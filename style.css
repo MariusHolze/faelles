@@ -1,11 +1,9 @@
-h1 {
-  color: darkblue;
-}
-
-#opretProfil.hidden{
+/* Skjuler boksen med id opretProfil, når den også har klassen hidden */
+#opretProfil.hidden {
     display: none;
 }
 
+/* Styling af opretProfil som et overlay midt på skærmen */
 #opretProfil {
     position: fixed;
     inset: 0;
@@ -14,13 +12,15 @@ h1 {
     gap: 10px;
     justify-content: center;
     align-items: center;
-    background: white
+    background: white;
 }
 
-#opretBrugernavn.hidden{
+/* Skjuler boksen med id opretBrugernavn, når den også har klassen hidden */
+#opretBrugernavn.hidden {
     display: none;
 }
 
+/* Styling af opretBrugernavn som et overlay midt på skærmen */
 #opretBrugernavn {
     position: fixed;
     inset: 0;
@@ -29,5 +29,64 @@ h1 {
     gap: 10px;
     justify-content: center;
     align-items: center;
-    background: white
+    background: white;
+}
+
+/* Hele navbarens ydre område */
+.navbar {
+    padding: 0 20px;
+    background: white;
+}
+
+/* Selve navigationen i navbaren */
+.navbar nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    border-bottom: 1px solid black;
+}
+
+/* Venstre side af navbaren med logo og links */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Højre side af navbaren med login-knappen */
+.nav-right {
+    margin-left: auto;
+}
+
+/* Logoets størrelse */
+#logo {
+    height: 50px;
+    width: auto;
+    display: block;
+}
+
+/* Generel styling af links i navbaren */
+.navbar a {
+    text-decoration: none;
+    color: black;
+    font-size: 16px;
+}
+
+/* Styling af login-link så det ligner en knap */
+.login-knap {
+    padding: 8px 14px;
+    border: 1px solid black;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* Effekt når musen holdes over links i navbaren */
+.navbar a:hover {
+    color: darkblue;
+}
+
+/* Effekt når musen holdes over login-knappen */
+.login-knap:hover {
+    background-color: #f2f2f2;
 }
