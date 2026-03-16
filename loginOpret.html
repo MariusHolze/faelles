@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Opret profil</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <section>
+        <h1>Log ind</h1>
+        <div class="container">
+            <p>Fornavn</p>
+            <input type="text" id="oprettetFornavn" name="oprettetFornavn">
+        </div>
+        <div class="container">
+            <p>Efternavn</p>
+            <input type="text" id="oprettetEfternavn" name="oprettetEfternavn">
+        </div>
+        <div class="container">
+            <p>Brugernavn</p>
+            <input type="text" id="oprettetBrugeravn" name="oprettetBrugeravn">
+        </div>
+        <div class="container">
+            <p>Adgangskode</p>
+            <input type="text" id="oprettetAdgangskode" name="oprettetAdgangskode">
+        </div>
+    </section>
+
+    <p>Har du ikke en profil?</p>
+    <button type="button" id="btnOpret">Opret profil</button>
+
+    <form class="hidden" id="opretProfil">
+        <section>
+            <h1>Opret profil</h1>
+            <div class="container">
+                <p>Fornavn</p>
+                <input type="text" id="Fornavn" name="Fornavn" maxlength="16" placeholder="max 16 karakterer">
+            </div>
+            <div class="container">
+                <p>Efternavn</p>
+                <input type="text" id="Efternavn" name="Efternavn" maxlength="16" placeholder="max 16 karakterer">
+            </div>
+            <div class="container">
+                <p>Telefonnummer</p>
+                <input type="tel" id="Phone" name="Phone">
+            </div>
+            <div class="container">
+                <p>E-mail</p>
+                <input type="email" id="Email" name="Email" placeholder="eksempel@eksempel.com">
+            </div>
+            <div class="container">
+                <p>Har du mange penge?</p>
+                <select id="status">
+                    <option value="vælg">--Vælg--</option>
+                    <option value="ja">Ja</option>
+                    <option value="nej">Nej</option>
+                </select>
+            </div>
+            <div class="container">
+                <button type="button" id="tilOpretBrugernavn">Næste</button>
+            </div>
+        </section>
+    </form>
+    <form class="hidden" id="opretBrugernavn">
+        <section>
+            <h1>Opret Brugernavn og adgangskode</h1>
+            <div class="container">
+                <p>Brugernavn</p>
+                <input type="text" id="Brugernavn" name="Brugernavn" maxlength="16" placeholder="max 16 karakterer">
+            </div>
+            <div class="container">
+                <p>Adgangskode</p>
+                <input type="password" id="Adgangskode" name="Adgangskode" maxlength="16" placeholder="max 16 karakterer">
+            </div>
+
+            <div class="container">
+                <button type="button" id="submitProfil">Opret Profil</button>
+            </div>
+        </section>
+    </form>
+    <script src="script.js"></script>
+</body>
+
+</html>

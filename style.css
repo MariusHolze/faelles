@@ -1,8 +1,33 @@
-body {
-  background-color: lightgray;
-  font-family: Arial, sans-serif;
-}
-
 h1 {
   color: darkblue;
+}
+
+#opretProfil.hidden{
+    display: none;
+}
+
+#opretProfil {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    background: white
+}
+
+#opretBrugernavn.hidden{
+    display: none;
+}
+
+#opretBrugernavn {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    background: white
 }
