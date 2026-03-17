@@ -1,41 +1,48 @@
-/* Skjuler boksen med id opretProfil, når den også har klassen hidden */
-#opretProfil.hidden {
-    display: none;
+body {
+    margin: 0;
 }
 
-/* Styling af opretProfil som et overlay midt på skærmen */
-#opretProfil {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    background: white;
-}
-
-/* Skjuler boksen med id opretBrugernavn, når den også har klassen hidden */
-#opretBrugernavn.hidden {
-    display: none;
-}
-
-/* Styling af opretBrugernavn som et overlay midt på skærmen */
+#login-form,
+#opretProfil,
 #opretBrugernavn {
     position: fixed;
     inset: 0;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
     justify-content: center;
     align-items: center;
+}
+
+#login-form {
+    flex-direction: column;
+    gap: 10px;
+}
+
+#opretProfil,
+#opretBrugernavn {
     background: white;
+}
+
+#opretProfil.hidden,
+#opretBrugernavn.hidden {
+    display: none;
+}
+
+#opretProfil form,
+#opretBrugernavn form,
+#opretBrugernavn form,
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 /* Hele navbarens ydre område */
 .navbar {
-    padding: 0 20px;
+    padding: 5px 0px ;
     background: white;
+    position: relative;
+    z-index: 1000;
 }
 
 /* Selve navigationen i navbaren */
@@ -57,10 +64,12 @@
 /* Højre side af navbaren med login-knappen */
 .nav-right {
     margin-left: auto;
+    margin-right: 10px;
 }
 
 /* Logoets størrelse */
 #logo {
+    padding-left: 10px;
     height: 50px;
     width: auto;
     display: block;
@@ -78,15 +87,26 @@
     padding: 8px 14px;
     border: 1px solid black;
     border-radius: 6px;
-    display: inline-block;
 }
 
 /* Effekt når musen holdes over links i navbaren */
 .navbar a:hover {
-    color: darkblue;
+    text-decoration: underline;
 }
 
 /* Effekt når musen holdes over login-knappen */
 .login-knap:hover {
     background-color: #f2f2f2;
+}
+
+#projektgrupppe {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    justify-content: space-around;
+}
+
+#projektgrupppe p {
+    text-decoration: underline;
 }
