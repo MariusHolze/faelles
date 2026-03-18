@@ -1,33 +1,112 @@
-h1 {
-  color: darkblue;
+body {
+    margin: 0;
 }
 
-#opretProfil.hidden{
-    display: none;
-}
-
-#opretProfil {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    background: white
-}
-
-#opretBrugernavn.hidden{
-    display: none;
-}
-
+#login-form,
+#opretProfil,
 #opretBrugernavn {
     position: fixed;
     inset: 0;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
     justify-content: center;
     align-items: center;
-    background: white
+}
+
+#login-form {
+    flex-direction: column;
+    gap: 10px;
+}
+
+#opretProfil,
+#opretBrugernavn {
+    background: white;
+}
+
+#opretProfil.hidden,
+#opretBrugernavn.hidden {
+    display: none;
+}
+
+#opretProfil form,
+#opretBrugernavn form,
+#opretBrugernavn form,
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Hele navbarens ydre område */
+.navbar {
+    padding: 5px 0px ;
+    background: white;
+    position: relative;
+    z-index: 1000;
+}
+
+/* Selve navigationen i navbaren */
+.navbar nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    border-bottom: 1px solid black;
+}
+
+/* Venstre side af navbaren med logo og links */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Højre side af navbaren med login-knappen */
+.nav-right {
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+/* Logoets størrelse */
+#logo {
+    padding-left: 10px;
+    height: 50px;
+    width: auto;
+    display: block;
+}
+
+/* Generel styling af links i navbaren */
+.navbar a {
+    text-decoration: none;
+    color: black;
+    font-size: 16px;
+}
+
+/* Styling af login-link så det ligner en knap */
+.login-knap {
+    padding: 8px 14px;
+    border: 1px solid black;
+    border-radius: 6px;
+}
+
+/* Effekt når musen holdes over links i navbaren */
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+/* Effekt når musen holdes over login-knappen */
+.login-knap:hover {
+    background-color: #f2f2f2;
+}
+
+#projektgrupppe {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    justify-content: space-around;
+}
+
+#projektgrupppe p {
+    text-decoration: underline;
 }

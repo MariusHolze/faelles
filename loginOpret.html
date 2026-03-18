@@ -9,14 +9,29 @@
 </head>
 
 <body>
-    <section>
+    <div class="navbar">
+        <nav class="nav-left">
+            <a href="index.html">
+                <img src="6676711.png" alt="logo" id="logo">
+            </a>
+            <a href="omOs.html">Om os</a>
+            <a href="kontakt.html">Kontakt</a>
+            <a href="learnHow.html">Learn how</a>
+
+            <div class="nav-right">
+                <a href="loginOpret.html" class="login-knap">Log ind</a>
+            </div>
+        </nav>
+
+    </div>
+    <div id="login-form">
         <h1>Log ind</h1>
         <div class="container">
             <p>Fornavn</p>
             <input type="text" id="oprettetFornavn" name="oprettetFornavn">
         </div>
         <div class="container">
-            <p>efternavn</p>
+            <p>Efternavn</p>
             <input type="text" id="oprettetEfternavn" name="oprettetEfternavn">
         </div>
         <div class="container">
@@ -32,8 +47,8 @@
     <p>Har du ikke en profil?</p>
     <button type="button" id="btnOpret">Opret profil</button>
 
-    <form class="hidden" id="opretProfil">
-        <section>
+    <div class="hidden" id="opretProfil">
+        <form>
             <h1>Opret profil</h1>
             <div class="container">
                 <p>Fornavn</p>
@@ -62,25 +77,28 @@
             <div class="container">
                 <button type="button" id="tilOpretBrugernavn">Næste</button>
             </div>
-        </section>
-    </form>
-    <form class="hidden" id="opretBrugernavn">
-        <section>
-            <h1>Opret Brugernavn og adgangskode</h1>
-            <div class="container">
-                <p>Brugernavn</p>
-                <input type="text" id="Brugernavn" name="Brugernavn" maxlength="16" placeholder="max 16 karakterer">
-            </div>
-            <div class="container">
-                <p>Adgangskode</p>
-                <input type="password" id="Adgangskode" name="Adgangskode" maxlength="16" placeholder="max 16 karakterer">
-            </div>
+        </form>
+    </div>
+    <div class="hidden" id="opretBrugernavn">
+        <form>
+            <section>
+                <h1>Opret brugernavn og adgangskode</h1>
+                <div class="container">
+                    <p>Brugernavn</p>
+                    <input type="text" id="Brugernavn" name="Brugernavn" maxlength="16" placeholder="max 16 karakterer">
+                </div>
+                <div class="container">
+                    <p>Adgangskode</p>
+                    <input type="password" id="Adgangskode" name="Adgangskode" maxlength="16"
+                        placeholder="max 16 karakterer">
+                </div>
 
-            <div class="container">
-                <button type="button" id="submitProfil">Opret Profil</button>
-            </div>
-        </section>
-    </form>
+                <div class="container">
+                    <button type="button" id="submitProfil">Opret Profil</button>
+                </div>
+            </section>
+        </form>
+    </div>
     <script src="script.js"></script>
 </body>
 
