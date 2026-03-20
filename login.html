@@ -1,50 +1,27 @@
 <!DOCTYPE html>
 <html lang="da">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log ind</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="navbar">
-        <nav>
-            <div class="nav-left">
-                <a href="index.html">
-                    <img src="6676711.png" alt="logo" id="logo">
-                </a>
-                <a href="omOs.html">Om os</a>
-                <a href="kontakt.html">Kontakt</a>
-                <a href="learnHow.html">Learn how</a>
-            </div>
-
-            <div class="nav-right">
-                <a href="login.html" class="login-knap">Log ind</a>
-            </div>
-        </nav>
-    </div>
-
+    <div id="navbar-placeholder"></div>
     <main class="page-content">
         <form id="login-form">
             <h1>Log ind</h1>
 
             <div class="container">
                 <p>E-mail</p>
-                <input 
-                    type="email" 
-                    id="brugerEmail" 
-                    name="brugerEmail" 
-                    placeholder="eksempel@eksempel.com" 
-                    required>
+                <input type="email" id="brugerEmail" name="brugerEmail" placeholder="eksempel@eksempel.com" required>
             </div>
 
             <div class="container">
                 <p>Adgangskode</p>
-                <input 
-                    type="password" 
-                    id="oprettetAdgangskode" 
-                    name="oprettetAdgangskode" 
-                    required>
+                <input type="password" id="oprettetAdgangskode" name="oprettetAdgangskode" required>
             </div>
 
             <div class="container">
@@ -58,4 +35,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
