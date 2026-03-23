@@ -10,7 +10,13 @@
         </div>
 
         <div class="nav-right">
+            <form class="nav-search" action="#" method="get" role="search" onsubmit="event.preventDefault();">
+                <label for="nav-search-input" class="visually-hidden">Søg</label>
+                <input id="nav-search-input" name="q" type="search" placeholder="Søg..."
+                    title="Søg (ikke aktiveret endnu)" />
+                <button type="submit" class="knap" aria-disabled="true">Søg</button>
+            </form>
             <a href="login.html" class="login-knap">Log ind</a>
         </div>
     </nav>
-</div>
+</div>2

@@ -1,7 +1,7 @@
 body {
     margin: 0;
     font-family: serif;
-    background-color: #ffdfdf;
+    background-color: antiquewhite;
 }
 
 .page-content {
@@ -32,16 +32,17 @@ body {
 
 .navbar {
     padding: 5px 0;
-    background: white;
+    background-color: #508fcd;
+    /* distinct navbar color (slate) */
     position: relative;
     z-index: 1000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .navbar nav {
     display: flex;
     align-items: center;
     height: 60px;
-    border-bottom: 1px solid black;
     padding-right: 10px;
 }
 
@@ -54,6 +55,40 @@ body {
 .nav-right {
     margin-left: auto;
 }
+
+.nav-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+.nav-search input[type="search"] {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 160px;
+    background: #ffffff;
+    /* keep input white so it stands out on the dark bar */
+    color: #000;
+}
+
+.nav-search .knap {
+    padding: 6px 10px;
+    font-size: 14px;
+}
+
+/* Utility: visually hidden but accessible to screen readers */
+.visually-hidden {
+    position: absolute !important;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+    white-space: nowrap;
+}
+
 
 #logo {
     padding-left: 10px;

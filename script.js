@@ -7,3 +7,5 @@ document.addEventListener("DOMContentLoaded", async () => {                     
         navbarPlaceholder.innerHTML = navbarHtml;       // Indsæt navbaren på siden
     }
 });
+
+//test
