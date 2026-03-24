@@ -14,47 +14,65 @@
         <div id="opret-form">
             <h1>Opret profil</h1>
 
-            <form class="container">
+            <form id="opretProfileForm" class="container">
                 <div class="container">
-                    <p>Fornavn</p>
+                    <label for="Fornavn">Fornavn</label>
                     <input type="text" id="Fornavn" name="Fornavn" maxlength="16" placeholder="max 16 karakterer"
                         required>
                 </div>
 
                 <div class="container">
-                    <p>Efternavn</p>
+                    <label for="Efternavn">Efternavn</label>
                     <input type="text" id="Efternavn" name="Efternavn" maxlength="16" placeholder="max 16 karakterer"
                         required>
                 </div>
 
                 <div class="container">
-                    <p>Telefonnummer</p>
+                    <label for="Phone">Telefonnummer</label>
                     <input type="tel" id="Phone" name="Phone" pattern="[0-9]{8}" placeholder="8 cifre" required>
                 </div>
 
                 <div class="container">
-                    <p>E-mail</p>
+                    <label for="opretEmail">E-mail</label>
                     <input type="email" id="opretEmail" name="opretEmail" placeholder="eksempel@eksempel.com" required>
                 </div>
+                
+                <div class="container">
+                    <label for="birthday">Fødselsdato:</label>
+                    <input type="date" id="birthday" name="birthday" required>
+                </div>
+                <!-- Fejlmeddelelse for alder -->
+                <p id="error-message-age" style="color: red; display: none;">Du skal være 18 år eller ældre for at
+                    oprette en profil.</p>
 
                 <div class="container">
-                    <p>Er du klar til at tænke som en ejendomsinvestor?</p>
+                    <label for="investorType">Er du klar til at tænke som en ejendomsinvestor?</label>
                     <select id="investorType" name="investorType" required>
+                        <!-- dropdown-menu med nedenstående valgmuligheder kontrol af valg-->
                         <option value="" selected disabled>--Vælg--</option>
+                        <!-- kan ikke vælges, SKAL være en af nedenstående-->
                         <option value="ja">Ja</option>
                         <option value="nej">Nej</option>
                     </select>
                 </div>
 
                 <div class="container">
-                    <p>Adgangskode</p>
-                    <input type="password" id="Adgangskode" name="Adgangskode" maxlength="16"
-                        placeholder="max 16 karakterer" required>
+                    <label for="adgangskode">Adgangskode</label>
+                    <input type="password" id="adgangskode" name="adgangskode" placeholder="Ny adgangskode" required>
                 </div>
+                <div class="container">
+                    <label for="kontrolAdgangskode"></label>
+                    <input type="password" id="kontrolAdgangskode" name="kontrolAdgangskode"
+                        placeholder="Gentag adgangskode" required>
+                </div>
+
+                <!-- Fejlmeddelelse for adgangskode -->
+                <p id="error-message-password" style="color: red; display: none;">Adgangskoderne skal være ens!</p>
 
                 <div class="container">
                     <button type="submit" id="submitProfil">Opret profil</button>
                 </div>
+                <p>Har du allerede en bruger? <a href="login.html">Login ind</a></p>
             </form>
         </div>
     </main>

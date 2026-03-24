@@ -1,13 +1,16 @@
-body {
+/* Kroppen på siderne designes */
+body {                                  
     margin: 0;
     font-family: serif;
     background-color: antiquewhite;
 }
 
+/* sidens reelle indhold designes */
 .page-content {
-    padding: 20px;
+    padding: 20px; /* Der gives plads ud til skærmens kanter*/
 }
 
+/* formular for login og opretProfil designes, centreres og sættes i en kollonne*/
 #login-form,
 #opret-form {
     display: flex;
@@ -15,30 +18,28 @@ body {
     justify-content: center;
     align-items: center;
     gap: 12px;
-    min-height: 70vh;
 }
 
-#opret-form form,
+/* hvert element med klassen container designes, centreres og sættes i en kollonne*/
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 8px;
 }
 
-.container {
-    gap: 6px;
-}
-
+/* navigationsbaren designes */
 .navbar {
     padding: 5px 0;
     background-color: #508fcd;
-    /* distinct navbar color (slate) */
     position: relative;
-    z-index: 1000;
+    z-index: 10000; /* sørger for at den er oven på alt andet indhold*/
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    border-bottom: ;
 }
 
+/* nav elementet med klassen navbar designes, de flere "sektioner" inden i navbaren lægges ved siden af hinanden*/
 .navbar nav {
     display: flex;
     align-items: center;
@@ -46,16 +47,19 @@ body {
     padding-right: 10px;
 }
 
+/* den venstre den af navbaren desgines*/
 .nav-left {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
+/* den højre den af navbaren desgines */
 .nav-right {
     margin-left: auto;
 }
 
+/* delen med søge feltet designes*/
 .nav-search {
     display: inline-flex;
     align-items: center;
@@ -63,6 +67,7 @@ body {
     margin-right: 12px;
 }
 
+/* søgefeltet i navbaren designes */
 .nav-search input[type="search"] {
     padding: 6px 8px;
     border: 1px solid #ccc;
@@ -70,26 +75,16 @@ body {
     font-size: 14px;
     min-width: 160px;
     background: #ffffff;
-    /* keep input white so it stands out on the dark bar */
     color: #000;
 }
 
+/* søgeknappen i navbaren designes*/
 .nav-search .knap {
     padding: 6px 10px;
     font-size: 14px;
 }
 
-/* Utility: visually hidden but accessible to screen readers */
-.visually-hidden {
-    position: absolute !important;
-    height: 1px;
-    width: 1px;
-    overflow: hidden;
-    clip: rect(1px, 1px, 1px, 1px);
-    white-space: nowrap;
-}
-
-
+/* logoet designes */
 #logo {
     padding-left: 10px;
     height: 50px;
@@ -97,16 +92,19 @@ body {
     display: block;
 }
 
+/* links i navbaren designes */
 .navbar a {
     text-decoration: none;
     color: black;
     font-size: 16px;
 }
 
-.navbar a:hover {
+/* en hovereffekt for links med klassen nav-left gives*/
+.navbar .nav-left a:hover {
     text-decoration: underline;
 }
 
+/* Knapper og links som skal ligne en knap desgines på lige fod */
 .knap,
 .login-knap,
 button {
@@ -121,6 +119,7 @@ button {
     cursor: pointer;
 }
 
+/* knapper og links som skal ligne en knap får en hovereffekt */
 .knap:hover,
 .login-knap:hover,
 button:hover {
@@ -128,6 +127,7 @@ button:hover {
     text-decoration: none;
 }
 
+/* listen over projektgruppen designes */
 #projektgruppe {
     display: flex;
     list-style: none;

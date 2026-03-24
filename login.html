@@ -11,16 +11,16 @@
 <body>
     <div id="navbar-placeholder"></div>
     <main class="page-content">
-        <form id="login-form">
+        <form id="login-form">  <!-- formular defineres-->
             <h1>Log ind</h1>
 
-            <div class="container">
-                <p>E-mail</p>
-                <input type="email" id="brugerEmail" name="brugerEmail" placeholder="eksempel@eksempel.com" required>
+            <div class="container">                         <!-- ensartet div element defineres med klassen container-->
+                <label for="brugerEmail">E-mail</label>     <!-- label til nedenstående inputfelt defineres -->
+                <input type="email" id="brugerEmail" name="brugerEmail" placeholder="eksempel@eksempel.com" required>   <!-- type af input defineres, placeholder og sikring af udfyldelse (også kontrol af type) -->
             </div>
 
             <div class="container">
-                <p>Adgangskode</p>
+                <label for="oprettetAdgangskode">Adgangskode</label>
                 <input type="password" id="oprettetAdgangskode" name="oprettetAdgangskode" required>
             </div>
 
@@ -28,8 +28,7 @@
                 <button type="submit" id="login">Log ind</button>
             </div>
 
-            <p>Har du ikke en profil?</p>
-            <a href="opret.html" class="login-knap">Opret profil</a>
+            <p>Har du ikke en profil? <a href="opret.html">Opret dig gratis</a></p>
         </form>
     </main>
 
