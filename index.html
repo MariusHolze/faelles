@@ -9,9 +9,30 @@
 </head>
 
 <body>
-  <div id="navbar-placeholder"></div>                           <!-- div hvor navbaren vil blive indsat, samme på alle filer -->
-  <main class="page-content">                                   <!-- sidens reelle indhold, samme på alle filer -->
-    <h1>Ejendomsinvestering-app</h1>                            <!-- header på siden, samme på alle filer -->
+  <div id="navbar-placeholder"></div> <!-- div hvor navbaren vil blive indsat, samme på alle filer -->
+  <main class="page-content"> <!-- sidens reelle indhold, samme på alle filer -->
+    <h1>Ejendomsinvestering-app</h1> <!-- header på siden, samme på alle filer -->
+
+    <div class="søgeområde">
+      <form id="index-søge">
+        <input id="index-søge-input" type="search" placeholder="Søg efter adresse..." />
+        <button type="submit" class="knap">Søg</button>
+      </form>
+      <div id="søge-output">
+        <div class="resultat">
+          <img src="img/house.png" alt="logo" id="logo">
+          <div id="ejendomsInfo">
+            <ul>
+              <li><p id="ejendsomType">Hus</p></li>
+              <li><p id="ejendomAdresse">Roladegade 1, 2345 København</p></li>
+              <li><p id="ejendomPris">1.000.000 DKK</p></li>
+              <li><p id="ejendomBeskrivelse">Et dejligt hus</p></li>
+              <li><button class="knap">Se detaljer</button></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="script.js"></script>
