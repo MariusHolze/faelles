@@ -1,73 +1,89 @@
+/* Kroppen på siderne designes */
 body {
     margin: 0;
+    font-family: serif;
+    background-color: antiquewhite;
 }
 
+/* Sidens reelle indhold designes */
+.page-content {
+    margin: 10px 60px;
+}
+
+/* Formular for login og opretProfil designes, centreres og sættes i en kolonne */
 #login-form,
-#opretProfil,
-#opretBrugernavn {
-    position: fixed;
-    inset: 0;
+#opret-form {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 12px;
 }
 
-#login-form {
-    flex-direction: column;
-    gap: 10px;
-}
-
-#opretProfil,
-#opretBrugernavn {
-    background: white;
-}
-
-#opretProfil.hidden,
-#opretBrugernavn.hidden {
-    display: none;
-}
-
-#opretProfil form,
-#opretBrugernavn form,
-#opretBrugernavn form,
+/* Hvert element med klassen container designes, centreres og sættes i en kolonne */
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 8px;
 }
 
-/* Hele navbarens ydre område */
+/* Navigationsbaren designes */
 .navbar {
-    padding: 5px 0px ;
-    background: white;
+    padding: 5px 0;
+    background-color: #508fcd;
     position: relative;
-    z-index: 1000;
+    z-index: 10000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-/* Selve navigationen i navbaren */
+/* Nav-elementet designes, de flere "sektioner" lægges ved siden af hinanden */
 .navbar nav {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     height: 60px;
-    border-bottom: 1px solid black;
+    padding-right: 10px;
 }
 
-/* Venstre side af navbaren med logo og links */
+/* Den venstre del af navbaren designes */
 .nav-left {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
-/* Højre side af navbaren med login-knappen */
+/* Den højre del af navbaren designes */
 .nav-right {
     margin-left: auto;
-    margin-right: 10px;
 }
 
-/* Logoets størrelse */
+/* Delen med søgefeltet designes */
+.nav-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+/* Søgefeltet i navbaren designes */
+.nav-search input[type="search"] {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 160px;
+    background: #ffffff;
+    color: #000;
+}
+
+/* Søgeknappen i navbaren designes */
+.nav-search .knap {
+    padding: 6px 10px;
+    font-size: 14px;
+}
+
+/* Logo designes */
 #logo {
     padding-left: 10px;
     height: 50px;
@@ -75,31 +91,43 @@ body {
     display: block;
 }
 
-/* Generel styling af links i navbaren */
+/* Links i navbaren designes */
 .navbar a {
     text-decoration: none;
     color: black;
     font-size: 16px;
 }
 
-/* Styling af login-link så det ligner en knap */
-.login-knap {
-    padding: 8px 14px;
-    border: 1px solid black;
-    border-radius: 6px;
-}
-
-/* Effekt når musen holdes over links i navbaren */
-.navbar a:hover {
+/* Hovereffekt for links med klassen nav-left */
+.navbar .nav-left a:hover {
     text-decoration: underline;
 }
 
-/* Effekt når musen holdes over login-knappen */
-.login-knap:hover {
-    background-color: #f2f2f2;
+/* Knapper og links som skal ligne en knap designes på lige fod */
+.knap,
+.login-knap,
+button {
+    display: inline-block;
+    padding: 8px 14px;
+    border: 1px solid black;
+    border-radius: 6px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
 }
 
-#projektgrupppe {
+/* Knapper får en hovereffekt */
+.knap:hover,
+.login-knap:hover,
+button:hover {
+    background-color: #f2f2f2;
+    text-decoration: none;
+}
+
+/* Listen over projektgruppen designes */
+#projektgruppe {
     display: flex;
     list-style: none;
     margin: 0;
@@ -107,6 +135,91 @@ body {
     justify-content: space-around;
 }
 
-#projektgrupppe p {
-    text-decoration: underline;
+/* Søgeområdet designes */
+.søgeområde {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 24px;
+    padding: 40px;
+}
+
+/* Søgeformularen designes */
+#index-søge {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Søgeinputfeltet designes */
+#index-søge-input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 16px;
+    border: 2px solid #508fcd;
+    border-radius: 6px;
+    font-weight: bold;
+    min-height: 44px;
+}
+
+/* Søgeoutput området designes */
+#søge-output {
+    width: 100%;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    background-color: rgb(253, 243, 230);
+    border-radius: 15px;
+}
+
+/* Søgeresultat-boksen designes */
+#søge-output div {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    width: auto;
+    max-width: 280px;
+}
+
+/* Billede i søgeresultat designes */
+#søge-output img {
+    height: 70px;
+    width: auto;
+}
+
+/* Ejendomsinformationen designes */
+#ejendomsInfo ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#ejendomsInfo li {
+    margin: 0;
+}
+
+#ejendomsInfo p {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+}
+
+#ejendomsInfo button {
+    margin-top: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
 }

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log ind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+        <form id="login-form">  <!-- formular defineres-->
+            <h1>Log ind</h1>
+
+            <div class="container">                         <!-- ensartet div element defineres med klassen container-->
+                <label for="brugerEmail">E-mail</label>     <!-- label til nedenstående inputfelt defineres -->
+                <input type="email" id="brugerEmail" name="brugerEmail" placeholder="eksempel@eksempel.com" required>   <!-- type af input defineres, placeholder og sikring af udfyldelse (også kontrol af type) -->
+            </div>
+
+            <div class="container">
+                <label for="oprettetAdgangskode">Adgangskode</label>
+                <input type="password" id="oprettetAdgangskode" name="oprettetAdgangskode" required>
+            </div>
+
+            <div class="container">
+                <button type="submit" id="login">Log ind</button>
+            </div>
+
+            <p>Har du ikke en profil? <a href="opret.html">Opret dig gratis</a></p>
+        </form>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
