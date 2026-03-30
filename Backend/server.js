@@ -1,12 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 
+const path = require("path"); // bruges til at finde frontend-mappen
+
 const app = express();
 const port = 3000;
 
 // middleware
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, "../frontend"))); 
+// gør frontend-mappen tilgængelig i browseren
 
 // midlertidig "database"
 let brugere = [];
