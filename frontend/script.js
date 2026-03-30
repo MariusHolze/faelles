@@ -1,65 +1,91 @@
-document.addEventListener("DOMContentLoaded", async () => {                     // Vent til HTML-siden er klar
-    const navbarPlaceholder = document.getElementById("navbar-placeholder");    // Find stedet i HTML hvor navbaren skal indsættes
+document.addEventListener("DOMContentLoaded", async () => {
+    const navbarPlaceholder = document.getElementById("navbar-placeholder");
 
-    if (navbarPlaceholder) {                            // Kun hvis den findes
-        const response = await fetch("navbar.html");    // Vent på at filen navbar.html bliver hentet, og gem svaret i variablen response
-        const navbarHtml = await response.text();       // Tag det hentede svar og læs det som almindelig tekst
-        navbarPlaceholder.innerHTML = navbarHtml;       // Indsæt navbaren på siden
-    }
-});
-
-// Hent formularen og fejlmeddelelseselementerne
-const form = document.getElementById('opretProfileForm');
-const ageErrorMessage = document.getElementById('error-message-age');
-const passwordErrorMessage = document.getElementById('error-message-password');
-
-// Tilføj event listener til formularens submit handling
-form.addEventListener('submit', function(event) {
-    // Hent fødselsdatoen som en Date
-    const birthdayInput = document.getElementById('birthday');
-    const birthday = new Date(birthdayInput.value);
-
-    // Få den nuværende dato
-    const today = new Date();
-    
-    // Beregn forskellen i år
-    let age = today.getFullYear() - birthday.getFullYear();
-    const m = today.getMonth() - birthday.getMonth();
-
-    // Hvis måned og dag ikke er kommet endnu i år, skal aldersberegningen trækkes 1 år fra
-    if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
-        age--;
+    if (navbarPlaceholder) {
+        const response = await fetch("navbar.html");
+        const navbarHtml = await response.text();
+        navbarPlaceholder.innerHTML = navbarHtml;
     }
 
-    // Tjek om brugeren er 18 år eller ældre
-    let ageValid = true;
-    if (age < 18) {
-        ageValid = false;
-        // Forhindre formularen i at blive sendt
+    const form = document.getElementById("opretProfileForm");
+
+    if (!form) {
+        return;
+    }
+
+    const ageErrorMessage = document.getElementById("error-message-age");
+    const passwordErrorMessage = document.getElementById("error-message-password");
+
+    form.addEventListener("submit", async function(event) {
         event.preventDefault();
-        
-        // Vis fejlmeddelelsen om alderskrav
-        ageErrorMessage.style.display = 'block';
-    } else {
-        ageErrorMessage.style.display = 'none';
-    }
 
-    // Tjek om adgangskoderne matcher
-    const adgangskode = document.getElementById('adgangskode').value;
-    const kontrolAdgangskode = document.getElementById('kontrolAdgangskode').value;
+        const birthdayInput = document.getElementById("birthday");
+        const birthday = new Date(birthdayInput.value);
+        const today = new Date();
 
-    let passwordsMatch = true;
-    if (adgangskode !== kontrolAdgangskode) {
-        passwordsMatch = false;
-        // Forhindre formularen i at blive sendt
-        event.preventDefault();
-        passwordErrorMessage.style.display = 'block';
-    } else {
-        passwordErrorMessage.style.display = 'none';
-    }
+        let age = today.getFullYear() - birthday.getFullYear();
+        const m = today.getMonth() - birthday.getMonth();
 
-    // Hvis begge betingelser er opfyldt (alder og adgangskoder)
-    if (ageValid && passwordsMatch) {
-        // Formularen vil blive sendt (forhindres ikke)
-    }
+        if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
+            age--;
+        }
+
+        let ageValid = true;
+        if (age < 18) {
+            ageValid = false;
+            ageErrorMessage.style.display = "block";
+        } else {
+            ageErrorMessage.style.display = "none";
+        }
+
+        const adgangskode = document.getElementById("adgangskode").value;
+        const kontrolAdgangskode = document.getElementById("kontrolAdgangskode").value;
+
+        let passwordsMatch = true;
+        if (adgangskode !== kontrolAdgangskode) {
+            passwordsMatch = false;
+            passwordErrorMessage.style.display = "block";
+        } else {
+            passwordErrorMessage.style.display = "none";
+        }
+
+        if (!ageValid || !passwordsMatch) {
+            return;
+        }
+
+        const brugerData = {
+            fornavn: document.getElementById("Fornavn").value,
+            efternavn: document.getElementById("Efternavn").value,
+            telefon: document.getElementById("Phone").value,
+            email: document.getElementById("opretEmail").value,
+            foedselsdato: document.getElementById("birthday").value,
+            investorType: document.getElementById("investorType").value,
+            adgangskode: document.getElementById("adgangskode").value
+        };
+
+        try {
+            const response = await fetch("http://localhost:3000/brugere", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(brugerData)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert("Fejl: " + result.message);
+                return;
+            }
+
+            alert("Bruger oprettet!");
+            console.log(result);
+
+            form.reset();
+        } catch (error) {
+            console.error("Fejl ved oprettelse af bruger:", error);
+            alert("Kunne ikke oprette bruger. Tjek om serveren kører.");
+        }
+    });
 });

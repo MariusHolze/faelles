@@ -1,48 +1,51 @@
-require("dotenv").config();
-
 const express = require("express");
-const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
+const port = 3000;
 
+// middleware
 app.use(cors());
 app.use(express.json());
 
-const dbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
-  options: {
-    encrypt: true,
-    trustServerCertificate: false
-  }
-};
+// midlertidig "database"
+let brugere = [];
 
-sql.connect(dbConfig)
-  .then(() => {
-    console.log("Forbundet til Azure SQL");
-  })
-  .catch(err => {
-    console.error("Fejl i databaseforbindelse:", err);
+// test-route
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API virker" });
+});
+
+// opret bruger
+app.post("/brugere", (req, res) => {
+  const nyBruger = req.body;
+
+  // simpel validering
+  if (!nyBruger.fornavn || !nyBruger.efternavn || !nyBruger.email) {
+    return res.status(400).json({
+      message: "Mangler fornavn, efternavn eller email"
+    });
+  }
+
+  brugere.push(nyBruger);
+
+  console.log("Ny bruger oprettet:");
+  console.log(nyBruger);
+
+  console.log("Alle brugere:");
+  console.log(brugere);
+
+  res.status(201).json({
+    message: "Bruger oprettet",
+    bruger: nyBruger
   });
-
-app.get("/api/test", async (req, res) => {
-  try {
-    const result = await sql.query`SELECT GETDATE() AS tid`;
-    res.json(result.recordset);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Noget gik galt");
-  }
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server kører på http://localhost:${process.env.PORT}`);
+// se alle brugere
+app.get("/brugere", (req, res) => {
+  res.json(brugere);
 });
 
-app.post('/brugere', (req, res) => {
-    console.log(req.body);
-    res.send("bruger modtaget");
+app.listen(port, () => {
+  console.log(`Server kører på http://localhost:${port}`);
 });
