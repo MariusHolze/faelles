@@ -89,3 +89,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 });
+
+async function hentBrugere() {
+    const response = await fetch("http://localhost:3000/brugere");
+    const brugere = await response.json();
+
+    console.log("Brugere:", brugere);
+
+    const liste = document.getElementById("brugerListe");
+
+    if (!liste) return;
+
+    liste.innerHTML = "";
+
+    brugere.forEach(bruger => {
+        const li = document.createElement("li");
+        li.textContent = bruger.fornavn + " " + bruger.efternavn;
+        liste.appendChild(li);
+    });
+}
