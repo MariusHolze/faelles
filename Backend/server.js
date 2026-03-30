@@ -10,6 +10,7 @@ app.use(express.json());
 
 // midlertidig "database"
 let brugere = [];
+let ejendomme = []; // midlertidig liste til ejendomme (fake DB)
 
 // test-route
 app.get("/api/test", (req, res) => {
@@ -45,6 +46,32 @@ app.post("/brugere", (req, res) => {
 app.get("/brugere", (req, res) => {
   res.json(brugere);
 });
+
+
+app.post("/ejendomme", (req, res) => {
+  const nyEjendom = req.body; // data fra frontend
+
+  // tjek om nødvendige felter findes
+  if (!nyEjendom.adresse || !nyEjendom.boligtype || !nyEjendom.boligareal) {
+    return res.status(400).json({
+      message: "Mangler adresse, boligtype eller boligareal"
+    });
+  }
+
+  ejendomme.push(nyEjendom); // gem i array
+
+  console.log("Ny ejendom oprettet:", nyEjendom); // log til terminal
+
+  res.status(201).json({
+    message: "Ejendom oprettet",
+    ejendom: nyEjendom
+  }); // svar tilbage til frontend
+});
+
+app.get("/ejendomme", (req, res) => {
+  res.json(ejendomme); // sender alle ejendomme tilbage
+});
+
 
 app.listen(port, () => {
   console.log(`Server kører på http://localhost:${port}`);

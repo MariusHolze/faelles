@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <title>Opret ejendom</title>
+</head>
+<body>
+
+<h1>Opret ejendom</h1>
+
+<form id="ejendomForm">
+  <input type="text" id="adresse" placeholder="Adresse" required>
+  <input type="text" id="boligtype" placeholder="Boligtype" required>
+  <input type="number" id="boligareal" placeholder="Boligareal" required>
+
+  <button type="submit">Opret ejendom</button>
+</form>
+
+<!-- knap til at hente ejendomme -->
+<button onclick="hentEjendomme()">Vis ejendomme</button>
+
+<!-- her bliver ejendomme vist -->
+<ul id="ejendomListe"></ul>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -108,3 +108,64 @@ async function hentBrugere() {
         liste.appendChild(li);
     });
 }
+
+
+
+
+
+const ejendomForm = document.getElementById("ejendomForm"); // finder form
+
+if (ejendomForm) {
+  ejendomForm.addEventListener("submit", async function (event) {
+    event.preventDefault(); // stopper reload
+
+    // samler input fra form
+    const ejendomData = {
+      adresse: document.getElementById("adresse").value,
+      boligtype: document.getElementById("boligtype").value,
+      boligareal: document.getElementById("boligareal").value
+    };
+
+    try {
+      const response = await fetch("http://localhost:3000/ejendomme", {
+        method: "POST", // sender data
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(ejendomData) // laver data om til JSON
+      });
+
+      const result = await response.json(); // læser svar
+
+      if (!response.ok) {
+        alert("Fejl: " + result.message);
+        return;
+      }
+
+      alert("Ejendom oprettet!");
+      ejendomForm.reset(); // rydder form
+    } catch (error) {
+      console.error(error);
+      alert("Noget gik galt");
+    }
+  });
+}
+
+
+
+async function hentEjendomme() {
+  const response = await fetch("http://localhost:3000/ejendomme"); // henter data
+  const ejendomme = await response.json(); // laver JSON om til JS
+
+  const liste = document.getElementById("ejendomListe");
+
+  if (!liste) return;
+
+  liste.innerHTML = ""; // rydder listen
+
+  ejendomme.forEach(ejendom => {
+    const li = document.createElement("li"); // laver nyt liste-element
+    li.textContent = ejendom.adresse + " - " + ejendom.boligtype;
+    liste.appendChild(li); // tilføjer til siden
+  });
+}
