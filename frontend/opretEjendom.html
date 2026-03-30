@@ -2,26 +2,28 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Opret ejendom</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="navbar-placeholder"></div>
 
-<h1>Opret ejendom</h1>
+  <main class="page-content">
+    <h1>Opret ejendom</h1>
 
-<form id="ejendomForm">
-  <input type="text" id="adresse" placeholder="Adresse" required>
-  <input type="text" id="boligtype" placeholder="Boligtype" required>
-  <input type="number" id="boligareal" placeholder="Boligareal" required>
+    <form id="ejendomForm">
+      <input type="text" id="adresse" placeholder="Adresse" required>
+      <input type="text" id="boligtype" placeholder="Boligtype" required>
+      <input type="number" id="boligareal" placeholder="Boligareal" required>
 
-  <button type="submit">Opret ejendom</button>
-</form>
+      <button type="submit">Opret ejendom</button>
+    </form>
 
-<!-- knap til at hente ejendomme -->
-<button onclick="hentEjendomme()">Vis ejendomme</button>
+    <button onclick="hentEjendomme()">Vis ejendomme</button>
+    <ul id="ejendomListe"></ul>
+  </main>
 
-<!-- her bliver ejendomme vist -->
-<ul id="ejendomListe"></ul>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
