@@ -41,3 +41,8 @@ app.get("/api/test", async (req, res) => {
 app.listen(process.env.PORT, () => {
   console.log(`Server kører på http://localhost:${process.env.PORT}`);
 });
+
+app.post('/brugere', (req, res) => {
+    console.log(req.body);
+    res.send("bruger modtaget");
+});
