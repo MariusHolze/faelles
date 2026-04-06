@@ -19,6 +19,10 @@ h1 {
     margin-bottom: 25px;
 }
 
+h2 {
+    margin-top: 0;
+}
+
 /* ===== NAVBAR ===== */
 .navbar {
     background-color: #ffffff;
@@ -59,9 +63,11 @@ h1 {
     color: #508fcd;
 }
 
-/* logo */
+/* logo i navbar */
 #logo {
     height: 45px;
+    width: auto;
+    display: block;
 }
 
 /* ===== SEARCH ===== */
@@ -89,6 +95,7 @@ button,
     cursor: pointer;
     transition: 0.2s;
     font-size: 14px;
+    text-decoration: none;
 }
 
 button:hover,
@@ -144,14 +151,14 @@ input:focus {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px;
+    gap: 15px;
 }
 
 #index-søge {
     display: flex;
     gap: 10px;
     width: 100%;
-    max-width: 600px;
+    max-width: 650px;
 }
 
 #index-søge-input {
@@ -159,28 +166,55 @@ input:focus {
     padding: 14px;
     border: 2px solid #508fcd;
     border-radius: 6px;
+    font-size: 15px;
+}
+
+/* fejltekst */
+#fejlBesked {
+    color: #c0392b;
+    font-weight: bold;
+    min-height: 20px;
+    margin: 0;
 }
 
 /* ===== RESULTATER ===== */
 #søge-output {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 20px;
     padding: 20px;
+    width: 100%;
 }
 
-/* kort */
-#søge-output div {
+.resultat,
+.bruger-box {
     background: white;
     border-radius: 10px;
     padding: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    max-width: 260px;
 }
 
-/* billeder */
-#søge-output img {
+.resultat {
+    width: 260px;
+}
+
+.bruger-box {
+    width: 170px;
+    min-height: 220px;
+}
+
+/* skjuler elementer */
+.skjult {
+    display: none;
+}
+
+/* billede i resultatkort */
+#resultat-logo {
     height: 70px;
+    width: auto;
+    display: block;
+    margin-bottom: 10px;
 }
 
 /* ===== EJENDOMSINFO ===== */
@@ -191,7 +225,20 @@ input:focus {
 }
 
 #ejendomsInfo li {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+#ejendsomType {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+#ejendomAdresse,
+#ejendomPost,
+#ejendomBeskrivelse {
+    margin: 0;
+    line-height: 1.4;
 }
 
 /* ===== LISTE ===== */
@@ -202,13 +249,42 @@ input:focus {
     padding: 0;
 }
 
-#ejendomListe li,
 #brugerListe li {
-    background: white;
-    padding: 12px;
+    background: #f8fafc;
+    padding: 10px;
     border-radius: 6px;
     margin-bottom: 8px;
+}
+
+.ejendom-kort {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.ejendom-kort h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.ejendom-kort p {
+    margin: 6px 0;
+}
+
+.ejendom-knapper {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+}
+
+.slet-knap {
+    background-color: #c94c4c;
+}
+
+.slet-knap:hover {
+    background-color: #a53c3c;
 }
 
 /* ===== BRUGER SECTION ===== */
@@ -218,4 +294,94 @@ input:focus {
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* fejltekst på login */
+#loginFejl {
+    color: #c0392b;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: center;
+}
+
+/* ===== BRUGER MENU I NAVBAR ===== */
+
+/* wrapper så dropdown kan placeres rigtigt */
+.bruger-menu-wrapper {
+    position: relative;
+}
+
+/* selve bruger-knappen */
+.bruger-menu-knap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #508fcd, #3c6fa3);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(60, 111, 163, 0.25);
+    transition: 0.2s ease;
+}
+
+.bruger-menu-knap:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(60, 111, 163, 0.35);
+}
+
+/* lille pil i knappen */
+.pil {
+    font-size: 12px;
+}
+
+/* dropdown-boksen */
+.bruger-dropdown {
+    position: absolute;
+    right: 0;
+    top: 48px;
+    min-width: 190px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+    padding: 10px;
+    z-index: 1000;
+    border: 1px solid #e8edf3;
+}
+
+/* links og knapper i dropdown */
+.dropdown-link,
+.dropdown-knap {
+    display: block;
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+    background: none;
+    border: none;
+    color: #222;
+    padding: 11px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+/* hover-effekt */
+.dropdown-link:hover,
+.dropdown-knap:hover {
+    background-color: #f2f7fc;
+    color: #508fcd;
+}
+
+/* gør logud lidt mere tydelig */
+.dropdown-knap {
+    font-weight: bold;
+}
+
+/* skjuler elementer */
+.skjult {
+    display: none;
 }
