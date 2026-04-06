@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 
 <head>
   <meta charset="UTF-8">
@@ -9,34 +9,62 @@
 </head>
 
 <body>
-  <div id="navbar-placeholder"></div> <!-- div hvor navbaren vil blive indsat, samme på alle filer -->
-  <main class="page-content"> <!-- sidens reelle indhold, samme på alle filer -->
-    <h1>Ejendomsinvestering-app</h1> <!-- header på siden, samme på alle filer -->
+  <!-- navbar bliver hentet ind med JavaScript -->
+  <div id="navbar-placeholder"></div>
+
+  <main class="page-content">
+    <h1>Ejendomsinvestering-app</h1>
 
     <div class="søgeområde">
+      <!-- søgefelt på forsiden -->
       <form id="index-søge">
-        <input id="index-søge-input" type="search" placeholder="Søg efter adresse..." />
+        <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse..." />
         <button type="submit" class="knap">Søg</button>
       </form>
+
+      <!-- fejlbesked -->
+      <p id="fejlBesked"></p>
+
+      <!-- søgeresultat -->
       <div id="søge-output">
-        <div class="resultat">
-          <img src="img/house.png" alt="logo" id="logo">
+        <div class="resultat skjult" id="resultatKort">
+          <img src="img/house.png" alt="hus" id="resultat-logo">
+
           <div id="ejendomsInfo">
             <ul>
-              <li><p id="ejendsomType">Hus</p></li>
-              <li><p id="ejendomAdresse">Roladegade 1, 2345 København</p></li>
-              <li><p id="ejendomPris">1.000.000 DKK</p></li>
-              <li><p id="ejendomBeskrivelse">Et dejligt hus</p></li>
-              <li><button class="knap">Se detaljer</button></li>
+              <li>
+                <p id="ejendsomType">Adresse fundet</p>
+              </li>
+              <li>
+                <p id="ejendomAdresse"></p>
+              </li>
+              <li>
+                <p id="ejendomPost"></p>
+              </li>
+              <li>
+                <p id="ejendomBeskrivelse"></p>
+              </li>
+              <li>
+                <button id="opretEjendomsprofilKnap" class="knap">
+                  Opret ejendomsprofil
+                </button>
+              </li>
             </ul>
           </div>
         </div>
-        <div>
-          <button onclick="hentBrugere()">Vis brugere</button>
-          <ul id="brugerListe"></ul> 
+
+        <div class="bruger-box">
+          <button onclick="hentBrugere()" class="knap">Vis brugere</button>
+          <ul id="brugerListe"></ul>
         </div>
       </div>
     </div>
+
+    <!-- tidligere profiler -->
+    <section class="bruger-section">
+      <h2>Mine ejendomsprofiler</h2>
+      <div id="ejendomListe"></div>
+    </section>
   </main>
 
   <script src="script.js"></script>

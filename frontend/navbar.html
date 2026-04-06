@@ -1,24 +1,35 @@
 <div class="navbar">
-    <nav>
-        <div class="nav-left">
-            <a href="index.html">
-                <img src="img/6676711.png" alt="logo" id="logo">
-            </a>
-            <a href="omOs.html">Om os</a>
-            <a href="kontakt.html">Kontakt</a>
-            <a href="learnHow.html">Learn how</a>
+  <nav>
+    <div class="nav-left">
+      <!-- logo -->
+      <a href="index.html">
+        <img src="img/6676711.png" alt="Logo" id="logo">
+      </a>
+
+      <!-- almindelige links -->
+      <a href="index.html">Forside</a>
+      <a href="omOs.html">Om os</a>
+      <a href="kontakt.html">Kontakt</a>
+      <a href="laerMere.html">Learn how</a>
+    </div>
+
+    <div class="nav-right">
+      <!-- denne vises kun når man IKKE er logget ind -->
+      <a href="login.html" id="loginNavKnap" class="login-knap">Log ind</a>
+
+      <!-- denne vises kun når man ER logget ind -->
+      <div id="brugerMenuWrapper" class="bruger-menu-wrapper skjult">
+        <button id="brugerMenuKnap" class="bruger-menu-knap">
+          <span id="brugerMenuNavn">Bruger</span>
+          <span class="pil">▾</span>
+        </button>
+
+        <!-- dropdown-menu -->
+        <div id="brugerDropdown" class="bruger-dropdown skjult">
+          <a href="profil.html" class="dropdown-link">Min profil</a>
+          <button id="logUdKnap" class="dropdown-knap">Log ud</button>
         </div>
-
-        <div class="nav-right">
-            <form class="nav-search" action="#" method="get" role="search" onsubmit="event.preventDefault();">
-
-                <input id="nav-search-input" name="q" type="search" placeholder="Søg..."
-                    title="Søg (ikke aktiveret endnu)" />
-                <button type="submit" class="knap" aria-disabled="true">Søg</button>
-            </form>
-            <a href="login.html" class="login-knap">Log ind</a>
-            <a href="opretEjendom.html">Opret ejendom</a>
-
-        </div>
-    </nav>
+      </div>
+    </div>
+  </nav>
 </div>

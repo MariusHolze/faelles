@@ -1,38 +1,50 @@
 <!DOCTYPE html>
 <html lang="da">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log ind</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log ind</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div id="navbar-placeholder"></div>
-    <main class="page-content">
-        <form id="login-form">  <!-- formular defineres-->
-            <h1>Log ind</h1>
+  <!-- navbar bliver hentet ind med JavaScript -->
+  <div id="navbar-placeholder"></div>
 
-            <div class="container">                         <!-- ensartet div element defineres med klassen container-->
-                <label for="brugerEmail">E-mail</label>     <!-- label til nedenstående inputfelt defineres -->
-                <input type="email" id="brugerEmail" name="brugerEmail" placeholder="eksempel@eksempel.com" required>   <!-- type af input defineres, placeholder og sikring af udfyldelse (også kontrol af type) -->
-            </div>
+  <main class="page-content">
+    <div class="container">
+      <h1>Log ind</h1>
 
-            <div class="container">
-                <label for="oprettetAdgangskode">Adgangskode</label>
-                <input type="password" id="oprettetAdgangskode" name="oprettetAdgangskode" required>
-            </div>
+      <!-- login-form -->
+      <form id="login-form">
+        <input
+          type="email"
+          id="loginEmail"
+          placeholder="Skriv din email"
+          required
+        />
 
-            <div class="container">
-                <button type="submit" id="login">Log ind</button>
-            </div>
+        <input
+          type="password"
+          id="loginPassword"
+          placeholder="Skriv din adgangskode"
+          required
+        />
 
-            <p>Har du ikke en profil? <a href="opretBruger.html">Opret dig gratis</a></p>
-        </form>
-    </main>
+        <button type="submit" class="knap">Log ind</button>
+      </form>
 
-    <script src="script.js"></script>
+      <!-- fejlbesked -->
+      <p id="loginFejl"></p>
+
+      <!-- link til opret profil -->
+      <p class="login-tekst">
+        Har du ikke en profil?
+        <a href="opretBruger.html">Opret gratis her</a>
+      </p>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
 </body>
-
 </html>
