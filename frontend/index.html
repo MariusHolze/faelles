@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="da">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,23 +8,30 @@
 </head>
 
 <body>
-  <!-- navbar bliver hentet ind med JavaScript -->
+  <!-- Navbar bliver indsat med JavaScript -->
   <div id="navbar-placeholder"></div>
 
   <main class="page-content">
     <h1>Ejendomsinvestering-app</h1>
 
     <div class="søgeområde">
-      <!-- søgefelt på forsiden -->
+      <!-- Søgefelt på forsiden -->
       <form id="index-søge">
-        <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse..." />
+        <input
+          id="index-søge-input"
+          type="search"
+          placeholder="Søg efter dansk adresse..."
+        >
         <button type="submit" class="knap">Søg</button>
       </form>
 
-      <!-- fejlbesked -->
+      <!-- Fejlbesked ved søgning -->
       <p id="fejlBesked"></p>
 
-      <!-- søgeresultat -->
+      <!-- Liste med adresseforslag -->
+      <div id="adresseListe"></div>
+
+      <!-- Søgeresultat -->
       <div id="søge-output">
         <div class="resultat skjult" id="resultatKort">
           <img src="img/house.png" alt="hus" id="resultat-logo">
@@ -53,6 +59,7 @@
           </div>
         </div>
 
+        <!-- Midlertidig boks til test af brugere -->
         <div class="bruger-box">
           <button onclick="hentBrugere()" class="knap">Vis brugere</button>
           <ul id="brugerListe"></ul>
@@ -60,7 +67,7 @@
       </div>
     </div>
 
-    <!-- tidligere profiler -->
+    <!-- Tidligere profiler -->
     <section class="bruger-section">
       <h2>Mine ejendomsprofiler</h2>
       <div id="ejendomListe"></div>
@@ -69,5 +76,4 @@
 
   <script src="script.js"></script>
 </body>
-
 </html>

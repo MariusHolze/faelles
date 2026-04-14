@@ -385,3 +385,27 @@ input:focus {
 .skjult {
     display: none;
 }
+
+#adresseliste {
+  margin-top: 10px;
+}
+
+.adresse-forslag {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  margin-bottom: 5px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  color: #333;
+}
+
+.adresse-forslag:hover {
+  background-color: #f0f0f0;
+}
+
+.adresse-forslag.valgt {
+  background-color: #d0e7ff;
+}
