@@ -1,0 +1,126 @@
+/* ===== NAVBAR ===== */
+.navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.navbar nav {
+  display: flex;
+  align-items: center;
+  min-height: 60px;
+  padding: 0 20px;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: #333;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.navbar a:hover {
+  color: #508fcd;
+}
+
+#logo {
+  height: 45px;
+  width: auto;
+  display: block;
+}
+
+/* ===== BRUGERMENU I NAVBAR ===== */
+.bruger-menu-wrapper {
+  position: relative;
+}
+
+.bruger-menu-knap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #508fcd, #3c6fa3);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(60, 111, 163, 0.25);
+  transition: 0.2s ease;
+}
+
+.bruger-menu-knap:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(60, 111, 163, 0.35);
+}
+
+.pil {
+  font-size: 12px;
+}
+
+.bruger-dropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  min-width: 190px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+  padding: 10px;
+  z-index: 1000;
+  border: 1px solid #e8edf3;
+}
+
+.dropdown-link,
+.dropdown-knap {
+  display: block;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  background: none;
+  border: none;
+  color: #222;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.dropdown-link:hover,
+.dropdown-knap:hover {
+  background-color: #f2f7fc;
+  color: #508fcd;
+}
+
+.dropdown-knap {
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .navbar nav {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px 20px;
+    gap: 12px;
+  }
+
+  .nav-left,
+  .nav-right {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}

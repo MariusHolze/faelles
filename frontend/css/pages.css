@@ -1,0 +1,112 @@
+/* ===== FORSIDE / SØGNING ===== */
+.søgeområde {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+#index-søge {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 650px;
+}
+
+#index-søge-input {
+  flex: 1;
+  padding: 14px;
+  border: 2px solid #508fcd;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+#fejlBesked {
+  color: #c0392b;
+  font-weight: bold;
+  min-height: 20px;
+  margin: 0;
+}
+
+#adresseListe {
+  width: 100%;
+  max-width: 650px;
+  margin-top: 10px;
+}
+
+#søge-output {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  width: 100%;
+}
+
+.resultat {
+  width: 260px;
+}
+
+.bruger-box {
+  width: 170px;
+  min-height: 220px;
+}
+
+/* ===== RESULTATKORT ===== */
+#resultat-logo {
+  height: 70px;
+  width: auto;
+  display: block;
+  margin-bottom: 10px;
+}
+
+#ejendomsInfo ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#ejendomsInfo li {
+  margin-bottom: 8px;
+}
+
+#ejendsomType {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+}
+
+#ejendomAdresse,
+#ejendomPost,
+#ejendomBeskrivelse {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ===== LISTER ===== */
+#ejendomListe,
+#brugerListe,
+#profilEjendomListe {
+  margin-top: 20px;
+  list-style: none;
+  padding: 0;
+}
+
+#brugerListe li {
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+  #index-søge {
+    flex-direction: column;
+  }
+
+  .resultat,
+  .bruger-box {
+    width: 100%;
+    max-width: 400px;
+  }
+}
