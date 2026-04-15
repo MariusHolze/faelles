@@ -78,8 +78,7 @@ app.get("/api/adresse", async (req, res) => {
       });
     }
 
-    // Vi tager første match
-    // map alle resultater til et simpelt format
+    // map de 10 første resultater til et simpelt format
     const adresser = data.slice(0, 10).map((item) => {
       const adr = item.adresse || {};
 
