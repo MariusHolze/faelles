@@ -15,9 +15,10 @@
         <div class="container">
             <h1>Log ind</h1>
 
-            <form id="login-form"> <!-- JS fanger submit -->
-                <input type="email" id="loginEmail"> <!-- JS henter email -->
-                <input type="password" id="loginPassword"> <!-- JS henter password -->
+            <form id="login-form"> <!-- loginformular -->
+                <input type="email" id="loginEmail" placeholder="Skriv din email" required> <!-- emailfelt -->
+                <input type="password" id="loginPassword" placeholder="Skriv din adgangskode" required> <!-- passwordfelt -->
+                <button type="submit" class="knap">Log ind</button> <!-- sender login -->
             </form>
 
             <p id="loginFejl"></p> <!-- JS indsætter fejlbesked -->
