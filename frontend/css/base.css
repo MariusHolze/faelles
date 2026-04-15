@@ -1,4 +1,4 @@
-/* ===== BASE ===== */
+/* ===== RESET / BASIS ===== */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -6,6 +6,7 @@ body {
   color: #222;
 }
 
+/* ===== LAYOUT ===== */
 .page-content {
   max-width: 900px;
   margin: 40px auto;
@@ -21,7 +22,7 @@ h2 {
   margin-top: 0;
 }
 
-/* ===== GENERELLE HJÆLPEKLASSER ===== */
+/* ===== HJÆLPEKLASSER ===== */
 .skjult {
   display: none;
 }

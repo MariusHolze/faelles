@@ -1,26 +1,26 @@
-<div class="navbar">
+<div class="navbar"> <!-- container til hele topmenuen -->
   <nav>
-    <div class="nav-left">
+    <div class="nav-left"> <!-- venstre side (statisk navigation) -->
       <a href="index.html">
-        <img src="img/6676711.png" alt="Logo" id="logo">
+        <img src="img/6676711.png" alt="Logo" id="logo"> <!-- logo bruges også evt. i JS -->
       </a>
 
-      <a href="omOs.html">Om os</a>
+      <a href="omOs.html">Om os</a> <!-- simpel navigation -->
       <a href="kontakt.html">Kontakt</a>
     </div>
 
-    <div class="nav-right">
-      <a href="login.html" id="loginNavKnap" class="login-knap">Log ind</a>
+    <div class="nav-right"> <!-- højre side (login / bruger state) -->
+      <a href="login.html" id="loginNavKnap" class="login-knap">Log ind</a> <!-- vises når IKKE logget ind -->
 
-      <div id="brugerMenuWrapper" class="bruger-menu-wrapper skjult">
-        <button id="brugerMenuKnap" class="bruger-menu-knap" type="button">
-          <span id="brugerMenuNavn">Bruger</span>
-          <span class="pil">▾</span>
+      <div id="brugerMenuWrapper" class="bruger-menu-wrapper skjult"> <!-- vises kun når bruger er logget ind (JS toggler .skjult) -->
+        <button id="brugerMenuKnap" class="bruger-menu-knap" type="button"> <!-- JS bruger denne til at åbne/lukke dropdown -->
+          <span id="brugerMenuNavn">Bruger</span> <!-- JS indsætter brugerens navn her -->
+          <span class="pil">▾</span> <!-- visuel indikator, ingen logik -->
         </button>
 
-        <div id="brugerDropdown" class="bruger-dropdown skjult">
-          <a href="profil.html" class="dropdown-link">Min profil</a>
-          <button id="logUdKnap" class="dropdown-knap" type="button">Log ud</button>
+        <div id="brugerDropdown" class="bruger-dropdown skjult"> <!-- dropdown menu, skjules/vises via JS -->
+          <a href="profil.html" class="dropdown-link">Min profil</a> <!-- statisk link -->
+          <button id="logUdKnap" class="dropdown-knap" type="button">Log ud</button> <!-- JS fanger klik og logger ud -->
         </div>
       </div>
     </div>

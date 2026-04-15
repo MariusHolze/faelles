@@ -1,4 +1,4 @@
-/* ===== RESULTATKORT OG GENERELLE BOKSE ===== */
+/* ===== KORT / BOKSE ===== */
 .resultat,
 .bruger-box,
 .bruger-section,
@@ -13,11 +13,13 @@
   padding: 15px;
 }
 
+/* ===== SECTIONS ===== */
 .bruger-section {
   margin-top: 30px;
   padding: 20px;
 }
 
+/* ===== EJENDOMSKORT ===== */
 .ejendom-kort {
   padding: 15px;
   margin-bottom: 12px;
@@ -33,6 +35,7 @@
   margin: 6px 0;
 }
 
+/* ===== KNAPPER I KORT ===== */
 .ejendom-knapper {
   margin-top: 12px;
   display: flex;

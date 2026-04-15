@@ -1,16 +1,16 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  await indsætNavbar();
-  opdaterNavbarEfterLogin();
-  bindBrugerMenu();
-  bindLogoutKnap();
+  await indsætNavbar(); // henter navbar.html og sætter den ind på siden
+  opdaterNavbarEfterLogin(); // viser rigtig menu alt efter login
+  bindBrugerMenu(); // gør dropdown-menuen klikbar
+  bindLogoutKnap(); // gør logout-knappen aktiv
 
-  bindLoginForm();
-  bindOpretBrugerForm();
-  bindEjendomForm();
-  bindAdresseSoegning();
-  bindOpretEjendomsprofilFraForside();
+  bindLoginForm(); // sætter login-formularen op
+  bindOpretBrugerForm(); // sætter opret-bruger-formularen op
+  bindEjendomForm(); // sætter opret-ejendom-formularen op
+  bindAdresseSoegning(); // sætter adresse-søgning op
+  bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
 
-  visProfil();
-  hentProfilEjendomme();
-  hentEjendomme();
+  visProfil(); // viser brugerdata på profilsiden
+  hentProfilEjendomme(); // henter ejendomme til profilsiden
+  hentEjendomme(); // henter ejendomme til ejendomssiden
 });

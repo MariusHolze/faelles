@@ -1,3 +1,7 @@
+/* Denne fil samler projektets CSS-filer ét sted.
+   Hver @import henter en del af designet, så stilen er delt op i mindre filer.
+   Det gør koden nemmere at holde styr på og nemmere at ændre senere. */
+
 @import url("css/base.css");
 @import url("css/navbar.css");
 @import url("css/forms.css");

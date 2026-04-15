@@ -2,37 +2,37 @@
 <html lang="da">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"> <!-- korrekt tegnsæt -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- responsivt layout -->
     <title>Opret ejendom</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> <!-- fælles styling -->
 </head>
 
 <body>
-    <div id="navbar-container"></div>
+    <div id="navbar-container"></div> <!-- navbar indsættes via JS -->
 
     <main class="page-content">
         <h1>Opret ejendom</h1>
 
-        <form id="ejendomForm">
-            <input type="text" id="adresse" placeholder="Adresse" required>
-            <input type="text" id="boligtype" placeholder="Boligtype" required>
-            <input type="number" id="boligareal" placeholder="Boligareal" required>
+        <form id="ejendomForm"> <!-- JS fanger submit her -->
+            <input type="text" id="adresse" placeholder="Adresse" required> <!-- JS læser værdi -->
+            <input type="text" id="boligtype" placeholder="Boligtype" required> <!-- JS sender til backend -->
+            <input type="number" id="boligareal" placeholder="Boligareal" required> <!-- type=number = basic validering -->
 
-            <button type="submit">Opret ejendom</button>
+            <button type="submit">Opret ejendom</button> <!-- trigger JS -->
         </form>
 
-        <p id="ejendomBesked"></p>
+        <p id="ejendomBesked"></p> <!-- JS viser succes/fejl besked -->
 
-        <ul id="ejendomListe"></ul>
+        <ul id="ejendomListe"></ul> <!-- JS renderer liste af ejendomme -->
     </main>
 
-    <script src="js/storage.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/ejendom.js"></script>
-    <script src="js/profil.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/storage.js"></script> <!-- håndterer lokal brugerdata -->
+    <script src="js/ui.js"></script> <!-- DOM manipulation -->
+    <script src="js/auth.js"></script> <!-- tjekker login -->
+    <script src="js/ejendom.js"></script> <!-- API kald (opret/hent ejendom) -->
+    <script src="js/profil.js"></script> <!-- bruges til brugerdata -->
+    <script src="js/app.js"></script> <!-- binder events og init -->
 </body>
 
 </html>

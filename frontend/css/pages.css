@@ -21,6 +21,7 @@
   font-size: 15px;
 }
 
+/* ===== FEJLBESKEDER ===== */
 #fejlBesked {
   color: #c0392b;
   font-weight: bold;
@@ -28,12 +29,14 @@
   margin: 0;
 }
 
+/* ===== ADRESSELISTE ===== */
 #adresseListe {
   width: 100%;
   max-width: 650px;
   margin-top: 10px;
 }
 
+/* ===== RESULTAT AREA ===== */
 #søge-output {
   display: flex;
   flex-wrap: wrap;
@@ -99,6 +102,7 @@
   margin-bottom: 8px;
 }
 
+/* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
   #index-søge {
     flex-direction: column;

@@ -1,1 +1,1 @@
-SELECT * FROM Bruger;
+SELECT * FROM Bruger; -- henter alle brugere (test)

@@ -1,4 +1,4 @@
-/* ===== NAVBAR ===== */
+/* ===== NAVBAR STRUCTURE ===== */
 .navbar {
   background-color: #ffffff;
   border-bottom: 1px solid #e5e5e5;
@@ -24,6 +24,7 @@
   gap: 10px;
 }
 
+/* ===== NAV LINKS ===== */
 .navbar a {
   text-decoration: none;
   color: #333;
@@ -35,13 +36,14 @@
   color: #508fcd;
 }
 
+/* ===== LOGO ===== */
 #logo {
   height: 45px;
   width: auto;
   display: block;
 }
 
-/* ===== BRUGERMENU I NAVBAR ===== */
+/* ===== BRUGERMENU ===== */
 .bruger-menu-wrapper {
   position: relative;
 }
@@ -71,6 +73,7 @@
   font-size: 12px;
 }
 
+/* ===== DROPDOWN ===== */
 .bruger-dropdown {
   position: absolute;
   right: 0;
@@ -84,6 +87,7 @@
   border: 1px solid #e8edf3;
 }
 
+/* ===== DROPDOWN ITEMS ===== */
 .dropdown-link,
 .dropdown-knap {
   display: block;
@@ -110,6 +114,7 @@
   font-weight: bold;
 }
 
+/* ===== RESPONSIVE NAVBAR ===== */
 @media (max-width: 700px) {
   .navbar nav {
     flex-direction: column;
