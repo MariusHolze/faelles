@@ -18,7 +18,7 @@ For at få fuld funktionalitet (oprettelse af bruger og ejendomme) kræves en da
 
 2. Indsæt dine egne databaseoplysninger:
     Brugernavn og Password er givet i rapportens bilag.
-    Det er ikke givet på forhånd. Dette er gjordt for at optimere sikkerhed af vores database. 
+    Det er ikke givet på forhånd. Dette er gjort for at optimere sikkerhed af vores database. 
 
     PORT=3000
     DB_USER=DIT_BRUGERNAVN
