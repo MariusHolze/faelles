@@ -1,33 +1,26 @@
 <div class="navbar">
   <nav>
     <div class="nav-left">
-      <!-- logo -->
       <a href="index.html">
         <img src="img/6676711.png" alt="Logo" id="logo">
       </a>
 
-      <!-- almindelige links -->
-      <a href="index.html">Forside</a>
       <a href="omOs.html">Om os</a>
       <a href="kontakt.html">Kontakt</a>
-      <a href="learnHow.html">Learn how</a>
     </div>
 
     <div class="nav-right">
-      <!-- denne vises kun når man IKKE er logget ind -->
       <a href="login.html" id="loginNavKnap" class="login-knap">Log ind</a>
 
-      <!-- denne vises kun når man ER logget ind -->
       <div id="brugerMenuWrapper" class="bruger-menu-wrapper skjult">
-        <button id="brugerMenuKnap" class="bruger-menu-knap">
+        <button id="brugerMenuKnap" class="bruger-menu-knap" type="button">
           <span id="brugerMenuNavn">Bruger</span>
           <span class="pil">▾</span>
         </button>
 
-        <!-- dropdown-menu -->
         <div id="brugerDropdown" class="bruger-dropdown skjult">
           <a href="profil.html" class="dropdown-link">Min profil</a>
-          <button id="logUdKnap" class="dropdown-knap">Log ud</button>
+          <button id="logUdKnap" class="dropdown-knap" type="button">Log ud</button>
         </div>
       </div>
     </div>

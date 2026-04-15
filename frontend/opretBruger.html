@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Opret profil</title>
+    <title>Opret Bruger</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div id="navbar-placeholder"></div>
+    <div id="navbar-container"></div>
+
     <main class="page-content">
         <div id="opret-form">
             <h1>Opret profil</h1>
@@ -36,21 +37,20 @@
                     <label for="opretEmail">E-mail</label>
                     <input type="email" id="opretEmail" name="opretEmail" placeholder="eksempel@eksempel.com" required>
                 </div>
-                
+
                 <div class="container">
-                    <label for="birthday">Fødselsdato:</label>
+                    <label for="birthday">Fødselsdato</label>
                     <input type="date" id="birthday" name="birthday" required>
                 </div>
-                <!-- Fejlmeddelelse for alder -->
-                <p id="error-message-age" style="color: red; display: none;">Du skal være 18 år eller ældre for at
-                    oprette en profil.</p>
+
+                <p id="error-message-age" style="color: red; display: none;">
+                    Du skal være 18 år eller ældre for at oprette en profil.
+                </p>
 
                 <div class="container">
                     <label for="investorType">Er du klar til at tænke som en ejendomsinvestor?</label>
                     <select id="investorType" name="investorType" required>
-                        <!-- dropdown-menu med nedenstående valgmuligheder kontrol af valg-->
                         <option value="" selected disabled>--Vælg--</option>
-                        <!-- kan ikke vælges, SKAL være en af nedenstående-->
                         <option value="ja">Ja</option>
                         <option value="nej">Nej</option>
                     </select>
@@ -60,24 +60,30 @@
                     <label for="adgangskode">Adgangskode</label>
                     <input type="password" id="adgangskode" name="adgangskode" placeholder="Ny adgangskode" required>
                 </div>
+
                 <div class="container">
                     <label for="kontrolAdgangskode"></label>
                     <input type="password" id="kontrolAdgangskode" name="kontrolAdgangskode"
                         placeholder="Gentag adgangskode" required>
                 </div>
 
-                <!-- Fejlmeddelelse for adgangskode -->
-                <p id="error-message-password" style="color: red; display: none;">Adgangskoderne skal være ens!</p>
+                <p id="error-message-password" style="color: red; display: none;">
+                    Adgangskoderne skal være ens!
+                </p>
 
                 <div class="container">
                     <button type="submit" id="submitProfil">Opret profil</button>
                 </div>
-                <p>Har du allerede en bruger? <a href="login.html">Login ind</a></p>
+
+                <p>Har du allerede en bruger? <a href="login.html">Log ind</a></p>
             </form>
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
 </body>
 
 </html>

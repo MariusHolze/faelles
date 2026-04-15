@@ -1,50 +1,41 @@
 <!DOCTYPE html>
 <html lang="da">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Log ind</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log ind</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <!-- navbar bliver hentet ind med JavaScript -->
-  <div id="navbar-placeholder"></div>
+    <div id="navbar-container"></div>
 
-  <main class="page-content">
-    <div class="container">
-      <h1>Log ind</h1>
+    <main class="page-content">
+        <div class="container">
+            <h1>Log ind</h1>
 
-      <!-- login-form -->
-      <form id="login-form">
-        <input
-          type="email"
-          id="loginEmail"
-          placeholder="Skriv din email"
-          required
-        />
+            <form id="login-form">
+                <input type="email" id="loginEmail" placeholder="Skriv din email" required>
 
-        <input
-          type="password"
-          id="loginPassword"
-          placeholder="Skriv din adgangskode"
-          required
-        />
+                <input type="password" id="loginPassword" placeholder="Skriv din adgangskode" required>
 
-        <button type="submit" class="knap">Log ind</button>
-      </form>
+                <button type="submit" class="knap">Log ind</button>
+            </form>
 
-      <!-- fejlbesked -->
-      <p id="loginFejl"></p>
+            <p id="loginFejl"></p>
 
-      <!-- link til opret profil -->
-      <p class="login-tekst">
-        Har du ikke en profil?
-        <a href="opretBruger.html">Opret gratis her</a>
-      </p>
-    </div>
-  </main>
+            <p class="login-tekst">
+                Har du ikke en profil?
+                <a href="opretbruger.html">Opret gratis her</a>
+            </p>
+        </div>
+    </main>
 
-  <script src="script.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
 </body>
+
 </html>

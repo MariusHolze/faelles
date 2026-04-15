@@ -6,7 +6,7 @@ const config = {
   server: process.env.DB_SERVER,
   database: process.env.DB_DATABASE,
   options: {
-    encrypt: true, // Azure kræver det
+    encrypt: true,
     trustServerCertificate: false
   }
 };
@@ -14,7 +14,10 @@ const config = {
 let pool;
 
 async function getPool() {
-  if (pool) return pool;
+  if (pool) {
+    return pool;
+  }
+
   pool = await sql.connect(config);
   return pool;
 }

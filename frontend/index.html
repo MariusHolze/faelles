@@ -1,79 +1,77 @@
 <!DOCTYPE html>
 <html lang="da">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ejendomsinvestering-app</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejendomsinvestering-app</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <!-- Navbar bliver indsat med JavaScript -->
-  <div id="navbar-placeholder"></div>
+    <!-- Navbar bliver indsat med JavaScript -->
+    <div id="navbar-container"></div>
 
-  <main class="page-content">
-    <h1>Ejendomsinvestering-app</h1>
+    <main class="page-content">
+        <h1>Ejendomsinvestering-app</h1>
 
-    <div class="søgeområde">
-      <!-- Søgefelt på forsiden -->
-      <form id="index-søge">
-        <input
-          id="index-søge-input"
-          type="search"
-          placeholder="Søg efter dansk adresse..."
-        >
-        <button type="submit" class="knap">Søg</button>
-      </form>
+        <div class="søgeområde">
+            <!-- Søgefelt på forsiden -->
+            <form id="index-søge">
+                <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse...">
+                <button type="submit" class="knap">Søg</button>
+            </form>
 
-      <!-- Fejlbesked ved søgning -->
-      <p id="fejlBesked"></p>
+            <!-- Fejlbesked ved søgning -->
+            <p id="fejlBesked"></p>
 
-      <!-- Liste med adresseforslag -->
-      <div id="adresseListe"></div>
+            <!-- Liste med adresseforslag -->
+            <div id="adresseListe"></div>
 
-      <!-- Søgeresultat -->
-      <div id="søge-output">
-        <div class="resultat skjult" id="resultatKort">
-          <img src="img/house.png" alt="hus" id="resultat-logo">
+            <!-- Søgeresultat -->
+            <div id="søge-output">
+                <div class="resultat skjult" id="resultatKort">
+                    <img src="img/house.png" alt="hus" id="resultat-logo">
 
-          <div id="ejendomsInfo">
-            <ul>
-              <li>
-                <p id="ejendsomType">Adresse fundet</p>
-              </li>
-              <li>
-                <p id="ejendomAdresse"></p>
-              </li>
-              <li>
-                <p id="ejendomPost"></p>
-              </li>
-              <li>
-                <p id="ejendomBeskrivelse"></p>
-              </li>
-              <li>
-                <button id="opretEjendomsprofilKnap" class="knap">
-                  Opret ejendomsprofil
-                </button>
-              </li>
-            </ul>
-          </div>
+                    <div id="ejendomsInfo">
+                        <ul>
+                            <li>
+                                <p id="ejendsomType">Adresse fundet</p>
+                            </li>
+                            <li>
+                                <p id="ejendomAdresse"></p>
+                            </li>
+                            <li>
+                                <p id="ejendomPost"></p>
+                            </li>
+                            <li>
+                                <p id="ejendomBeskrivelse"></p>
+                            </li>
+                            <li>
+                                <button id="opretEjendomsprofilKnap" class="knap">
+                                    Opret ejendomsprofil
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Midlertidig boks til test af brugere -->
-        <div class="bruger-box">
-          <button onclick="hentBrugere()" class="knap">Vis brugere</button>
-          <ul id="brugerListe"></ul>
-        </div>
-      </div>
-    </div>
+        <!-- Tidligere profiler -->
+        <section class="bruger-section">
+            <h2>Mine ejendomsprofiler</h2>
+            <div id="ejendomListe"></div>
+        </section>
+    </main>
 
-    <!-- Tidligere profiler -->
-    <section class="bruger-section">
-      <h2>Mine ejendomsprofiler</h2>
-      <div id="ejendomListe"></div>
-    </section>
-  </main>
-
-  <script src="script.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ejendom.js"></script>
+    <script src="js/profil.js"></script>
+    <script src="js/adresse.js"></script>
+    <script src="js/app.js"></script>
 </body>
+
 </html>
