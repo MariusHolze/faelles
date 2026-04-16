@@ -136,12 +136,12 @@ function bindOpretEjendomsprofilFraForside() {
         },
         body: JSON.stringify({
           adresse: valgtAdresse.adresse,
+          adresseID: valgtAdresse.adresseID,
           vejnavn: valgtAdresse.vejnavn,
           husnr: valgtAdresse.husnr,
           postnr: valgtAdresse.postnr,
           bynavn: valgtAdresse.postnrnavn,
-          boligtype: "Ukendt", // der sættes en standardværdi her
-          boligareal: null, // areal kendes ikke endnu
+          adgangsadresseID: valgtAdresse.adgangsadresseID,
           ownerEmail: bruger.email
         })
       });

@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   bindLoginForm(); // sætter login-formularen op
   bindOpretBrugerForm(); // sætter opret-bruger-formularen op
-  bindEjendomForm(); // sætter opret-ejendom-formularen op
   bindAdresseSoegning(); // sætter adresse-søgning op
   bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
 

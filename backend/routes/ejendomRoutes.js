@@ -1,25 +1,27 @@
 const express = require("express");
 const router = express.Router();
 const { sql, getPool } = require("../db");
+const { hentBbrData } = require("../services/bbrService");
 
 // Denne route opretter en ny ejendom i databasen.
 router.post("/", async (req, res) => {
   // Vi henter de data, som frontend sender med.
   const {
     adresse,
+    adresseID,
     vejnavn,
     husnr,
     postnr,
     bynavn,
-    boligtype,
-    boligareal,
+    adgangsadresseID,
     ownerEmail
   } = req.body;
 
-  // Adresse og brugerens email er nødvendige.
-  if (!adresse || !ownerEmail) {
+  // Ejendommen må kun oprettes ud fra en adresse, der er valgt fra adresse-API'et.
+  // Derfor kræver vi både den samlede adresse og de opdelte adressefelter.
+  if (!adresse || !vejnavn || !husnr || !postnr || !bynavn || !adgangsadresseID || !ownerEmail) {
     return res.status(400).json({
-      message: "Adresse eller email mangler"
+      message: "Ejendommen skal oprettes fra en valideret adresse"
     });
   }
 
@@ -45,6 +47,7 @@ router.post("/", async (req, res) => {
 
     // Henter brugerens ID fra databasen.
     const brugerID = brugerResult.recordset[0].brugerID;
+    const bbrData = await hentBbrData(adresseID, adgangsadresseID); // henter BBR-data ud fra den validerede adresse
 
     // Her indsætter vi ejendommen i tabellen Ejendomsprofil.
     await pool.request()
@@ -54,13 +57,17 @@ router.post("/", async (req, res) => {
       .input("husnr", sql.VarChar(20), husnr || null)
       .input("postnr", sql.VarChar(10), postnr || null)
       .input("bynavn", sql.VarChar(100), bynavn || null)
-      .input("boligtype", sql.VarChar(100), boligtype || null)
-      .input("boligareal", sql.Int, boligareal ? Number(boligareal) : null)
+      .input("adgangsadresseID", sql.VarChar(50), adgangsadresseID)
+      .input("boligtype", sql.VarChar(100), bbrData.boligtype || null)
+      .input("byggeaar", sql.Int, bbrData.byggeaar || null)
+      .input("boligareal", sql.Int, bbrData.boligareal || null)
+      .input("grundareal", sql.Int, bbrData.grundareal || null)
+      .input("antalVaerelser", sql.Int, bbrData.antalVaerelser || null)
       .query(`
         INSERT INTO Ejendomsprofil
-        (brugerID, adresse, vejnavn, husnr, postnr, bynavn, boligtype, boligareal)
+        (brugerID, adresse, vejnavn, husnr, postnr, bynavn, adgangsadresseID, boligtype, byggeaar, boligareal, grundareal, antalVaerelser)
         VALUES
-        (@brugerID, @adresse, @vejnavn, @husnr, @postnr, @bynavn, @boligtype, @boligareal)
+        (@brugerID, @adresse, @vejnavn, @husnr, @postnr, @bynavn, @adgangsadresseID, @boligtype, @byggeaar, @boligareal, @grundareal, @antalVaerelser)
       `);
 
     // Hvis alt lykkes, sender vi besked om at ejendommen er oprettet.
@@ -99,6 +106,17 @@ router.get("/", async (req, res) => {
         SELECT
           e.ejendomID AS id,
           e.adresse,
+          e.vejnavn,
+          e.husnr,
+          e.postnr,
+          e.bynavn,
+          e.adgangsadresseID,
+          -- Disse felter bruges på profilsiden til overblikket over ejendommen.
+          e.boligtype,
+          e.byggeaar,
+          e.boligareal,
+          e.grundareal,
+          e.antalVaerelser,
           e.oprettetTidspunkt,
           e.sidstOpdateret,
           COUNT(c.caseID) AS antalCases
@@ -110,6 +128,16 @@ router.get("/", async (req, res) => {
         GROUP BY
           e.ejendomID,
           e.adresse,
+          e.vejnavn,
+          e.husnr,
+          e.postnr,
+          e.bynavn,
+          e.adgangsadresseID,
+          e.boligtype,
+          e.byggeaar,
+          e.boligareal,
+          e.grundareal,
+          e.antalVaerelser,
           e.oprettetTidspunkt,
           e.sidstOpdateret
         ORDER BY e.oprettetTidspunkt DESC
