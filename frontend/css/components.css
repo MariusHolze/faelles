@@ -173,21 +173,30 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px;
-  margin-bottom: 6px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
   background-color: white;
   color: #333;
   cursor: pointer;
 }
 
+.adresse-forslag:last-child {
+  border-bottom: 0;
+}
+
 .adresse-forslag:hover {
-  background-color: #f0f0f0;
+  background-color: #f0f7ff;
 }
 
 .adresse-forslag.valgt {
   background-color: #d0e7ff;
+}
+
+.adresse-tom {
+  margin: 0;
+  padding: 12px 14px;
+  color: #526070;
 }
 
 @media (max-width: 800px) {

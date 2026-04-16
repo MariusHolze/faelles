@@ -18,15 +18,16 @@
         <div class="søgeområde">
             <!-- Søgefelt på forsiden -->
             <form id="index-søge">
-                <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse...">
-                <button type="submit" class="knap">Søg</button>
+                <div class="søgefelt-wrapper">
+                    <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse..." autocomplete="off">
+
+                    <!-- Liste med adresseforslag -->
+                    <div id="adresseListe"></div>
+                </div>
             </form>
 
             <!-- Fejlbesked ved søgning -->
             <p id="fejlBesked"></p>
-
-            <!-- Liste med adresseforslag -->
-            <div id="adresseListe"></div>
 
             <!-- Søgeresultat -->
             <div id="søge-output">

@@ -1,4 +1,73 @@
 let valgtAdresse = null; // gemmer den adresse brugeren vælger
+let aktivSoegning = null;
+let soegeTimer = null;
+
+function rydAdresseForslag() {
+  const adresseListe = document.getElementById("adresseListe");
+
+  if (!adresseListe) return;
+
+  adresseListe.innerHTML = "";
+  adresseListe.classList.remove("har-forslag");
+}
+
+function visFejlBesked(besked) {
+  const fejlBesked = document.getElementById("fejlBesked");
+
+  if (fejlBesked) {
+    fejlBesked.textContent = besked;
+  }
+}
+
+async function hentAdresseForslag(soeg, { visTomSoegning = false } = {}) {
+  const resultatKort = document.getElementById("resultatKort");
+
+  visFejlBesked("");
+  rydAdresseForslag();
+
+  if (resultatKort) {
+    resultatKort.classList.add("skjult");
+  }
+
+  if (!soeg) {
+    if (visTomSoegning) {
+      visFejlBesked("Du skal skrive en adresse");
+    }
+    return;
+  }
+
+  if (aktivSoegning) {
+    aktivSoegning.abort();
+  }
+
+  const controller = new AbortController();
+  aktivSoegning = controller;
+
+  try {
+    const response = await fetch(`/api/adresser?soeg=${encodeURIComponent(soeg)}`, {
+      signal: controller.signal
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      visFejlBesked(data.message || "Fejl ved søgning");
+      return;
+    }
+
+    visAdresseForslag(data);
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error("Fejl ved søgning:", error);
+    visFejlBesked("Server fejl");
+  } finally {
+    if (aktivSoegning === controller) {
+      aktivSoegning = null;
+    }
+  }
+}
 
 function bindAdresseSoegning() {
   const form = document.getElementById("index-søge"); // søgeformularen på forsiden
@@ -8,41 +77,49 @@ function bindAdresseSoegning() {
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault(); // stopper siden i at reloade
+    await hentAdresseForslag(input.value.trim(), { visTomSoegning: true });
+  });
 
-    const soeg = input.value.trim(); // henter tekst uden mellemrum i start/slut
-    const fejlBesked = document.getElementById("fejlBesked");
-    const adresseListe = document.getElementById("adresseListe");
+  input.addEventListener("input", function () {
+    const soeg = input.value.trim();
     const resultatKort = document.getElementById("resultatKort");
 
-    if (fejlBesked) fejlBesked.textContent = ""; // rydder gammel fejl
-    if (adresseListe) adresseListe.innerHTML = ""; // rydder gamle forslag
-    if (resultatKort) resultatKort.classList.add("skjult"); // skjuler resultatkort
+    valgtAdresse = null;
+    visFejlBesked("");
+    clearTimeout(soegeTimer);
+
+    if (resultatKort) {
+      resultatKort.classList.add("skjult");
+    }
 
     if (!soeg) {
-      if (fejlBesked) {
-        fejlBesked.textContent = "Du skal skrive en adresse"; // viser fejl hvis feltet er tomt
-      }
+      rydAdresseForslag();
       return;
     }
 
-    try {
-      const response = await fetch(`/api/adresser?soeg=${encodeURIComponent(soeg)}`); // sender søgning til backend
-      const data = await response.json(); // laver svar om til JavaScript-data
+    soegeTimer = setTimeout(function () {
+      hentAdresseForslag(soeg);
+    }, 250);
+  });
 
-      if (!response.ok) {
-        if (fejlBesked) {
-          fejlBesked.textContent = data.message || "Fejl ved søgning"; // viser fejl fra serveren
-        }
-        return;
-      }
+  input.addEventListener("focus", function () {
+    const adresseListe = document.getElementById("adresseListe");
 
-      visAdresseForslag(data); // viser de adresser der blev fundet
-    } catch (error) {
-      console.error("Fejl ved søgning:", error);
+    if (adresseListe && adresseListe.children.length > 0) {
+      adresseListe.classList.add("har-forslag");
+    }
+  });
 
-      if (fejlBesked) {
-        fejlBesked.textContent = "Server fejl"; // vises hvis serveren ikke svarer
-      }
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      rydAdresseForslag();
+      input.blur();
+    }
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!form.contains(event.target)) {
+      rydAdresseForslag();
     }
   });
 }
@@ -55,7 +132,8 @@ function visAdresseForslag(adresser) {
   adresseListe.innerHTML = ""; // rydder listen før nye forslag vises
 
   if (!adresser || adresser.length === 0) {
-    adresseListe.innerHTML = "<p>Ingen adresser fundet</p>"; // besked hvis intet findes
+    adresseListe.innerHTML = '<p class="adresse-tom">Ingen adresser fundet</p>';
+    adresseListe.classList.add("har-forslag");
     return;
   }
 
@@ -71,20 +149,24 @@ function visAdresseForslag(adresser) {
 
     adresseListe.appendChild(knap); // sætter knappen ind på siden
   });
+
+  adresseListe.classList.add("har-forslag");
 }
 
 function vaelgAdresse(adresse) {
   valgtAdresse = adresse; // gemmer den valgte adresse i variablen
 
-  const adresseListe = document.getElementById("adresseListe");
+  const input = document.getElementById("index-søge-input");
   const resultatKort = document.getElementById("resultatKort");
   const ejendomAdresse = document.getElementById("ejendomAdresse");
   const ejendomPost = document.getElementById("ejendomPost");
   const ejendomBeskrivelse = document.getElementById("ejendomBeskrivelse");
 
-  if (adresseListe) {
-    adresseListe.innerHTML = ""; // skjuler forslagene efter valg
+  if (input) {
+    input.value = adresse.adresse || "";
   }
+
+  rydAdresseForslag();
 
   if (ejendomAdresse) {
     ejendomAdresse.textContent = adresse.adresse || ""; // viser den valgte adresse
