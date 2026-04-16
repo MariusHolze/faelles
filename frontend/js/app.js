@@ -1,17 +1,49 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  await indsætNavbar(); // henter navbar.html og sætter den ind på siden
-  opdaterNavbarEfterLogin(); // viser rigtig menu alt efter login
-  bindBrugerMenu(); // gør dropdown-menuen klikbar
-  bindLogoutKnap(); // gør logout-knappen aktiv
+  if (typeof indsætNavbar === "function") {
+    await indsætNavbar(); // henter navbar.html og sætter den ind på siden
+  }
 
-  initInvesteringscaseSide(); // viser og binder investeringscasesiden
+  if (typeof opdaterNavbarEfterLogin === "function") {
+    opdaterNavbarEfterLogin(); // viser rigtig menu alt efter login
+  }
 
-  bindLoginForm(); // sætter login-formularen op
-  bindOpretBrugerForm(); // sætter opret-bruger-formularen op
-  bindAdresseSoegning(); // sætter adresse-søgning op
-  bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
+  if (typeof bindBrugerMenu === "function") {
+    bindBrugerMenu(); // gør dropdown-menuen klikbar
+  }
 
-  visProfil(); // viser brugerdata på profilsiden
-  hentProfilEjendomme(); // henter ejendomme til profilsiden
-  hentEjendomme(); // henter ejendomme til ejendomssiden
+  if (typeof bindLogoutKnap === "function") {
+    bindLogoutKnap(); // gør logout-knappen aktiv
+  }
+
+  if (typeof initInvesteringscaseSide === "function") {
+    initInvesteringscaseSide(); // viser og binder investeringscasesiden
+  }
+
+  if (typeof bindLoginForm === "function") {
+    bindLoginForm(); // sætter login-formularen op
+  }
+
+  if (typeof bindOpretBrugerForm === "function") {
+    bindOpretBrugerForm(); // sætter opret-bruger-formularen op
+  }
+
+  if (typeof bindAdresseSoegning === "function") {
+    bindAdresseSoegning(); // sætter adresse-søgning op
+  }
+
+  if (typeof bindOpretEjendomsprofilFraForside === "function") {
+    bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
+  }
+
+  if (typeof visProfil === "function") {
+    visProfil(); // viser brugerdata på profilsiden
+  }
+
+  if (typeof hentProfilEjendomme === "function") {
+    hentProfilEjendomme(); // henter ejendomme til profilsiden
+  }
+
+  if (typeof hentEjendomme === "function") {
+    hentEjendomme(); // henter ejendomme til ejendomssiden
+  }
 });

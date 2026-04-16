@@ -1,6 +1,8 @@
 const express = require("express");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config({
+  path: path.join(__dirname, ".env")
+});
 
 // Her henter vi vores route-filer.
 // Hver route-fil håndterer et område i systemet.

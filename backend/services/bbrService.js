@@ -5,12 +5,22 @@ function hentBbrConfig() {
   return {
     username: process.env.BBR_USERNAME,
     password: process.env.BBR_PASSWORD,
-    baseUrl: process.env.BBR_BASE_URL
+    baseUrl: process.env.BBR_BASE_URL,
+    apiKey: process.env.BBR_API_KEY,
+    wfsBaseUrl: process.env.BBR_WFS_BASE_URL
   };
 }
 
 function harBbrLogin(config) {
   return Boolean(config.username && config.password && config.baseUrl);
+}
+
+function harBbrApiKey(config) {
+  return Boolean(
+    config.apiKey &&
+    config.apiKey !== "DIN_DATAFORDELER_API_KEY" &&
+    config.wfsBaseUrl
+  );
 }
 
 async function hentBbrData(adresseID, adgangsadresseID) {
@@ -21,23 +31,29 @@ async function hentBbrData(adresseID, adgangsadresseID) {
 
   const config = hentBbrConfig();
 
-  if (!harBbrLogin(config)) {
-    console.log("BBR-login mangler i .env");
-    return {};
+  if (harBbrLogin(config)) {
+    try {
+      const bygninger = await hentBygninger(adgangsadresseID, config);
+      const enheder = await hentEnheder(adresseID, config);
+      const grunde = await hentGrunde(adgangsadresseID, config);
+
+      return lavBbrOverblik(bygninger, enheder, grunde);
+    } catch (error) {
+      console.error("Fejl ved hentning af BBR-data via REST:", error.message);
+    }
   }
 
-  try {
-    const bygninger = await hentBygninger(adgangsadresseID, config);
-    const enheder = await hentEnheder(adresseID, config);
-    const grunde = await hentGrunde(adgangsadresseID, config);
-
-    return lavBbrOverblik(bygninger, enheder, grunde);
-  } catch (error) {
-    // Vi stopper ikke oprettelse af ejendom, hvis BBR fejler.
-    // Så kan brugeren stadig gemme den validerede adresse.
-    console.error("Fejl ved hentning af BBR-data:", error.message);
-    return {};
+  if (harBbrApiKey(config) && adgangsadresseID) {
+    try {
+      const bygninger = await hentBygningerViaWfs(adgangsadresseID, config);
+      return lavBbrOverblik(bygninger, [], []);
+    } catch (error) {
+      console.error("Fejl ved hentning af BBR-data via WFS:", error.message);
+    }
   }
+
+  console.log("BBR-login eller API-key mangler eller kunne ikke bruges");
+  return {};
 }
 
 async function hentBygninger(adgangsadresseID, config) {
@@ -55,6 +71,32 @@ async function hentGrunde(adgangsadresseID, config) {
   return hentFraDatafordeler("grund", { Husnummer: adgangsadresseID }, config);
 }
 
+async function hentBygningerViaWfs(adgangsadresseID, config) {
+  const params = new URLSearchParams({
+    service: "WFS",
+    version: "2.0.0",
+    request: "GetFeature",
+    typeNames: "bbr_v001:bygning_current",
+    outputFormat: "application/json",
+    count: "25",
+    cql_filter: `husnummer='${adgangsadresseID}'`,
+    apikey: config.apiKey
+  });
+
+  const response = await fetch(`${config.wfsBaseUrl}?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`BBR WFS svarede med status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const features = Array.isArray(data.features) ? data.features : [];
+
+  return features
+    .map((feature) => feature.properties || null)
+    .filter(Boolean);
+}
+
 async function hentFraDatafordeler(metode, soegeParametre, config) {
   const baseUrl = config.baseUrl.replace(/\/$/, "").replace("/REST", "/rest");
 
@@ -68,8 +110,7 @@ async function hentFraDatafordeler(metode, soegeParametre, config) {
   const response = await fetch(`${baseUrl}/${metode}?${params.toString()}`);
 
   if (!response.ok) {
-    console.error(`BBR ${metode} svarede med status ${response.status}`);
-    return [];
+    throw new Error(`BBR ${metode} svarede med status ${response.status}`);
   }
 
   const data = await response.json();
@@ -99,7 +140,9 @@ function lavBbrOverblik(bygninger, enheder, grunde) {
     ),
     boligareal: findFoersteTal(
       enhed.enh027ArealTilBeboelse,
-      enhed.enh026EnhedensSamledeAreal
+      enhed.enh026EnhedensSamledeAreal,
+      bygning.byg039BygningensSamledeBoligAreal,
+      bygning.byg038SamletBygningsareal
     ),
     antalVaerelser: findFoersteTal(
       enhed.enh031AntalVaerelser,
@@ -118,6 +161,11 @@ function findFoersteVaerdi(...values) {
 
 function findFoersteTal(...values) {
   const value = findFoersteVaerdi(...values);
+
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
   const tal = Number(value);
 
   if (Number.isNaN(tal)) {
