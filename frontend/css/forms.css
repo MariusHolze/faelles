@@ -21,8 +21,7 @@ button:hover,
 
 /* ===== FORM LAYOUT ===== */
 #login-form,
-#opret-form,
-#ejendomForm {
+#opret-form {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -37,9 +36,7 @@ button:hover,
 /* ===== INPUT FELTER ===== */
 #login-form input,
 #opret-form input,
-#opret-form select,
-#ejendomForm input,
-#ejendomForm select {
+#opret-form select {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -77,8 +74,7 @@ select:focus {
 /* ===== FEJLBESKEDER ===== */
 #loginFejl,
 #error-message-age,
-#error-message-password,
-#ejendomBesked {
+#error-message-password {
   color: #c0392b;
   font-weight: bold;
   margin-top: 10px;

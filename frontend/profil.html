@@ -11,16 +11,38 @@
   <div id="navbar-container"></div> <!-- navbar indsættes via JS -->
 
   <main class="page-content">
-    <h1>Min profil</h1>
+    <header class="profil-hero">
+      <div>
+        <p class="eyebrow">Logget ind</p>
+        <h1>Min profil</h1>
+        <p class="profil-intro">Her får du overblik over dine oplysninger og dine ejendomsprofiler.</p>
+      </div>
+      <a class="knap" href="index.html">Find ny ejendom</a>
+    </header>
 
-    <section class="bruger-section">
-      <p><strong>Fornavn:</strong> <span id="profilFornavn"></span></p> <!-- JS indsætter fornavn -->
-      <p><strong>Efternavn:</strong> <span id="profilEfternavn"></span></p> <!-- JS indsætter efternavn -->
-      <p><strong>Email:</strong> <span id="profilEmail"></span></p> <!-- JS indsætter email -->
+    <section class="bruger-section profil-bruger">
+      <div>
+        <span class="profil-label">Fornavn</span>
+        <strong id="profilFornavn"></strong> <!-- JS indsætter fornavn -->
+      </div>
+      <div>
+        <span class="profil-label">Efternavn</span>
+        <strong id="profilEfternavn"></strong> <!-- JS indsætter efternavn -->
+      </div>
+      <div>
+        <span class="profil-label">Email</span>
+        <strong id="profilEmail"></strong> <!-- JS indsætter email -->
+      </div>
     </section>
 
     <section class="bruger-section">
-      <h2>Mine ejendomsprofiler</h2>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Ejendomme</p>
+          <h2>Mine ejendomsprofiler</h2>
+        </div>
+        <span id="profilEjendomAntal" class="profil-count">0 ejendomme</span>
+      </div>
       <div id="profilEjendomListe"></div> <!-- JS renderer brugerens ejendomme -->
     </section>
 

@@ -21,6 +21,7 @@ CREATE TABLE Ejendomsprofil (
     husnr VARCHAR(20) NULL, -- husnummer
     postnr VARCHAR(10) NULL, -- postnummer
     bynavn VARCHAR(100) NULL, -- bynavn
+    adgangsadresseID VARCHAR(50) NULL, -- id fra adresse-API, bruges til BBR-opslag
     boligtype VARCHAR(100) NULL, -- type bolig
     byggeaar INT NULL, -- byggeår
     boligareal INT NULL, -- antal m2 bolig

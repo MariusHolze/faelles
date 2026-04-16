@@ -48,6 +48,10 @@ router.get("/", async (req, res) => {
 
       return {
         adresse: item.tekst || "",
+        // Disse ID'er skal bruges, hvis vi senere henter flere data fra BBR.
+        adresseID: adr.id || "",
+        adgangsadresseID: adr.adgangsadresseid || "",
+        kommunekode: adr.kommunekode || "",
         vejnavn: adr.vejnavn || "",
         husnr: adr.husnr || "",
         postnr: adr.postnr || "",
