@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindBrugerMenu(); // gør dropdown-menuen klikbar
   bindLogoutKnap(); // gør logout-knappen aktiv
 
+  initInvesteringscaseSide(); // viser og binder investeringscasesiden
+
   bindLoginForm(); // sætter login-formularen op
   bindOpretBrugerForm(); // sætter opret-bruger-formularen op
   bindAdresseSoegning(); // sætter adresse-søgning op
