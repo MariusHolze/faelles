@@ -2,13 +2,54 @@ let valgtAdresse = null; // gemmer den adresse brugeren vælger
 let aktivSoegning = null;
 let soegeTimer = null;
 
+async function opdaterCasesKnapForAdresse(adresse) {
+  const casesKnap = document.getElementById("seCasesForEjendomKnap");
+
+  if (!casesKnap) {
+    return;
+  }
+
+  casesKnap.disabled = true;
+  casesKnap.textContent = "Finder cases...";
+  casesKnap.removeAttribute("data-ejendom-id");
+  casesKnap.removeAttribute("data-ejendom-adresse");
+
+  try {
+    const params = new URLSearchParams();
+
+    if (adresse.adresseID) {
+      params.set("adresseID", adresse.adresseID);
+    }
+
+    if (adresse.adgangsadresseID) {
+      params.set("adgangsadresseID", adresse.adgangsadresseID);
+    }
+
+    const response = await fetch(`/api/ejendomme/find?${params.toString()}`);
+    const data = await response.json();
+
+    if (!response.ok || !data) {
+      casesKnap.textContent = "Ingen cases endnu";
+      return;
+    }
+
+    casesKnap.dataset.ejendomId = data.id;
+    casesKnap.dataset.ejendomAdresse = data.adresse || adresse.adresse || "";
+    casesKnap.disabled = false;
+    casesKnap.textContent = `Se cases (${data.antalCases || 0})`;
+  } catch (error) {
+    console.error("Fejl ved opslag af offentlig ejendom:", error);
+    casesKnap.textContent = "Ingen cases endnu";
+  }
+}
+
 function rydAdresseForslag() {
   const adresseListe = document.getElementById("adresseListe");
 
   if (!adresseListe) return;
 
   adresseListe.innerHTML = "";
-  adresseListe.classList.remove("har-forslag");
+  adresseListe.classList.add("skjult");
 }
 
 function visFejlBesked(besked) {
@@ -106,7 +147,7 @@ function bindAdresseSoegning() {
     const adresseListe = document.getElementById("adresseListe");
 
     if (adresseListe && adresseListe.children.length > 0) {
-      adresseListe.classList.add("har-forslag");
+      adresseListe.classList.remove("skjult");
     }
   });
 
@@ -132,25 +173,24 @@ function visAdresseForslag(adresser) {
   adresseListe.innerHTML = ""; // rydder listen før nye forslag vises
 
   if (!adresser || adresser.length === 0) {
-    adresseListe.innerHTML = '<p class="adresse-tom">Ingen adresser fundet</p>';
-    adresseListe.classList.add("har-forslag");
+    adresseListe.classList.add("skjult");
     return;
   }
 
   adresser.forEach((adresse) => {
-    const knap = document.createElement("button"); // laver en knap til hvert forslag
+    const knap = document.createElement("button");
     knap.type = "button";
     knap.className = "adresse-forslag";
-    knap.textContent = adresse.adresse; // viser adressen som tekst
+    knap.textContent = adresse.adresse || "";
 
     knap.addEventListener("click", function () {
-      vaelgAdresse(adresse); // gemmer adressen når man klikker
+      vaelgAdresse(adresse);
     });
 
-    adresseListe.appendChild(knap); // sætter knappen ind på siden
+    adresseListe.appendChild(knap);
   });
 
-  adresseListe.classList.add("har-forslag");
+  adresseListe.classList.remove("skjult");
 }
 
 function vaelgAdresse(adresse) {
@@ -162,6 +202,7 @@ function vaelgAdresse(adresse) {
   const ejendomPost = document.getElementById("ejendomPost");
   const ejendomBeskrivelse = document.getElementById("ejendomBeskrivelse");
   const visKortdataKnap = document.getElementById("visKortdataKnap");
+  const seCasesKnap = document.getElementById("seCasesForEjendomKnap");
 
   if (input) {
     input.value = adresse.adresse || "";
@@ -178,7 +219,7 @@ function vaelgAdresse(adresse) {
   }
 
   if (ejendomBeskrivelse) {
-    ejendomBeskrivelse.textContent = "Du kan nu oprette en ejendomsprofil ud fra denne adresse."; // hjælpetekst
+    ejendomBeskrivelse.textContent = "Klar til at oprette ejendomsprofil eller se eksisterende cases."; // hjælpetekst
   }
 
   if (visKortdataKnap) {
@@ -188,9 +229,16 @@ function vaelgAdresse(adresse) {
     visKortdataKnap.dataset.kortAdresse = adresse.adresse || "";
   }
 
+  if (seCasesKnap) {
+    seCasesKnap.disabled = true;
+    seCasesKnap.textContent = "Se cases";
+  }
+
   if (resultatKort) {
     resultatKort.classList.remove("skjult"); // viser kortet med den valgte adresse
   }
+
+  opdaterCasesKnapForAdresse(adresse);
 }
 
 function bindOpretEjendomsprofilFraForside() {
@@ -253,5 +301,31 @@ function bindOpretEjendomsprofilFraForside() {
         fejlBesked.textContent = "Server fejl";
       }
     }
+  });
+}
+
+function bindSeCasesFraForside() {
+  const knap = document.getElementById("seCasesForEjendomKnap");
+
+  if (!knap) {
+    return;
+  }
+
+  knap.addEventListener("click", () => {
+    const ejendomID = knap.dataset.ejendomId;
+
+    if (!ejendomID) {
+      return;
+    }
+
+    const url = new URL("investeringscase.html", window.location.href);
+    url.searchParams.set("ejendomID", ejendomID);
+    url.searchParams.set("visning", "offentlig");
+
+    if (knap.dataset.ejendomAdresse) {
+      url.searchParams.set("adresse", knap.dataset.ejendomAdresse);
+    }
+
+    window.location.href = url.toString();
   });
 }

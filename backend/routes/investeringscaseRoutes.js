@@ -56,6 +56,26 @@ function parseJson(value) {
   }
 }
 
+function lavTomCaseData() {
+  return {
+    koebsudgifter: {},
+    finansiering: {},
+    renovering: {},
+    driftsbudget: {},
+    udlejning: {}
+  };
+}
+
+function mergeTrinData(eksisterendeData, trin, data) {
+  const samletData = {
+    ...lavTomCaseData(),
+    ...(eksisterendeData || {})
+  };
+
+  samletData[trin] = data || {};
+  return samletData;
+}
+
 function tal(value) {
   const nummer = Number(value);
   return Number.isNaN(nummer) ? 0 : nummer;
@@ -95,48 +115,68 @@ function beregnAnalyse(trinData) {
   };
 }
 
-// Henter alle cases for en bruger.
+function mapCaseRow(row) {
+  const data = parseJson(row.dataJson);
+  const analyse = beregnAnalyse(data);
+
+  return {
+    caseID: row.caseID,
+    ejendomID: row.ejendomID,
+    navn: row.navn,
+    beskrivelse: row.beskrivelse,
+    oprettetTidspunkt: row.oprettetTidspunkt,
+    adresse: row.adresse,
+    boligareal: row.boligareal,
+    byggeaar: row.byggeaar,
+    koebsudgifterIAlt: analyse.koebsudgifterIAlt
+  };
+}
+
+// Henter alle cases for en bruger eller for en bestemt ejendom.
 router.get("/", async (req, res) => {
   const email = req.query.email;
+  const ejendomID = req.query.ejendomID;
 
-  if (!email) {
-    return res.status(400).json({ message: "Email mangler" });
+  if (!email && !ejendomID) {
+    return res.status(400).json({ message: "Email eller ejendomID mangler" });
   }
 
   try {
     const pool = await getPool();
-    const result = await pool.request()
-      .input("email", sql.VarChar(255), email)
-      .query(`
+    const request = pool.request();
+    let whereClause = "e.erArkiveret = 0";
+
+    if (email) {
+      request.input("email", sql.VarChar(255), email);
+      whereClause += " AND b.email = @email";
+    }
+
+    if (ejendomID) {
+      request.input("ejendomID", sql.Int, Number(ejendomID));
+      whereClause += " AND e.ejendomID = @ejendomID";
+    }
+
+    const result = await request.query(`
         SELECT
           c.caseID,
           c.ejendomID,
           c.navn,
           c.beskrivelse,
           c.oprettetTidspunkt,
-          e.adresse,
-          e.boligareal,
-          e.byggeaar,
-          COALESCE(SUM(k.beloeb), 0) AS koebsudgifterIAlt
-        FROM Investeringscase c
-        JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
-        JOIN Bruger b ON e.brugerID = b.brugerID
-        LEFT JOIN InvesteringscaseKoebspost k ON c.caseID = k.caseID
-        WHERE b.email = @email
-          AND e.erArkiveret = 0
-        GROUP BY
-          c.caseID,
-          c.ejendomID,
-          c.navn,
-          c.beskrivelse,
-          c.oprettetTidspunkt,
+          c.dataJson,
           e.adresse,
           e.boligareal,
           e.byggeaar
+        FROM Investeringscase c
+        JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
+        JOIN Bruger b ON e.brugerID = b.brugerID
+        WHERE ${whereClause}
         ORDER BY c.oprettetTidspunkt DESC
       `);
 
-    res.json(result.recordset);
+    const cases = result.recordset.map(mapCaseRow);
+
+    res.json(cases);
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
     res.status(500).json({ message: "Server fejl" });
@@ -195,36 +235,34 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ message: "Du har allerede en case med det navn" });
     }
 
+    const gyldigePoster = poster
+      .map((post) => ({
+        navn: String(post.navn || "").trim(),
+        beloeb: Number(post.beloeb)
+      }))
+      .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
+
+    const caseData = lavTomCaseData();
+
+    if (gyldigePoster.length > 0) {
+      caseData.koebsudgifter = {
+        poster: gyldigePoster,
+        total: gyldigePoster.reduce((sum, post) => sum + post.beloeb, 0)
+      };
+    }
+
     const caseResult = await pool.request()
       .input("ejendomID", sql.Int, Number(ejendomID))
       .input("navn", sql.VarChar(100), caseNavn)
       .input("beskrivelse", sql.VarChar(500), caseBeskrivelse || null)
+      .input("dataJson", sql.NVarChar(sql.MAX), JSON.stringify(caseData))
       .query(`
-        INSERT INTO Investeringscase (ejendomID, navn, beskrivelse)
+        INSERT INTO Investeringscase (ejendomID, navn, beskrivelse, dataJson)
         OUTPUT INSERTED.caseID
-        VALUES (@ejendomID, @navn, @beskrivelse)
+        VALUES (@ejendomID, @navn, @beskrivelse, @dataJson)
       `);
 
     const caseID = caseResult.recordset[0].caseID;
-
-    // Gemmer kun købsposter med både navn og gyldigt beløb.
-    for (const post of poster) {
-      const postNavn = String(post.navn || "").trim();
-      const beloeb = Number(post.beloeb);
-
-      if (!postNavn || Number.isNaN(beloeb) || beloeb < 0) {
-        continue;
-      }
-
-      await pool.request()
-        .input("caseID", sql.Int, caseID)
-        .input("navn", sql.VarChar(100), postNavn)
-        .input("beloeb", sql.Decimal(18, 2), beloeb)
-        .query(`
-          INSERT INTO InvesteringscaseKoebspost (caseID, navn, beloeb)
-          VALUES (@caseID, @navn, @beloeb)
-        `);
-    }
 
     res.status(201).json({
       message: "Investeringscase oprettet",
@@ -259,21 +297,21 @@ router.get("/:caseID/trin/:trin", async (req, res) => {
 
     const result = await pool.request()
       .input("caseID", sql.Int, Number(caseID))
-      .input("trin", sql.VarChar(50), trin)
       .query(`
-        SELECT dataJson, opdateretTidspunkt
-        FROM InvesteringscaseTrinData
+        SELECT dataJson, oprettetTidspunkt
+        FROM Investeringscase
         WHERE caseID = @caseID
-          AND trin = @trin
       `);
 
     if (result.recordset.length === 0) {
       return res.json({ data: null });
     }
 
+    const samletData = parseJson(result.recordset[0].dataJson);
+
     res.json({
-      data: JSON.parse(result.recordset[0].dataJson),
-      opdateretTidspunkt: result.recordset[0].opdateretTidspunkt
+      data: samletData[trin] || null,
+      opdateretTidspunkt: result.recordset[0].oprettetTidspunkt
     });
   } catch (error) {
     console.error("Fejl ved hentning af formulartrin:", error);
@@ -301,16 +339,14 @@ router.get("/:caseID/analyse", async (req, res) => {
     const result = await pool.request()
       .input("caseID", sql.Int, Number(caseID))
       .query(`
-        SELECT trin, dataJson
-        FROM InvesteringscaseTrinData
+        SELECT dataJson
+        FROM Investeringscase
         WHERE caseID = @caseID
       `);
 
-    const trinData = {};
-
-    result.recordset.forEach((row) => {
-      trinData[row.trin] = parseJson(row.dataJson);
-    });
+    const trinData = result.recordset.length > 0
+      ? { ...lavTomCaseData(), ...parseJson(result.recordset[0].dataJson) }
+      : lavTomCaseData();
 
     res.json({
       trinData,
@@ -344,44 +380,28 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
     }
 
     const dataJson = JSON.stringify(data || {});
+    const eksisterende = await pool.request()
+      .input("caseID", sql.Int, Number(caseID))
+      .query(`
+        SELECT dataJson
+        FROM Investeringscase
+        WHERE caseID = @caseID
+      `);
+
+    if (eksisterende.recordset.length === 0) {
+      return res.status(404).json({ message: "Case ikke fundet" });
+    }
+
+    const samletData = mergeTrinData(parseJson(eksisterende.recordset[0].dataJson), trin, data || {});
 
     await pool.request()
       .input("caseID", sql.Int, Number(caseID))
-      .input("trin", sql.VarChar(50), trin)
-      .input("dataJson", sql.NVarChar(sql.MAX), dataJson)
+      .input("dataJson", sql.NVarChar(sql.MAX), JSON.stringify(samletData))
       .query(`
-        MERGE InvesteringscaseTrinData AS target
-        USING (SELECT @caseID AS caseID, @trin AS trin) AS source
-        ON target.caseID = source.caseID AND target.trin = source.trin
-        WHEN MATCHED THEN
-          UPDATE SET dataJson = @dataJson, opdateretTidspunkt = SYSDATETIME()
-        WHEN NOT MATCHED THEN
-          INSERT (caseID, trin, dataJson)
-          VALUES (@caseID, @trin, @dataJson);
+        UPDATE Investeringscase
+        SET dataJson = @dataJson
+        WHERE caseID = @caseID
       `);
-
-    // Købsudgifter bruges også i oversigten, så vi holder købsposterne opdateret.
-    if (trin === "koebsudgifter") {
-      const poster = hentKoebsposter(data);
-
-      await pool.request()
-        .input("caseID", sql.Int, Number(caseID))
-        .query(`
-          DELETE FROM InvesteringscaseKoebspost
-          WHERE caseID = @caseID
-        `);
-
-      for (const post of poster) {
-        await pool.request()
-          .input("caseID", sql.Int, Number(caseID))
-          .input("navn", sql.VarChar(100), post.navn)
-          .input("beloeb", sql.Decimal(18, 2), post.beloeb)
-          .query(`
-            INSERT INTO InvesteringscaseKoebspost (caseID, navn, beloeb)
-            VALUES (@caseID, @navn, @beloeb)
-          `);
-      }
-    }
 
     res.json({ message: "Formulartrin gemt" });
   } catch (error) {

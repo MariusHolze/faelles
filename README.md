@@ -34,6 +34,11 @@ For at få fuld funktionalitet (oprettelse af bruger og ejendomme) kræves en da
 
 ### Database-opdatering
 
-Hvis databasen allerede findes, skal migrationen i `database/02_add_adresseID.sql` køres én gang.
-Den gemmer adresse-id'et fra adresse-API'et, så backend kan hente de korrekte BBR-enhedsdata
-for ejendommen, når profilsiden henter brugerens boliger.
+Hvis databasen oprettes fra bunden, er `database/01_schema.sql` nok, fordi den allerede indeholder:
+- `adresseID` på `Ejendomsprofil`
+- kolonnen `dataJson` på `Investeringscase`
+
+Hvis databasen allerede fandtes fra en ældre version af projektet, kan de ekstra scripts køres én gang:
+- `database/02_add_adresseID.sql`
+- `database/03_add_investeringscase_koebspost.sql`
+- `database/04_add_investeringscase_trindata.sql`

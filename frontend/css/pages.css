@@ -1,9 +1,27 @@
 /* ===== FORSIDE / SØGNING ===== */
+.forside-body {
+  background:
+    linear-gradient(rgba(245, 247, 250, 0.55), rgba(245, 247, 250, 0.62)),
+    url("../img/1548255963_jeppe_k.jpg") center top / cover no-repeat fixed;
+}
+
+.forside-body .page-content {
+  padding-top: 56px;
+}
+
 .søgeområde {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 15px;
+}
+
+.forside-intro {
+  max-width: 720px;
+  margin: 0 auto 28px;
+  color: #526070;
+  text-align: center;
+  line-height: 1.5;
 }
 
 #index-søge {
@@ -14,6 +32,12 @@
 .søgefelt-wrapper {
   position: relative;
   width: 100%;
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease;
+}
+
+.søgefelt-wrapper:focus-within {
+  box-shadow: 0 0 0 4px rgba(80, 143, 205, 0.14);
 }
 
 #index-søge-input {
@@ -22,6 +46,8 @@
   border: 2px solid #508fcd;
   border-radius: 6px;
   font-size: 15px;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 /* ===== FEJLBESKEDER ===== */
@@ -34,70 +60,45 @@
 
 /* ===== ADRESSELISTE ===== */
 #adresseListe {
-  width: 100%;
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   z-index: 20;
-  display: none;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(31, 41, 55, 0.14);
-  overflow: hidden;
-}
-
-#adresseListe.har-forslag {
-  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9e3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #182330;
+  box-shadow: 0 10px 24px rgba(30, 49, 72, 0.12);
+  padding: 6px;
 }
 
 /* ===== RESULTAT AREA ===== */
 #søge-output {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 20px;
-  padding: 20px;
+  padding: 20px 0 0;
   width: 100%;
 }
 
-.resultat {
-  width: 260px;
+.forside-resultat {
+  width: 100%;
+  max-width: 860px;
 }
 
-.bruger-box {
-  width: 170px;
-  min-height: 220px;
+.forside-resultat .ejendom-data-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* ===== RESULTATKORT ===== */
-#resultat-logo {
-  height: 70px;
-  width: auto;
-  display: block;
-  margin-bottom: 10px;
+.forside-resultat #ejendomBeskrivelse,
+.forside-resultat #ejendomPost {
+  line-height: 1.5;
 }
 
-#ejendomsInfo ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#ejendomsInfo li {
-  margin-bottom: 8px;
-}
-
-#ejendsomType {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-}
-
-#ejendomAdresse,
-#ejendomPost,
-#ejendomBeskrivelse {
-  margin: 0;
-  line-height: 1.4;
+.forside-knapper {
+  margin-top: 18px;
+  flex-wrap: wrap;
 }
 
 /* ===== LISTER ===== */
@@ -118,9 +119,7 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
-  .resultat,
-  .bruger-box {
-    width: 100%;
-    max-width: 400px;
+  .forside-resultat .ejendom-data-grid {
+    grid-template-columns: 1fr;
   }
 }

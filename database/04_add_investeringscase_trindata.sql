@@ -1,15 +1,9 @@
-IF OBJECT_ID('InvesteringscaseTrinData', 'U') IS NULL
+IF OBJECT_ID('InvesteringscaseKoebspost', 'U') IS NOT NULL
 BEGIN
-    CREATE TABLE InvesteringscaseTrinData (
-        trinDataID INT IDENTITY(1,1) NOT NULL,
-        caseID INT NOT NULL,
-        trin VARCHAR(50) NOT NULL,
-        dataJson NVARCHAR(MAX) NOT NULL,
-        opdateretTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    DROP TABLE InvesteringscaseKoebspost;
+END;
 
-        CONSTRAINT PK_InvesteringscaseTrinData PRIMARY KEY (trinDataID),
-        CONSTRAINT FK_InvesteringscaseTrinData_Investeringscase
-            FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID),
-        CONSTRAINT UQ_InvesteringscaseTrinData_Case_Trin UNIQUE (caseID, trin)
-    );
+IF OBJECT_ID('InvesteringscaseTrinData', 'U') IS NOT NULL
+BEGIN
+    DROP TABLE InvesteringscaseTrinData;
 END;

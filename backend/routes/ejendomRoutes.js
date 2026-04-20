@@ -124,6 +124,66 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Finder en aktiv ejendom i systemet ud fra adresse-id eller adgangsadresse-id.
+router.get("/find", async (req, res) => {
+  const { adresseID, adgangsadresseID } = req.query;
+
+  if (!adresseID && !adgangsadresseID) {
+    return res.status(400).json({
+      message: "adresseID eller adgangsadresseID mangler"
+    });
+  }
+
+  try {
+    const pool = await getPool();
+    const harAdresseID = await harKolonne(pool, "Ejendomsprofil", "adresseID");
+    const request = pool.request();
+
+    let whereClause = "e.erArkiveret = 0";
+
+    if (harAdresseID && adresseID) {
+      request.input("adresseID", sql.VarChar(50), adresseID);
+      whereClause += " AND e.adresseID = @adresseID";
+    } else if (adgangsadresseID) {
+      request.input("adgangsadresseID", sql.VarChar(50), adgangsadresseID);
+      whereClause += " AND e.adgangsadresseID = @adgangsadresseID";
+    }
+
+    const result = await request.query(`
+      SELECT TOP 1
+        e.ejendomID AS id,
+        e.adresse,
+        ${harAdresseID ? "e.adresseID," : "CAST(NULL AS VARCHAR(50)) AS adresseID,"}
+        e.adgangsadresseID,
+        e.postnr,
+        e.bynavn,
+        COUNT(c.caseID) AS antalCases
+      FROM Ejendomsprofil e
+      LEFT JOIN Investeringscase c ON e.ejendomID = c.ejendomID
+      WHERE ${whereClause}
+      GROUP BY
+        e.ejendomID,
+        e.adresse,
+        ${harAdresseID ? "e.adresseID," : ""}
+        e.adgangsadresseID,
+        e.postnr,
+        e.bynavn
+      ORDER BY e.ejendomID DESC
+    `);
+
+    if (result.recordset.length === 0) {
+      return res.json(null);
+    }
+
+    res.json(result.recordset[0]);
+  } catch (error) {
+    console.error("Fejl ved opslag af offentlig ejendom:", error);
+    res.status(500).json({
+      message: "Server fejl"
+    });
+  }
+});
+
 async function hentEjendommeForBruger(pool, email, harAdresseID) {
   // Her henter vi alle aktive ejendomme for brugeren.
     // Vi tæller også hvor mange cases der er knyttet til hver ejendom.

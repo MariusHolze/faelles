@@ -13,6 +13,25 @@
   padding: 15px;
 }
 
+.adresse-forslag {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #182330;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.adresse-forslag:hover,
+.adresse-forslag:focus {
+  background: #eef5fb;
+  outline: none;
+}
+
 /* ===== SECTIONS ===== */
 .bruger-section {
   margin-top: 30px;
@@ -317,71 +336,43 @@
 
 body.modal-aaben {
   overflow: hidden;
-.sekundaer-knap {
-  background-color: #eef2f7;
-  color: #243244;
-}
 
-.sekundaer-knap:hover {
-  background-color: #dce5ef;
-}
-
-/* ===== ADRESSEFORSLAG ===== */
-.adresse-forslag {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 12px 14px;
-  border: 0;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: white;
-  color: #333;
-  cursor: pointer;
-}
-
-.adresse-forslag:last-child {
-  border-bottom: 0;
-}
-
-.adresse-forslag:hover {
-  background-color: #f0f7ff;
-}
-
-.adresse-forslag.valgt {
-  background-color: #d0e7ff;
-}
-
-.adresse-tom {
-  margin: 0;
-  padding: 12px 14px;
-  color: #526070;
-}
-
-@media (max-width: 800px) {
-  .profil-hero,
-  .section-heading,
-  .ejendom-kort-top,
-  .kortdata-header {
-    align-items: stretch;
-    flex-direction: column;
+  .sekundaer-knap {
+    background-color: #eef2f7;
+    color: #243244;
   }
 
-  .profil-bruger,
-  .ejendom-data-grid,
-  .kortdata-meta {
-    grid-template-columns: 1fr;
+  .sekundaer-knap:hover {
+    background-color: #dce5ef;
   }
 
-  .kortdata-modal {
-    padding: 12px;
-  }
+  @media (max-width: 800px) {
 
-  .kortdata-panel {
-    padding: 18px;
-    max-height: calc(100vh - 24px);
-  }
+    .profil-hero,
+    .section-heading,
+    .ejendom-kort-top,
+    .kortdata-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
 
-  .kortdata-map {
-    height: 360px;
+    .profil-bruger,
+    .ejendom-data-grid,
+    .kortdata-meta {
+      grid-template-columns: 1fr;
+    }
+
+    .kortdata-modal {
+      padding: 12px;
+    }
+
+    .kortdata-panel {
+      padding: 18px;
+      max-height: calc(100vh - 24px);
+    }
+
+    .kortdata-map {
+      height: 360px;
+    }
   }
 }
