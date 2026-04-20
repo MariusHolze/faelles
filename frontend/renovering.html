@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renovering og forbedringer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/investeringscase.css">
+</head>
+
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="cases-page">
+    <section class="case-form-header">
+      <p class="cases-label">Trin 3 af 5</p>
+      <h1 id="caseTrinTitel">Renovering og forbedringer</h1>
+      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+    </section>
+
+    <form id="caseTrinForm" class="case-trin-form" data-trin="renovering">
+      <section class="case-help">
+        <h2>Hjælp til input</h2>
+        <p>
+          Brug dette trin til at beskrive renoveringsplanen. Bufferen er en ekstra
+          procentdel til uforudsete udgifter, fx 10.
+        </p>
+      </section>
+
+      <div class="case-field-grid">
+        <label>
+          Renoveringsbudget
+          <input data-case-field="renoveringsbudget" type="number" min="0" step="1000" placeholder="fx 150000">
+          <span>Samlet forventet renoveringsbudget i kroner.</span>
+        </label>
+
+        <label>
+          Buffer i procent
+          <input data-case-field="bufferProcent" type="number" min="0" step="1" placeholder="fx 10">
+          <span>Ekstra sikkerhed til uforudsete udgifter.</span>
+        </label>
+
+        <label>
+          Forventet varighed i måneder
+          <input data-case-field="varighedMaaneder" type="number" min="0" step="1" placeholder="fx 3">
+          <span>Hvor lang tid renoveringen forventes at tage.</span>
+        </label>
+
+        <label>
+          Kort beskrivelse
+          <textarea data-case-field="renoveringsNoter" rows="4" maxlength="500" placeholder="fx nyt køkken, maling og gulve"></textarea>
+          <span>Noter hvad der skal forbedres.</span>
+        </label>
+      </div>
+
+      <p id="caseTrinFejl" class="case-form-fejl"></p>
+      <p id="caseTrinStatus" class="case-form-status"></p>
+
+      <div class="case-form-actions">
+        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
+        <a id="naesteTrinLink" class="case-primary-link skjult" href="#">Næste trin</a>
+        <button type="submit">Gem trin</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/investeringscaseForm.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Købsudgifter</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/investeringscase.css">
+</head>
+
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="cases-page">
+    <section class="case-form-header">
+      <p class="cases-label">Trin 1 af 5</p>
+      <h1 id="caseTrinTitel">Køb og renoveringsudgifter</h1>
+      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+    </section>
+
+    <form id="caseTrinForm" class="case-trin-form" data-trin="koebsudgifter">
+      <section class="case-help">
+        <h2>Hvad skal udfyldes?</h2>
+        <p>
+          Tilføj de udgifter der hører til købet. Brug fx ejendomspris, advokat,
+          tinglysning, køberrådgivning og renovering. Beløb må ikke være negative.
+        </p>
+      </section>
+
+      <div id="koebspostListe" class="koebspost-liste"></div>
+
+      <button id="tilfoejKoebspostKnap" class="sekundaer-knap" type="button">
+        + Tilføj udgift
+      </button>
+
+      <p class="case-total">Samlet køb og udgifter: <strong id="koebspostTotal">0 kr.</strong></p>
+
+      <p id="caseTrinFejl" class="case-form-fejl"></p>
+      <p id="caseTrinStatus" class="case-form-status"></p>
+
+      <div class="case-form-actions">
+        <a class="sekundaer-link" href="investeringscase.html">Til oversigt</a>
+        <a id="naesteTrinLink" class="case-primary-link skjult" href="#">Næste trin</a>
+        <button type="submit">Gem trin</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/investeringscaseForm.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

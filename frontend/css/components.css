@@ -317,6 +317,13 @@
 
 body.modal-aaben {
   overflow: hidden;
+.sekundaer-knap {
+  background-color: #eef2f7;
+  color: #243244;
+}
+
+.sekundaer-knap:hover {
+  background-color: #dce5ef;
 }
 
 /* ===== ADRESSEFORSLAG ===== */

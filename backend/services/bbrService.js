@@ -187,7 +187,12 @@ async function hentBbrData(adresseID, adgangsadresseID) {
 async function hentBbrDataViaGraphql(adresseID, adgangsadresseID, config) {
   const tid = new Date().toISOString();
   const enheder = adresseID ? await hentEnhederViaGraphql(adresseID, tid, config) : [];
-  const bygninger = adgangsadresseID ? await hentBygningerViaGraphql(adgangsadresseID, tid, config) : [];
+  let bygninger = adgangsadresseID ? await hentBygningerViaGraphql(adgangsadresseID, tid, config) : [];
+
+  if (bygninger.length === 0 && enheder.length > 0) {
+    bygninger = await hentBygningerForEnhederViaGraphql(enheder, tid, config);
+  }
+
   const jordstykkeID = findFoersteVaerdiIObjekter(bygninger, "jordstykke");
   const grundareal = jordstykkeID ? await hentGrundarealViaGraphql(jordstykkeID, tid, config) : null;
   const grunde = grundareal ? [{ grundareal }] : [];
@@ -253,6 +258,57 @@ async function hentBygningerViaGraphql(adgangsadresseID, tid, config) {
 
   const data = await hentFraGraphql(config.bbrGraphqlBaseUrl, config.apiKey, query, {
     adgangsadresseID,
+    tid
+  });
+
+  return data?.BBR_Bygning?.nodes || [];
+}
+
+async function hentBygningerForEnhederViaGraphql(enheder, tid, config) {
+  const bygningIDs = [
+    ...new Set(
+      enheder
+        .map((enhed) => enhed.bygning)
+        .filter(Boolean)
+    )
+  ];
+  const bygninger = [];
+
+  for (const bygningID of bygningIDs) {
+    const fundneBygninger = await hentBygningViaGraphql(bygningID, tid, config);
+    bygninger.push(...fundneBygninger);
+  }
+
+  return bygninger;
+}
+
+async function hentBygningViaGraphql(bygningID, tid, config) {
+  const query = `
+    query HentBygningFraId($bygningID: String!, $tid: DafDateTime) {
+      BBR_Bygning(
+        first: 5
+        registreringstid: $tid
+        virkningstid: $tid
+        where: { id_lokalId: { eq: $bygningID } }
+      ) {
+        nodes {
+          id_lokalId
+          husnummer
+          grund
+          jordstykke
+          byg021BygningensAnvendelse
+          byg026Opfoerelsesaar
+          byg038SamletBygningsareal
+          byg039BygningensSamledeBoligAreal
+          byg041BebyggetAreal
+          status
+        }
+      }
+    }
+  `;
+
+  const data = await hentFraGraphql(config.bbrGraphqlBaseUrl, config.apiKey, query, {
+    bygningID,
     tid
   });
 

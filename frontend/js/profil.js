@@ -122,8 +122,18 @@ async function hentProfilEjendomme() {
             adresse: ejendom.adresse,
             disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
           })}
+        <div class="ejendom-knapper">
+          <button class="knap opret-case-fra-profil" type="button" data-ejendom-id="${ejendom.id}">
+            Opret case
+          </button>
+          <a class="knap sekundaer-knap" href="investeringscase.html">Se cases</a>
         </div>
       `;
+
+      const opretCaseKnap = div.querySelector(".opret-case-fra-profil");
+      opretCaseKnap.addEventListener("click", async () => {
+        await opretInvesteringscaseFraProfil(ejendom);
+      });
 
       liste.appendChild(div);
     });
@@ -133,6 +143,57 @@ async function hentProfilEjendomme() {
     if (antalElement) {
       antalElement.textContent = "Server fejl";
     }
+  }
+}
+
+// Opretter en investeringscase direkte fra en bolig på profilsiden.
+async function opretInvesteringscaseFraProfil(ejendom) {
+  const bruger = hentLoggetIndBruger();
+
+  if (!bruger) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const navn = prompt("Navn på investeringscase:", `Case for ${ejendom.adresse || "valgt ejendom"}`);
+
+  if (!navn || !navn.trim()) {
+    return;
+  }
+
+  const beskrivelse = prompt("Kort beskrivelse af casen:", "Ny investeringscase oprettet fra min profil.") || "";
+
+  try {
+    const response = await fetch("/api/investeringscases", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ejendomID: ejendom.id,
+        ownerEmail: bruger.email,
+        navn: navn.trim(),
+        beskrivelse: beskrivelse.trim(),
+        koebsposter: []
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Kunne ikke oprette investeringscase.");
+      return;
+    }
+
+    localStorage.setItem("valgtInvesteringscase", JSON.stringify({
+      caseID: data.caseID,
+      navn: navn.trim(),
+      adresse: ejendom.adresse || ""
+    }));
+
+    window.location.href = "investeringscase.html";
+  } catch (error) {
+    console.error("Fejl ved oprettelse af investeringscase fra profil:", error);
+    alert("Serverfejl ved oprettelse af investeringscase.");
   }
 }
 

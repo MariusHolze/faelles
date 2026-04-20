@@ -1,24 +1,41 @@
-function hentInvesteringscases() {
-  const tekst = localStorage.getItem("investeringscases");
+let visteInvesteringscases = [];
 
-  if (!tekst) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(tekst);
-  } catch (error) {
-    console.error("Fejl ved læsning af investeringscases:", error);
-    localStorage.removeItem("investeringscases");
-    return [];
-  }
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function gemInvesteringscases(cases) {
-  localStorage.setItem("investeringscases", JSON.stringify(cases));
+function formatDato(dato) {
+  if (!dato) {
+    return "Ikke angivet";
+  }
+
+  return new Date(dato).toLocaleDateString("da-DK");
 }
 
-function lavPlaceholderCase(nummer) {
+function formatKroner(beloeb) {
+  return `${Number(beloeb || 0).toLocaleString("da-DK")} kr.`;
+}
+
+function lavTomCaseBesked() {
+  return `
+    <article class="case-card case-card-bred">
+      <div class="case-card-top">
+        <span class="case-status tom">Ingen cases endnu</span>
+      </div>
+      <h2>Opret din første investeringscase</h2>
+      <p class="case-description">
+        Vælg en ejendom og giv casen et navn. Derefter kan du tilføje køb og renoveringsudgifter.
+      </p>
+    </article>
+  `;
+}
+
+function lavEksempelCase(nummer) {
   const eksempelCases = [
     {
       titel: "Investeringscase 1",
@@ -60,7 +77,7 @@ function lavPlaceholderCase(nummer) {
       <h2>${data.titel}</h2>
 
       <p class="case-description">
-        Dette er en eksempelvisning af, hvordan en investeringscase kan se ud, før brugeren opretter sin egen case.
+        Dette er en eksempelvisning af, hvordan en investeringscase kan se ud.
       </p>
 
       <div class="case-meta">
@@ -80,6 +97,66 @@ function lavPlaceholderCase(nummer) {
   `;
 }
 
+function lavEksempelCasesHtml(antal) {
+  let html = "";
+
+  for (let i = 1; i <= antal; i += 1) {
+    html += lavEksempelCase(i);
+  }
+
+  return html;
+}
+
+async function opretInvesteringscaseFraProfil(profil) {
+  const bruger = hentLoggetIndBruger();
+
+  if (!bruger) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const navn = prompt("Navn på investeringscase:", `Case for ${profil.adresse || "valgt ejendom"}`);
+
+  if (!navn || !navn.trim()) {
+    return;
+  }
+
+  const beskrivelse = prompt("Kort beskrivelse af casen:", "Ny investeringscase oprettet fra ejendomsprofil.") || "";
+
+  try {
+    const response = await fetch("/api/investeringscases", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ejendomID: profil.id,
+        ownerEmail: bruger.email,
+        navn: navn.trim(),
+        beskrivelse: beskrivelse.trim(),
+        koebsposter: []
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Kunne ikke oprette investeringscase.");
+      return;
+    }
+
+    localStorage.setItem("valgtInvesteringscase", JSON.stringify({
+      caseID: data.caseID,
+      navn: navn.trim(),
+      adresse: profil.adresse || ""
+    }));
+
+    await visInvesteringscases();
+  } catch (error) {
+    console.error("Fejl ved oprettelse af investeringscase:", error);
+    alert("Serverfejl ved oprettelse af investeringscase.");
+  }
+}
+
 function lavCaseHtml(caseData, index) {
   return `
     <article class="case-card">
@@ -87,53 +164,89 @@ function lavCaseHtml(caseData, index) {
         <span class="case-status aktiv">Aktiv case</span>
       </div>
 
-      <h2>${caseData.navn || `Investeringscase ${index + 1}`}</h2>
+      <h2>${escapeHtml(caseData.navn || `Investeringscase ${index + 1}`)}</h2>
 
       <p class="case-description">
-        ${caseData.beskrivelse || "Ingen beskrivelse endnu."}
+        ${escapeHtml(caseData.beskrivelse || "Ingen beskrivelse endnu.")}
       </p>
 
       <div class="case-meta">
-        <div><span>Adresse:</span> ${caseData.ejendom || "Ikke angivet"}</div>
-        <div><span>Case-ID:</span> ${caseData.caseId || `CASE-${1000 + index + 1}`}</div>
-        <div><span>Oprettelsesdato:</span> ${caseData.oprettet || "Ikke angivet"}</div>
-        <div><span>Boligareal:</span> ${caseData.boligareal || "Ikke angivet"}</div>
-        <div><span>Etager:</span> ${caseData.etager || "Ikke angivet"}</div>
+        <div><span>Adresse:</span> ${escapeHtml(caseData.adresse || "Ikke angivet")}</div>
+        <div><span>Case-ID:</span> CASE-${caseData.caseID}</div>
+        <div><span>Oprettelsesdato:</span> ${formatDato(caseData.oprettetTidspunkt)}</div>
+        <div><span>Boligareal:</span> ${caseData.boligareal ? `${caseData.boligareal} m²` : "Ikke angivet"}</div>
         <div><span>Byggeår:</span> ${caseData.byggeaar || "Ikke angivet"}</div>
+        <div><span>Køb og udgifter:</span> ${formatKroner(caseData.koebsudgifterIAlt)}</div>
       </div>
 
       <div class="case-actions">
         <button class="case-hent-knap" type="button" data-index="${index}">Hent</button>
-        <button class="case-rediger-knap" type="button" data-index="${index}">Rediger</button>
+        <button class="case-rediger-knap" type="button" data-index="${index}" disabled>Rediger senere</button>
       </div>
     </article>
   `;
 }
 
-function visInvesteringscases() {
+async function hentInvesteringscasesFraApi() {
+  if (typeof hentLoggetIndBruger !== "function") {
+    return { fejl: "Brugerfunktionen mangler.", cases: [] };
+  }
+
+  const bruger = hentLoggetIndBruger();
+
+  if (!bruger) {
+    return { fejl: "Du skal være logget ind for at se investeringscases.", cases: [] };
+  }
+
+  try {
+    const response = await fetch(`/api/investeringscases?email=${encodeURIComponent(bruger.email)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { fejl: data.message || "Kunne ikke hente investeringscases.", cases: [] };
+    }
+
+    return { fejl: null, cases: data };
+  } catch (error) {
+    console.error("Serverfejl ved hentning af investeringscases:", error);
+    return { fejl: "Serverfejl ved hentning af investeringscases.", cases: [] };
+  }
+}
+
+async function visInvesteringscases() {
   const casesGrid = document.getElementById("casesGrid");
+  const eksempelCasesGrid = document.getElementById("eksempelCasesGrid");
 
   if (!casesGrid) {
     return;
   }
 
-  const cases = hentInvesteringscases();
-  let html = "";
+  casesGrid.innerHTML = "<p class='case-dropdown-empty'>Loader investeringscases...</p>";
 
-  for (let i = 0; i < 3; i += 1) {
-    if (cases[i]) {
-      html += lavCaseHtml(cases[i], i);
-    } else {
-      html += lavPlaceholderCase(i + 1);
-    }
+  if (eksempelCasesGrid) {
+    eksempelCasesGrid.innerHTML = lavEksempelCasesHtml(3);
   }
 
-  casesGrid.innerHTML = html;
+  const resultat = await hentInvesteringscasesFraApi();
+  visteInvesteringscases = resultat.cases;
+
+  if (resultat.fejl) {
+    casesGrid.innerHTML = `<p class="case-dropdown-empty">${escapeHtml(resultat.fejl)}</p>`;
+    return;
+  }
+
+  if (visteInvesteringscases.length === 0) {
+    casesGrid.innerHTML = lavTomCaseBesked();
+    return;
+  }
+
+  casesGrid.innerHTML = visteInvesteringscases
+    .map((caseData, index) => lavCaseHtml(caseData, index))
+    .join("");
 }
 
 async function hentEjendomsprofilerTilDropdown() {
   if (typeof hentLoggetIndBruger !== "function") {
-    console.error("hentLoggetIndBruger findes ikke.");
     return { fejl: "Brugerfunktionen mangler.", profiler: [] };
   }
 
@@ -148,8 +261,7 @@ async function hentEjendomsprofilerTilDropdown() {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Fejl ved hentning af ejendomme:", data);
-      return { fejl: "Kunne ikke hente ejendomsprofiler.", profiler: [] };
+      return { fejl: data.message || "Kunne ikke hente ejendomsprofiler.", profiler: [] };
     }
 
     return { fejl: null, profiler: data };
@@ -164,7 +276,6 @@ async function visCaseDropdown() {
   const liste = document.getElementById("caseDropdownListe");
 
   if (!dropdown || !liste) {
-    console.error("Dropdown-elementer blev ikke fundet.");
     return;
   }
 
@@ -174,21 +285,17 @@ async function visCaseDropdown() {
   const resultat = await hentEjendomsprofilerTilDropdown();
   const profiler = resultat.profiler;
 
-  liste.innerHTML = "";
-
   if (resultat.fejl) {
-    liste.innerHTML = `<p class="case-dropdown-empty">${resultat.fejl}</p>`;
+    liste.innerHTML = `<p class="case-dropdown-empty">${escapeHtml(resultat.fejl)}</p>`;
     return;
   }
 
   if (profiler.length === 0) {
-    liste.innerHTML = `
-      <p class="case-dropdown-empty">
-        Du har ingen gemte ejendomsprofiler endnu.
-      </p>
-    `;
+    liste.innerHTML = "<p class='case-dropdown-empty'>Du har ingen gemte ejendomsprofiler endnu.</p>";
     return;
   }
+
+  liste.innerHTML = "";
 
   profiler.forEach((profil, index) => {
     const knap = document.createElement("button");
@@ -196,48 +303,20 @@ async function visCaseDropdown() {
     knap.className = "case-dropdown-item";
 
     knap.innerHTML = `
-      <h4>${profil.adresse || `Ejendomsprofil ${index + 1}`}</h4>
+      <h4>${escapeHtml(profil.adresse || `Ejendomsprofil ${index + 1}`)}</h4>
       <p>
-        Oprettet: ${
-          profil.oprettetTidspunkt
-            ? new Date(profil.oprettetTidspunkt).toLocaleDateString("da-DK")
-            : "Ukendt"
-        } · Cases: ${profil.antalCases ?? 0}
+        Oprettet: ${formatDato(profil.oprettetTidspunkt)}
+        · Cases: ${profil.antalCases ?? 0}
       </p>
     `;
 
-    knap.addEventListener("click", function () {
-  localStorage.setItem("valgtEjendomsprofilTilCase", JSON.stringify(profil));
-  window.location.href = "opretInvesteringscase.html";
-});
+    knap.addEventListener("click", async () => {
+      await opretInvesteringscaseFraProfil(profil);
+      dropdown.classList.add("skjult");
+    });
 
     liste.appendChild(knap);
   });
-}
-
-function opretCaseFraProfil(profil) {
-  const cases = hentInvesteringscases();
-
-  if (cases.length >= 3) {
-    alert("Du har allerede 3 investeringscases på siden.");
-    return;
-  }
-
-  const nyCase = {
-    navn: `Case for ${profil.adresse || "valgt ejendom"}`,
-    beskrivelse: "Ny investeringscase oprettet fra ejendomsprofil.",
-    ejendom: profil.adresse || "Ikke angivet",
-    caseId: `CASE-${1000 + cases.length + 1}`,
-    oprettet: new Date().toLocaleDateString("da-DK"),
-    boligareal: profil.boligareal || "Ikke angivet",
-    etager: profil.etager || "Ikke angivet",
-    byggeaar: profil.byggeaar || "Ikke angivet",
-    opdateret: new Date().toLocaleDateString("da-DK")
-  };
-
-  cases.push(nyCase);
-  gemInvesteringscases(cases);
-  visInvesteringscases();
 }
 
 function bindOpretCaseDropdown() {
@@ -245,24 +324,21 @@ function bindOpretCaseDropdown() {
   const dropdown = document.getElementById("caseDropdown");
 
   if (!opretKnap || !dropdown) {
-    console.error("Opret-knap eller dropdown blev ikke fundet.");
     return;
   }
 
-  opretKnap.addEventListener("click", async function (event) {
+  opretKnap.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
 
-    const erSkjult = dropdown.classList.contains("skjult");
-
-    if (erSkjult) {
+    if (dropdown.classList.contains("skjult")) {
       await visCaseDropdown();
     } else {
       dropdown.classList.add("skjult");
     }
   });
 
-  document.addEventListener("click", function (event) {
+  document.addEventListener("click", (event) => {
     const klikIndeIWrapper = dropdown.contains(event.target) || opretKnap.contains(event.target);
 
     if (!klikIndeIWrapper) {
@@ -272,58 +348,21 @@ function bindOpretCaseDropdown() {
 }
 
 function bindCaseKnapper() {
-  document.addEventListener("click", function (event) {
+  document.addEventListener("click", (event) => {
     const hentKnap = event.target.closest(".case-hent-knap");
-    const redigerKnap = event.target.closest(".case-rediger-knap");
 
-    if (hentKnap && !hentKnap.disabled) {
-      const index = Number(hentKnap.dataset.index);
-      const cases = hentInvesteringscases();
-      const valgtCase = cases[index];
-
-      if (!valgtCase) {
-        return;
-      }
-
-      alert(
-        `Case: ${valgtCase.navn}\n\nAdresse: ${valgtCase.ejendom}\nCase-ID: ${valgtCase.caseId}\nOprettelsesdato: ${valgtCase.oprettet}\nBoligareal: ${valgtCase.boligareal}\nEtager: ${valgtCase.etager}\nByggeår: ${valgtCase.byggeaar}`
-      );
+    if (!hentKnap || hentKnap.disabled) {
+      return;
     }
 
-    if (redigerKnap && !redigerKnap.disabled) {
-      const index = Number(redigerKnap.dataset.index);
-      const cases = hentInvesteringscases();
-      const valgtCase = cases[index];
+    const valgtCase = visteInvesteringscases[Number(hentKnap.dataset.index)];
 
-      if (!valgtCase) {
-        return;
-      }
-
-      const nytNavn = prompt("Redigér navn:", valgtCase.navn);
-      if (!nytNavn) {
-        return;
-      }
-
-      const nyBeskrivelse = prompt("Redigér beskrivelse:", valgtCase.beskrivelse || "");
-      const nyEjendom = prompt("Redigér adresse:", valgtCase.ejendom || "");
-      const nytBoligareal = prompt("Redigér boligareal:", valgtCase.boligareal || "");
-      const nyeEtager = prompt("Redigér antal etager:", valgtCase.etager || "");
-      const nytByggeaar = prompt("Redigér byggeår:", valgtCase.byggeaar || "");
-
-      cases[index] = {
-        ...valgtCase,
-        navn: nytNavn,
-        beskrivelse: nyBeskrivelse || "Ingen beskrivelse endnu.",
-        ejendom: nyEjendom || "Ikke angivet",
-        boligareal: nytBoligareal || "Ikke angivet",
-        etager: nyeEtager || "Ikke angivet",
-        byggeaar: nytByggeaar || "Ikke angivet",
-        opdateret: new Date().toLocaleDateString("da-DK")
-      };
-
-      gemInvesteringscases(cases);
-      visInvesteringscases();
+    if (!valgtCase) {
+      return;
     }
+
+    localStorage.setItem("valgtInvesteringscase", JSON.stringify(valgtCase));
+    window.location.href = "købsudgifter.html";
   });
 }
 

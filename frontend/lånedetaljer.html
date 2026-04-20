@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finansiering og lånedetaljer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/investeringscase.css">
+</head>
+
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="cases-page">
+    <section class="case-form-header">
+      <p class="cases-label">Trin 2 af 5</p>
+      <h1 id="caseTrinTitel">Finansiering og lånedetaljer</h1>
+      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+    </section>
+
+    <form id="caseTrinForm" class="case-trin-form" data-trin="finansiering">
+      <section class="case-help">
+        <h2>Hjælp til input</h2>
+        <p>
+          Angiv finansieringstal i kroner og rente i procent. Brug fx 4.5 for 4,5%.
+          Felter kan stå tomme, hvis tallet ikke er kendt endnu.
+        </p>
+      </section>
+
+      <div class="case-field-grid">
+        <label>
+          Egenbetaling
+          <input data-case-field="egenbetaling" type="number" min="0" step="1000" placeholder="fx 250000">
+          <span>Beløb som investoren selv betaler.</span>
+        </label>
+
+        <label>
+          Lånebeløb
+          <input data-case-field="laanebeloeb" type="number" min="0" step="1000" placeholder="fx 1750000">
+          <span>Samlet beløb der skal finansieres med lån.</span>
+        </label>
+
+        <label>
+          Rente i procent
+          <input data-case-field="rente" type="number" min="0" step="0.1" placeholder="fx 4.5">
+          <span>Årlig rente. Skriv procent uden %-tegn.</span>
+        </label>
+
+        <label>
+          Løbetid i år
+          <input data-case-field="loebetid" type="number" min="0" step="1" placeholder="fx 30">
+          <span>Hvor mange år lånet forventes at løbe.</span>
+        </label>
+      </div>
+
+      <p id="caseTrinFejl" class="case-form-fejl"></p>
+      <p id="caseTrinStatus" class="case-form-status"></p>
+
+      <div class="case-form-actions">
+        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
+        <a id="naesteTrinLink" class="case-primary-link skjult" href="#">Næste trin</a>
+        <button type="submit">Gem trin</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/investeringscaseForm.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
