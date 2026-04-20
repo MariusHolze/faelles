@@ -168,6 +168,15 @@
   background-color: #a53c3c;
 }
 
+.sekundaer-knap {
+  background-color: #eef2f7;
+  color: #243244;
+}
+
+.sekundaer-knap:hover {
+  background-color: #dce5ef;
+}
+
 /* ===== ADRESSEFORSLAG ===== */
 .adresse-forslag {
   display: block;

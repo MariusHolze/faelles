@@ -50,3 +50,28 @@ CREATE TABLE Investeringscase (
     CONSTRAINT FK_Investeringscase_Ejendomsprofil 
         FOREIGN KEY (ejendomID) REFERENCES Ejendomsprofil(ejendomID) -- kobling til ejendom
 );
+
+CREATE TABLE InvesteringscaseKoebspost (
+    postID INT IDENTITY(1,1) NOT NULL, -- unikt id for købspost
+    caseID INT NOT NULL, -- reference til investeringscase
+    navn VARCHAR(100) NOT NULL, -- fx ejendomspris, advokat eller tinglysning
+    beloeb DECIMAL(18,2) NOT NULL, -- beløb i kroner
+    oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(), -- oprettet tidspunkt
+
+    CONSTRAINT PK_InvesteringscaseKoebspost PRIMARY KEY (postID),
+    CONSTRAINT FK_InvesteringscaseKoebspost_Investeringscase
+        FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID)
+);
+
+CREATE TABLE InvesteringscaseTrinData (
+    trinDataID INT IDENTITY(1,1) NOT NULL, -- unikt id for gemt formulartrin
+    caseID INT NOT NULL, -- reference til investeringscase
+    trin VARCHAR(50) NOT NULL, -- fx koebsudgifter, finansiering eller udlejning
+    dataJson NVARCHAR(MAX) NOT NULL, -- formularens data gemt som JSON
+    opdateretTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(), -- sidst gemt
+
+    CONSTRAINT PK_InvesteringscaseTrinData PRIMARY KEY (trinDataID),
+    CONSTRAINT FK_InvesteringscaseTrinData_Investeringscase
+        FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID),
+    CONSTRAINT UQ_InvesteringscaseTrinData_Case_Trin UNIQUE (caseID, trin)
+);
