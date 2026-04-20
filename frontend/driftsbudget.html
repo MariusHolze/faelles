@@ -1,1 +1,75 @@
- 
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driftsbudget</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/investeringscase.css">
+</head>
+
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="cases-page">
+    <section class="case-form-header">
+      <p class="cases-label">Trin 4 af 5</p>
+      <h1 id="caseTrinTitel">Driftsbudget</h1>
+      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+    </section>
+
+    <form id="caseTrinForm" class="case-trin-form" data-trin="driftsbudget">
+      <section class="case-help">
+        <h2>Hjælp til input</h2>
+        <p>
+          Angiv de forventede årlige driftsudgifter. Hvis en udgift ikke findes,
+          kan du skrive 0.
+        </p>
+      </section>
+
+      <div class="case-field-grid">
+        <label>
+          Ejendomsskat årligt
+          <input data-case-field="ejendomsskat" type="number" min="0" step="100" placeholder="fx 12000">
+          <span>Forventet årlig ejendomsskat.</span>
+        </label>
+
+        <label>
+          Forsikring årligt
+          <input data-case-field="forsikring" type="number" min="0" step="100" placeholder="fx 6500">
+          <span>Forventet årlig forsikring.</span>
+        </label>
+
+        <label>
+          Vedligehold årligt
+          <input data-case-field="vedligehold" type="number" min="0" step="100" placeholder="fx 10000">
+          <span>Beløb sat af til løbende vedligehold.</span>
+        </label>
+
+        <label>
+          Øvrige udgifter årligt
+          <input data-case-field="oevrigeUdgifter" type="number" min="0" step="100" placeholder="fx 5000">
+          <span>Fx administration, fællesudgifter eller tomgang.</span>
+        </label>
+      </div>
+
+      <p id="caseTrinFejl" class="case-form-fejl"></p>
+      <p id="caseTrinStatus" class="case-form-status"></p>
+
+      <div class="case-form-actions">
+        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
+        <a id="naesteTrinLink" class="case-primary-link skjult" href="#">Næste trin</a>
+        <button type="submit">Gem trin</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/investeringscaseForm.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

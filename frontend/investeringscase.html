@@ -22,7 +22,18 @@
         </p>
       </div>
 
-        <main class="cases-page">
+      <div class="opret-case-wrapper">
+        <button id="opretCaseKnap" class="opret-case-knap" type="button">
+          + Opret investeringscase
+        </button>
+
+        <div id="caseDropdown" class="case-dropdown skjult">
+          <p class="case-dropdown-title">Vælg ejendomsprofil</p>
+          <div id="caseDropdownListe" class="case-dropdown-liste"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="case-steps">
       <a href="købsudgifter.html" class="step-btn">Købsudgifter</a>
       <a href="lånedetaljer.html" class="step-btn">Finansiering & lånedetaljer</a>
@@ -31,85 +42,18 @@
       <a href="udlejning.html" class="step-btn">Udlejning</a>
     </section>
 
-    <div class="opret-case-wrapper">
-  <button id="opretCaseKnap" class="opret-case-knap" type="button">
-    + Opret investeringscase
-  </button>
-
-  <div id="caseDropdown" class="case-dropdown skjult">
-    <p class="case-dropdown-title">Vælg ejendomsprofil</p>
-    <div id="caseDropdownListe" class="case-dropdown-liste"></div>
-  </div>
-</div>
+    <section>
+      <h2 class="case-section-title">Dine cases</h2>
+      <div class="cases-grid" id="casesGrid"></div>
     </section>
 
-    <section class="cases-grid" id="casesGrid">
-  <article class="case-card">
-    <div class="case-card-top">
-      <span class="case-status">Eksempelcase</span>
-    </div>
-
-    <h2>Investeringscase 1</h2>
-
-    <div class="case-meta">
-      <div><span>Adresse:</span> Søndergade 14, 8000 Aarhus C</div>
-      <div><span>Case-ID:</span> CASE-1001</div>
-      <div><span>Oprettelsesdato:</span> 12/04/2026</div>
-      <div><span>Boligareal:</span> 124 m²</div>
-      <div><span>Etager:</span> 2</div>
-      <div><span>Byggeår:</span> 1998</div>
-    </div>
-
-    <div class="case-actions">
-      <button class="case-hent-knap" type="button">Hent</button>
-      <button class="case-rediger-knap" type="button">Rediger</button>
-    </div>
-  </article>
-
-  <article class="case-card">
-    <div class="case-card-top">
-      <span class="case-status">Eksempelcase</span>
-    </div>
-
-    <h2>Investeringscase 2</h2>
-
-    <div class="case-meta">
-      <div><span>Adresse:</span> Østerbrogade 52, 2100 København Ø</div>
-      <div><span>Case-ID:</span> CASE-1002</div>
-      <div><span>Oprettelsesdato:</span> 14/04/2026</div>
-      <div><span>Boligareal:</span> 96 m²</div>
-      <div><span>Etager:</span> 1</div>
-      <div><span>Byggeår:</span> 2007</div>
-    </div>
-
-    <div class="case-actions">
-      <button class="case-hent-knap" type="button">Hent</button>
-      <button class="case-rediger-knap" type="button">Rediger</button>
-    </div>
-  </article>
-
-  <article class="case-card">
-    <div class="case-card-top">
-      <span class="case-status">Eksempelcase</span>
-    </div>
-
-    <h2>Investeringscase 3</h2>
-
-    <div class="case-meta">
-      <div><span>Adresse:</span> Vestergade 7, 5000 Odense C</div>
-      <div><span>Case-ID:</span> CASE-1003</div>
-      <div><span>Oprettelsesdato:</span> 15/04/2026</div>
-      <div><span>Boligareal:</span> 148 m²</div>
-      <div><span>Etager:</span> 2</div>
-      <div><span>Byggeår:</span> 1989</div>
-    </div>
-
-    <div class="case-actions">
-      <button class="case-hent-knap" type="button">Hent</button>
-      <button class="case-rediger-knap" type="button">Rediger</button>
-    </div>
-  </article>
-</section>
+    <section class="case-example-section">
+      <h2 class="case-section-title">Eksempelcases</h2>
+      <p class="case-section-text">
+        Eksemplerne viser, hvordan en investeringscase kan se ud, før du har udfyldt dine egne tal.
+      </p>
+      <div class="cases-grid" id="eksempelCasesGrid"></div>
+    </section>
   </main>
 
   <script src="js/storage.js"></script>
