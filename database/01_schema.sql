@@ -17,6 +17,7 @@ CREATE TABLE Ejendomsprofil (
     ejendomID INT IDENTITY(1,1) NOT NULL, -- unikt id for ejendom
     brugerID INT NOT NULL, -- reference til ejer (Bruger)
     adresse VARCHAR(255) NOT NULL, -- samlet adresse
+    adresseID VARCHAR(50) NULL, -- konkret adresse-id fra adresse-API, bruges til BBR-enheder
     vejnavn VARCHAR(100) NULL, -- vejnavn
     husnr VARCHAR(20) NULL, -- husnummer
     postnr VARCHAR(10) NULL, -- postnummer

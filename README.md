@@ -31,3 +31,9 @@ For at få fuld funktionalitet (oprettelse af bruger og ejendomme) kræves en da
    cd backend
    npm install
    npm start
+
+### Database-opdatering
+
+Hvis databasen allerede findes, skal migrationen i `database/02_add_adresseID.sql` køres én gang.
+Den gemmer adresse-id'et fra adresse-API'et, så backend kan hente de korrekte BBR-enhedsdata
+for ejendommen, når profilsiden henter brugerens boliger.
