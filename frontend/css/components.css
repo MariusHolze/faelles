@@ -132,6 +132,12 @@
   font-weight: 700;
 }
 
+.ejendom-kort-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
 .mangler-data {
   color: #8a4b1f;
   font-weight: 700;
@@ -168,6 +174,149 @@
   background-color: #a53c3c;
 }
 
+.kortdata-knap {
+  min-width: 132px;
+}
+
+.kortdata-knap:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kortdata-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.kortdata-modal.skjult {
+  display: none;
+}
+
+.kortdata-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 35, 48, 0.48);
+}
+
+.kortdata-panel {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(15, 34, 52, 0.22);
+  padding: 26px;
+}
+
+.kortdata-luk {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #182330;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.kortdata-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-right: 52px;
+}
+
+.kortdata-adresse {
+  margin: 8px 0 0;
+  color: #526070;
+}
+
+.kortdata-skift {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kortdata-visning {
+  border: 1px solid #c9d7e6;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  color: #26435f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kortdata-visning.aktiv {
+  background: #e3f1ea;
+  border-color: #b6d7c5;
+  color: #1f6b4a;
+}
+
+.kortdata-feedback {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #34475b;
+}
+
+.kortdata-feedback.fejl {
+  background: #fff3f0;
+  color: #9a3c27;
+}
+
+.kortdata-map-wrapper {
+  margin-top: 20px;
+}
+
+.kortdata-map {
+  height: 480px;
+  border: 1px solid #d9e3ee;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eef3f8;
+}
+
+.kortdata-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.kortdata-meta-kort {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.kortdata-meta-kort span {
+  display: block;
+  margin-bottom: 6px;
+  color: #617184;
+  font-size: 13px;
+}
+
+.kortdata-meta-kort strong {
+  color: #182330;
+}
+
+body.modal-aaben {
+  overflow: hidden;
 .sekundaer-knap {
   background-color: #eef2f7;
   color: #243244;
@@ -211,13 +360,28 @@
 @media (max-width: 800px) {
   .profil-hero,
   .section-heading,
-  .ejendom-kort-top {
+  .ejendom-kort-top,
+  .kortdata-header {
     align-items: stretch;
     flex-direction: column;
   }
 
   .profil-bruger,
-  .ejendom-data-grid {
+  .ejendom-data-grid,
+  .kortdata-meta {
     grid-template-columns: 1fr;
+  }
+
+  .kortdata-modal {
+    padding: 12px;
+  }
+
+  .kortdata-panel {
+    padding: 18px;
+    max-height: calc(100vh - 24px);
+  }
+
+  .kortdata-map {
+    height: 360px;
   }
 }

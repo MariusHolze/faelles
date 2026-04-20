@@ -34,7 +34,13 @@ async function hentEjendomme() {
         Boligareal: ${ejendom.boligareal ? `${ejendom.boligareal} m2` : "Mangler data"}<br>
         Grundareal: ${ejendom.grundareal ? `${ejendom.grundareal} m2` : "Mangler data"}<br>
         Oprettet: ${new Date(ejendom.oprettetTidspunkt).toLocaleDateString()}<br>
-        Cases: ${ejendom.antalCases}
+        Cases: ${ejendom.antalCases}<br>
+        ${hentKortdataKnapHtml({
+          adresseID: ejendom.adresseID,
+          adgangsadresseID: ejendom.adgangsadresseID,
+          adresse: ejendom.adresse,
+          disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
+        })}
       `;
       liste.appendChild(li);
     });

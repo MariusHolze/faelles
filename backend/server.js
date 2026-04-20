@@ -9,6 +9,7 @@ require("dotenv").config({
 const adresseRoutes = require("./routes/adresseRoutes");
 const brugerRoutes = require("./routes/brugerRoutes");
 const ejendomRoutes = require("./routes/ejendomRoutes");
+const kortRoutes = require("./routes/kortRoutes");
 const investeringscaseRoutes = require("./routes/investeringscaseRoutes");
 
 // Vi opretter selve Express-appen.
@@ -33,6 +34,7 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 app.use("/api/adresser", adresseRoutes);
 app.use("/api/brugere", brugerRoutes);
 app.use("/api/ejendomme", ejendomRoutes);
+app.use("/api/kort", kortRoutes);
 app.use("/api/investeringscases", investeringscaseRoutes);
 
 // Simpel testroute.

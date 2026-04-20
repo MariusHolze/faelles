@@ -39,6 +39,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
   }
 
+  if (typeof initKortdata === "function") {
+    initKortdata(); // sætter kortmodal og kortknapper op
+  }
+
   if (typeof visProfil === "function") {
     visProfil(); // viser brugerdata på profilsiden
   }

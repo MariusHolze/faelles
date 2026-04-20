@@ -115,6 +115,13 @@ async function hentProfilEjendomme() {
           </div>
         </dl>
 
+        <div class="ejendom-kort-footer">
+          ${hentKortdataKnapHtml({
+            adresseID: ejendom.adresseID,
+            adgangsadresseID: ejendom.adgangsadresseID,
+            adresse: ejendom.adresse,
+            disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
+          })}
         <div class="ejendom-knapper">
           <button class="knap opret-case-fra-profil" type="button" data-ejendom-id="${ejendom.id}">
             Opret case
