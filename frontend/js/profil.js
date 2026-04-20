@@ -114,6 +114,15 @@ async function hentProfilEjendomme() {
             <dd>${formatDato(ejendom.sidstOpdateret)}</dd>
           </div>
         </dl>
+
+        <div class="ejendom-kort-footer">
+          ${hentKortdataKnapHtml({
+            adresseID: ejendom.adresseID,
+            adgangsadresseID: ejendom.adgangsadresseID,
+            adresse: ejendom.adresse,
+            disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
+          })}
+        </div>
       `;
 
       liste.appendChild(div);

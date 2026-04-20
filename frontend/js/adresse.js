@@ -161,6 +161,7 @@ function vaelgAdresse(adresse) {
   const ejendomAdresse = document.getElementById("ejendomAdresse");
   const ejendomPost = document.getElementById("ejendomPost");
   const ejendomBeskrivelse = document.getElementById("ejendomBeskrivelse");
+  const visKortdataKnap = document.getElementById("visKortdataKnap");
 
   if (input) {
     input.value = adresse.adresse || "";
@@ -178,6 +179,13 @@ function vaelgAdresse(adresse) {
 
   if (ejendomBeskrivelse) {
     ejendomBeskrivelse.textContent = "Du kan nu oprette en ejendomsprofil ud fra denne adresse."; // hjælpetekst
+  }
+
+  if (visKortdataKnap) {
+    visKortdataKnap.disabled = !adresse.adresseID && !adresse.adgangsadresseID;
+    visKortdataKnap.dataset.kortAdresseId = adresse.adresseID || "";
+    visKortdataKnap.dataset.kortAdgangsadresseId = adresse.adgangsadresseID || "";
+    visKortdataKnap.dataset.kortAdresse = adresse.adresse || "";
   }
 
   if (resultatKort) {

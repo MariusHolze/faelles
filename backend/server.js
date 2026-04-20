@@ -9,6 +9,7 @@ require("dotenv").config({
 const adresseRoutes = require("./routes/adresseRoutes");
 const brugerRoutes = require("./routes/brugerRoutes");
 const ejendomRoutes = require("./routes/ejendomRoutes");
+const kortRoutes = require("./routes/kortRoutes");
 
 // Vi opretter selve Express-appen.
 const app = express();
@@ -32,6 +33,7 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 app.use("/api/adresser", adresseRoutes);
 app.use("/api/brugere", brugerRoutes);
 app.use("/api/ejendomme", ejendomRoutes);
+app.use("/api/kort", kortRoutes);
 
 // Simpel testroute.
 // Den kan bruges til hurtigt at tjekke om serveren kører.
