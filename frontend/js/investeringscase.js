@@ -1,5 +1,15 @@
 let visteInvesteringscases = [];
 
+function hentCaseVisningFraUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    ejendomID: params.get("ejendomID") || "",
+    visning: params.get("visning") || "",
+    adresse: params.get("adresse") || ""
+  };
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -30,6 +40,20 @@ function lavTomCaseBesked() {
       <h2>Opret din første investeringscase</h2>
       <p class="case-description">
         Vælg en ejendom og giv casen et navn. Derefter kan du tilføje køb og renoveringsudgifter.
+      </p>
+    </article>
+  `;
+}
+
+function lavTomOffentligCaseBesked(adresse) {
+  return `
+    <article class="case-card case-card-bred">
+      <div class="case-card-top">
+        <span class="case-status tom">Ingen offentlige cases endnu</span>
+      </div>
+      <h2>${escapeHtml(adresse || "Ingen cases fundet")}</h2>
+      <p class="case-description">
+        Der er endnu ikke oprettet investeringscases på denne ejendom. Du kan søge videre på en anden adresse.
       </p>
     </article>
   `;
@@ -188,6 +212,24 @@ function lavCaseHtml(caseData, index) {
 }
 
 async function hentInvesteringscasesFraApi() {
+  const visning = hentCaseVisningFraUrl();
+
+  if (visning.visning === "offentlig" && visning.ejendomID) {
+    try {
+      const response = await fetch(`/api/investeringscases?ejendomID=${encodeURIComponent(visning.ejendomID)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { fejl: data.message || "Kunne ikke hente investeringscases.", cases: [] };
+      }
+
+      return { fejl: null, cases: data, offentlig: true, adresse: visning.adresse };
+    } catch (error) {
+      console.error("Serverfejl ved hentning af offentlige investeringscases:", error);
+      return { fejl: "Serverfejl ved hentning af investeringscases.", cases: [], offentlig: true, adresse: visning.adresse };
+    }
+  }
+
   if (typeof hentLoggetIndBruger !== "function") {
     return { fejl: "Brugerfunktionen mangler.", cases: [] };
   }
@@ -195,7 +237,7 @@ async function hentInvesteringscasesFraApi() {
   const bruger = hentLoggetIndBruger();
 
   if (!bruger) {
-    return { fejl: "Du skal være logget ind for at se investeringscases.", cases: [] };
+    return { fejl: "Du skal være logget ind for at se dine egne investeringscases.", cases: [] };
   }
 
   try {
@@ -206,16 +248,20 @@ async function hentInvesteringscasesFraApi() {
       return { fejl: data.message || "Kunne ikke hente investeringscases.", cases: [] };
     }
 
-    return { fejl: null, cases: data };
+    return { fejl: null, cases: data, offentlig: false, adresse: "" };
   } catch (error) {
     console.error("Serverfejl ved hentning af investeringscases:", error);
-    return { fejl: "Serverfejl ved hentning af investeringscases.", cases: [] };
+    return { fejl: "Serverfejl ved hentning af investeringscases.", cases: [], offentlig: false, adresse: "" };
   }
 }
 
 async function visInvesteringscases() {
   const casesGrid = document.getElementById("casesGrid");
   const eksempelCasesGrid = document.getElementById("eksempelCasesGrid");
+  const opretCaseKnap = document.getElementById("opretCaseKnap");
+  const heroTitel = document.querySelector(".cases-hero-text h1");
+  const heroTekst = document.querySelector(".cases-hero-text p");
+  const sectionTitel = document.querySelector(".case-section-title");
 
   if (!casesGrid) {
     return;
@@ -230,13 +276,41 @@ async function visInvesteringscases() {
   const resultat = await hentInvesteringscasesFraApi();
   visteInvesteringscases = resultat.cases;
 
+  if (resultat.offentlig) {
+    if (opretCaseKnap) {
+      opretCaseKnap.classList.add("skjult");
+    }
+
+    if (heroTitel) {
+      heroTitel.textContent = "Cases for valgt ejendom";
+    }
+
+    if (heroTekst) {
+      heroTekst.textContent = resultat.adresse
+        ? `Her kan du se investeringscases, der allerede er oprettet for ${resultat.adresse}.`
+        : "Her kan du se investeringscases, der allerede er oprettet for den valgte ejendom.";
+    }
+
+    if (sectionTitel) {
+      sectionTitel.textContent = "Offentlige cases";
+    }
+
+    if (eksempelCasesGrid) {
+      eksempelCasesGrid.innerHTML = "";
+    }
+  } else if (opretCaseKnap) {
+    opretCaseKnap.classList.remove("skjult");
+  }
+
   if (resultat.fejl) {
     casesGrid.innerHTML = `<p class="case-dropdown-empty">${escapeHtml(resultat.fejl)}</p>`;
     return;
   }
 
   if (visteInvesteringscases.length === 0) {
-    casesGrid.innerHTML = lavTomCaseBesked();
+    casesGrid.innerHTML = resultat.offentlig
+      ? lavTomOffentligCaseBesked(resultat.adresse)
+      : lavTomCaseBesked();
     return;
   }
 
@@ -350,6 +424,7 @@ function bindOpretCaseDropdown() {
 function bindCaseKnapper() {
   document.addEventListener("click", (event) => {
     const hentKnap = event.target.closest(".case-hent-knap");
+    const visning = hentCaseVisningFraUrl();
 
     if (!hentKnap || hentKnap.disabled) {
       return;
@@ -358,6 +433,11 @@ function bindCaseKnapper() {
     const valgtCase = visteInvesteringscases[Number(hentKnap.dataset.index)];
 
     if (!valgtCase) {
+      return;
+    }
+
+    if (visning.visning === "offentlig") {
+      alert("Offentlige cases kan ses som inspiration på oversigten, men kun ejeren kan åbne og redigere formulartrinene.");
       return;
     }
 

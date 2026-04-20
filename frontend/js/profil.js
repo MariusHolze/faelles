@@ -122,6 +122,8 @@ async function hentProfilEjendomme() {
             adresse: ejendom.adresse,
             disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
           })}
+        </div>
+
         <div class="ejendom-knapper">
           <button class="knap opret-case-fra-profil" type="button" data-ejendom-id="${ejendom.id}">
             Opret case
@@ -190,7 +192,7 @@ async function opretInvesteringscaseFraProfil(ejendom) {
       adresse: ejendom.adresse || ""
     }));
 
-    window.location.href = "investeringscase.html";
+    window.location.href = "købsudgifter.html";
   } catch (error) {
     console.error("Fejl ved oprettelse af investeringscase fra profil:", error);
     alert("Serverfejl ved oprettelse af investeringscase.");

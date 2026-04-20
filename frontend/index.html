@@ -8,12 +8,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body class="forside-body">
     <!-- Navbar bliver indsættes dynamisk med JavaScript -->
     <div id="navbar-container"></div>
 
     <main class="page-content">
         <h1>Ejendomsinvestering-app</h1>
+        <p class="forside-intro">Søg efter en dansk adresse for at se ejendomsdata, kortvisning og eksisterende investeringscases.</p>
 
         <div class="søgeområde">
             <!-- Søgefelt på forsiden -->
@@ -22,7 +23,7 @@
                     <input id="index-søge-input" type="search" placeholder="Søg efter dansk adresse..." autocomplete="off">
 
                     <!-- Liste med adresseforslag -->
-                    <div id="adresseListe"></div>
+                    <div id="adresseListe" class="skjult"></div>
                 </div>
             </form>
 
@@ -31,44 +32,40 @@
 
             <!-- Søgeresultat -->
             <div id="søge-output">
-                <div class="resultat skjult" id="resultatKort">
-                    <img src="img/house.png" alt="hus" id="resultat-logo">
+                <div class="ejendom-kort forside-resultat skjult" id="resultatKort">
+                    <div class="ejendom-kort-top">
+                        <div>
+                            <p class="eyebrow" id="ejendsomType">Valgt adresse</p>
+                            <h3 id="ejendomAdresse"></h3>
+                        </div>
+                        <span class="case-badge">Adresse fundet</span>
+                    </div>
 
-                    <div id="ejendomsInfo">
-                        <ul>
-                            <li>
-                                <p id="ejendsomType">Adresse fundet</p>
-                            </li>
-                            <li>
-                                <p id="ejendomAdresse"></p>
-                            </li>
-                            <li>
-                                <p id="ejendomPost"></p>
-                            </li>
-                            <li>
-                                <p id="ejendomBeskrivelse"></p>
-                            </li>
-                            <li>
-                                <button id="opretEjendomsprofilKnap" class="knap">
-                                    Opret ejendomsprofil
-                                </button>
-                            </li>
-                            <li>
-                                <button id="visKortdataKnap" class="knap kortdata-knap" disabled>
-                                    Kortdata
-                                </button>
-                            </li>
-                        </ul>
+                    <dl class="ejendom-data-grid">
+                        <div>
+                            <dt>Postnummer og by</dt>
+                            <dd id="ejendomPost"></dd>
+                        </div>
+                        <div>
+                            <dt>Status</dt>
+                            <dd id="ejendomBeskrivelse"></dd>
+                        </div>
+                    </dl>
+
+                    <div class="ejendom-knapper forside-knapper">
+                        <button id="opretEjendomsprofilKnap" class="knap">
+                            Opret ejendomsprofil
+                        </button>
+                        <button id="visKortdataKnap" class="knap kortdata-knap" disabled>
+                            Kortdata
+                        </button>
+                        <button id="seCasesForEjendomKnap" class="knap" type="button" disabled>
+                            Se cases
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Tidligere profiler -->
-        <section class="bruger-section">
-            <h2>Mine ejendomsprofiler</h2>
-            <div id="ejendomListe"></div>
-        </section>
     </main>
 
     <script src="js/storage.js"></script> <!-- håndterer localStorage -->
