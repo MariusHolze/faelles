@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rediger profil</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="page-content">
+        <div id="opret-form">
+            <h1>Rediger profil</h1>
+            <p>Her kan du opdatere dine oplysninger for den profil, du er logget ind på.</p>
+
+            <form id="redigerProfilForm" class="container">
+                <!-- Felterne bliver udfyldt fra localStorage via profil.js. -->
+                <div class="container">
+                    <label for="redigerFornavn">Fornavn</label>
+                    <input type="text" id="redigerFornavn" name="fornavn" maxlength="16" placeholder="max 16 karakterer" required>
+                </div>
+
+                <div class="container">
+                    <label for="redigerEfternavn">Efternavn</label>
+                    <input type="text" id="redigerEfternavn" name="efternavn" maxlength="16" placeholder="max 16 karakterer" required>
+                </div>
+
+                <div class="container">
+                    <label for="redigerTelefon">Telefonnummer</label>
+                    <input type="tel" id="redigerTelefon" name="telefon" pattern="[0-9]{8}" placeholder="8 cifre" required>
+                </div>
+
+                <div class="container">
+                    <label for="redigerEmail">E-mail</label>
+                    <input type="email" id="redigerEmail" name="email" placeholder="eksempel@eksempel.com" required>
+                </div>
+
+                <div class="container">
+                    <button type="submit" id="gemProfilAendringer">Gem ændringer</button>
+                </div>
+            </form>
+
+            <div class="container">
+                <!-- Brugeren skal bekræfte sletning i JavaScript før kontoen fjernes. -->
+                <p>Hvis du sletter din konto, kan handlingen ikke fortrydes.</p>
+                <button type="button" id="sletKontoKnap">Slet konto</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/profil.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

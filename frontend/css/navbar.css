@@ -36,9 +36,17 @@
   color: #508fcd;
 }
 
+.nav-left > a:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
 /* ===== LOGO ===== */
 #logo {
-  height: 45px;
+  height: 60px;
   width: auto;
   display: block;
 }
