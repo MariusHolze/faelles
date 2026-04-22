@@ -51,6 +51,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     visProfil(); // viser brugerdata på profilsiden
   }
 
+  if (typeof udfyldRedigerProfilForm === "function") {
+    udfyldRedigerProfilForm(); // udfylder felterne på rediger-profil siden
+  }
+
+  if (typeof bindRedigerProfilForm === "function") {
+    bindRedigerProfilForm(); // gør gem-knappen på rediger-profil siden aktiv
+  }
+
+  if (typeof bindSletKontoKnap === "function") {
+    bindSletKontoKnap(); // gør slet-konto-knappen aktiv
+  }
+  
   if (typeof hentProfilEjendomme === "function") {
     hentProfilEjendomme(); // henter ejendomme til profilsiden
   }

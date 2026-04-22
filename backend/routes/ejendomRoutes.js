@@ -297,12 +297,22 @@ async function harKolonne(pool, tabel, kolonne) {
 // Denne route opdaterer en eksisterende ejendom.
 router.put("/:id", async (req, res) => {
   const ejendomID = Number(req.params.id);
-  const { adresse, ownerEmail } = req.body;
+  const {
+    adresse,
+    adresseID,
+    vejnavn,
+    husnr,
+    postnr,
+    bynavn,
+    adgangsadresseID,
+    ownerEmail
+  } = req.body;
 
-  // Adresse og email skal bruges for at kunne opdatere.
-  if (!adresse || !ownerEmail) {
+  // Ejendommen må kun opdateres med en ny valideret adresse.
+  // Derfor kræver vi både den samlede adresse og de opdelte adressefelter.
+  if (!adresse || !vejnavn || !husnr || !postnr || !bynavn || !adgangsadresseID || !ownerEmail) {
     return res.status(400).json({
-      message: "Adresse eller email mangler"
+      message: "Ejendommen skal opdateres med en valideret adresse"
     });
   }
 
@@ -331,14 +341,43 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    // Hvis adgang er godkendt, opdaterer vi adressen.
-    // Samtidig gemmer vi tidspunktet for sidste ændring.
-    await pool.request()
+    // Vi henter friske BBR-data ud fra den validerede adresse.
+    const bbrData = await hentBbrData(adresseID, adgangsadresseID);
+    const harAdresseID = await harKolonne(pool, "Ejendomsprofil", "adresseID");
+    const request = pool.request()
       .input("ejendomID", sql.Int, ejendomID)
       .input("adresse", sql.VarChar(255), adresse)
-      .query(`
+      .input("vejnavn", sql.VarChar(100), vejnavn || null)
+      .input("husnr", sql.VarChar(20), husnr || null)
+      .input("postnr", sql.VarChar(10), postnr || null)
+      .input("bynavn", sql.VarChar(100), bynavn || null)
+      .input("adgangsadresseID", sql.VarChar(50), adgangsadresseID)
+      .input("boligtype", sql.VarChar(100), bbrData.boligtype || null)
+      .input("byggeaar", sql.Int, bbrData.byggeaar || null)
+      .input("boligareal", sql.Int, bbrData.boligareal || null)
+      .input("grundareal", sql.Int, bbrData.grundareal || null)
+      .input("antalVaerelser", sql.Int, bbrData.antalVaerelser || null);
+
+    if (harAdresseID) {
+      request.input("adresseID", sql.VarChar(50), adresseID || null);
+    }
+
+    // Hvis adgang er godkendt, opdaterer vi ejendomsprofilen.
+    // Samtidig gemmer vi de nye BBR-felter og tidspunktet for sidste ændring.
+    await request.query(`
         UPDATE Ejendomsprofil
         SET adresse = @adresse,
+            ${harAdresseID ? "adresseID = @adresseID," : ""}
+            vejnavn = @vejnavn,
+            husnr = @husnr,
+            postnr = @postnr,
+            bynavn = @bynavn,
+            adgangsadresseID = @adgangsadresseID,
+            boligtype = @boligtype,
+            byggeaar = @byggeaar,
+            boligareal = @boligareal,
+            grundareal = @grundareal,
+            antalVaerelser = @antalVaerelser,
             sidstOpdateret = SYSDATETIME()
         WHERE ejendomID = @ejendomID
       `);

@@ -93,7 +93,7 @@ router.post("/login", async (req, res) => {
       .input("email", sql.VarChar(255), email)
       .input("adgangskode", sql.VarChar(255), adgangskode)
       .query(`
-        SELECT brugerID, fornavn, efternavn, email
+        SELECT brugerID, fornavn, efternavn, telefon, email
         FROM Bruger
         WHERE email = @email
           AND adgangskode = @adgangskode
@@ -115,6 +115,127 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     // Hvis der opstår fejl, sender vi en serverfejl tilbage.
     console.error("Login fejl:", error);
+    res.status(500).json({
+      message: "Server fejl"
+    });
+  }
+});
+
+// Denne route opdaterer den profil, som brugeren er logget ind på.
+router.put("/profil", async (req, res) => {
+  // Vi henter de nye profiloplysninger fra frontend.
+  const { brugerID, fornavn, efternavn, telefon, email } = req.body;
+
+  // brugerID og email er nødvendige for at kunne opdatere brugeren.
+  if (!brugerID || !email) {
+    return res.status(400).json({
+      message: "brugerID og email mangler"
+    });
+  }
+
+  try {
+    // Henter forbindelse til databasen.
+    const pool = await getPool();
+
+    // Først tjekker vi om den nye email allerede bruges af en anden bruger.
+    const emailFindes = await pool.request()
+      .input("email", sql.VarChar(255), email)
+      .input("brugerID", sql.Int, brugerID)
+      .query(`
+        SELECT brugerID
+        FROM Bruger
+        WHERE email = @email
+          AND brugerID <> @brugerID
+      `);
+
+    // Hvis email allerede bruges af en anden, stopper vi opdateringen.
+    if (emailFindes.recordset.length > 0) {
+      return res.status(400).json({
+        message: "Email bruges allerede af en anden bruger"
+      });
+    }
+
+    // Her gemmer vi de nye brugeroplysninger i databasen.
+    const result = await pool.request()
+      .input("brugerID", sql.Int, brugerID)
+      .input("fornavn", sql.VarChar(100), fornavn || "")
+      .input("efternavn", sql.VarChar(100), efternavn || "")
+      .input("telefon", sql.VarChar(30), telefon || null)
+      .input("email", sql.VarChar(255), email)
+      .query(`
+        UPDATE Bruger
+        SET fornavn = @fornavn,
+            efternavn = @efternavn,
+            telefon = @telefon,
+            email = @email
+        WHERE brugerID = @brugerID
+      `);
+
+    // Hvis ingen rækker blev opdateret, findes brugeren ikke.
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: "Bruger blev ikke fundet"
+      });
+    }
+
+    // Hvis alt gik godt, sender vi de opdaterede brugerdata tilbage.
+    res.json({
+      message: "Profil opdateret",
+      bruger: {
+        brugerID,
+        fornavn,
+        efternavn,
+        telefon,
+        email
+      }
+    });
+  } catch (error) {
+    // Hvis noget går galt, logger vi fejlen og sender en serverfejl tilbage.
+    console.error("Fejl ved opdatering af profil:", error);
+    res.status(500).json({
+      message: "Server fejl"
+    });
+  }
+});
+
+// Denne route sletter den profil, som brugeren er logget ind på.
+router.delete("/profil", async (req, res) => {
+  // Vi henter brugerens ID fra frontend.
+  const { brugerID } = req.body;
+
+  // brugerID er nødvendigt for at kunne slette brugeren.
+  if (!brugerID) {
+    return res.status(400).json({
+      message: "brugerID mangler"
+    });
+  }
+
+  try {
+    // Henter forbindelse til databasen.
+    const pool = await getPool();
+
+    // Her sletter vi brugeren fra databasen.
+    const result = await pool.request()
+      .input("brugerID", sql.Int, brugerID)
+      .query(`
+        DELETE FROM Bruger
+        WHERE brugerID = @brugerID
+      `);
+
+    // Hvis ingen rækker blev slettet, findes brugeren ikke.
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: "Bruger blev ikke fundet"
+      });
+    }
+
+    // Hvis alt gik godt, sender vi svar tilbage.
+    res.json({
+      message: "Konto slettet"
+    });
+  } catch (error) {
+    // Hvis noget går galt, logger vi fejlen og sender en serverfejl tilbage.
+    console.error("Fejl ved sletning af profil:", error);
     res.status(500).json({
       message: "Server fejl"
     });

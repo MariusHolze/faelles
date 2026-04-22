@@ -4,18 +4,18 @@
   padding: 40px 20px 60px;
 }
 
-.hero {
+.contact-hero {
   text-align: center;
-  margin-bottom: 40px; 
+  margin-bottom: 40px;
 }
 
-.hero h1 {
+.contact-hero h1 {
   font-size: 42px;
   margin-bottom: 12px;
   color: #0f172a;
 }
 
-.hero p {
+.contact-hero p {
   font-size: 18px;
   color: #475569;
   max-width: 700px;
@@ -58,21 +58,22 @@
   line-height: 1.6;
 }
 
-.input-group {
+.contact-page .input-group {
   display: flex;
   flex-direction: column;
   margin-bottom: 18px;
 }
 
-.input-group label {
+.contact-page .input-group label {
   margin-bottom: 8px;
   font-weight: 600;
   color: #334155;
 }
 
-.input-group input,
-.input-group textarea {
+.contact-page .input-group input,
+.contact-page .input-group textarea {
   width: 100%;
+  box-sizing: border-box;
   padding: 14px;
   border: 1px solid #dbe2ea;
   border-radius: 12px;
@@ -82,13 +83,13 @@
   background: #ffffff;
 }
 
-.input-group input:focus,
-.input-group textarea:focus {
+.contact-page .input-group input:focus,
+.contact-page .input-group textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
 }
 
-textarea {
+.contact-page textarea {
   resize: vertical;
   min-height: 160px;
 }
@@ -265,11 +266,11 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .hero h1 {
+  .contact-hero h1 {
     font-size: 32px;
   }
 
-  .hero p {
+  .contact-hero p {
     font-size: 16px;
   }
 
