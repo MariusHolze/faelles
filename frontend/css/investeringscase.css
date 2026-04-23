@@ -574,7 +574,54 @@
   display: grid;
   grid-template-columns: 1fr 180px auto;
   gap: 10px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.koebspost-navn-felt {
+  display: grid;
+  gap: 6px;
+}
+
+.koebspost-navn {
+  background: #f8fafc;
+}
+
+.koebspost-fast .koebspost-navn {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+}
+
+.koebspost-beskrivelse {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.koebspost-fast-plads {
+  display: block;
+  min-height: 48px;
+}
+
+.koebspost-beloeb,
+.fjern-koebspost-knap,
+.koebspost-fast-plads {
+  align-self: start;
+}
+
+.fjern-koebspost-knap {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .fjern-koebspost-knap,
@@ -630,6 +677,73 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 24px;
+}
+
+.finansiering-beregning {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  padding: 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+}
+
+.finansiering-beregning-header {
+  margin-bottom: 14px;
+}
+
+.finansiering-beregning-header h2 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.finansiering-beregning-header p {
+  margin: 0;
+  color: #475569;
+}
+
+.finansiering-beregning-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.finansiering-highlight {
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+}
+
+.finansiering-highlight span,
+.finansiering-highlight small {
+  display: block;
+}
+
+.finansiering-highlight span {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+.finansiering-highlight strong {
+  display: block;
+  margin: 10px 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.finansiering-highlight small {
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.finansiering-highlight-sekundaer {
+  background: linear-gradient(135deg, #0f766e 0%, #0f9d8a 100%);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.16);
 }
 
 .case-analyse {
@@ -740,6 +854,7 @@
   .case-noegletal,
   .koebspost-række,
   .case-analyse-grid,
+  .finansiering-beregning-grid,
   .case-overblik-trin {
     grid-template-columns: 1fr;
   }
