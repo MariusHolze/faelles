@@ -23,12 +23,23 @@
       <section class="case-help">
         <h2>Hjælp til input</h2>
         <p>
-          Angiv finansieringstal i kroner og rente i procent. Brug fx 4.5 for 4,5%.
-          Felter kan stå tomme, hvis tallet ikke er kendt endnu.
+          Angiv de vigtigste lånedetaljer. Systemet bruger lånebeløb, rente og løbetid
+          til at beregne en simpel månedlig ydelse til caseoverblikket.
         </p>
       </section>
 
       <div class="case-field-grid">
+        <label>
+          Lånetype
+          <select data-case-field="laanetype">
+            <option value="">Vælg lånetype</option>
+            <option value="realkredit">Realkreditlån</option>
+            <option value="banklaan">Banklån</option>
+            <option value="privat">Privat finansiering</option>
+          </select>
+          <span>Bruges til at beskrive hvordan købet finansieres.</span>
+        </label>
+
         <label>
           Egenbetaling
           <input data-case-field="egenbetaling" type="number" min="0" step="1000" placeholder="fx 250000">
@@ -52,6 +63,12 @@
           <input data-case-field="loebetid" type="number" min="0" step="1" placeholder="fx 30">
           <span>Hvor mange år lånet forventes at løbe.</span>
         </label>
+
+        <label>
+          Afdragsfrihed i år
+          <input data-case-field="afdragsfrihed" type="number" min="0" step="1" placeholder="fx 5">
+          <span>Antal år uden afdrag. Brug 0 hvis der betales afdrag fra start.</span>
+        </label>
       </div>
 
       <p id="caseTrinFejl" class="case-form-fejl"></p>
@@ -59,8 +76,10 @@
 
       <div class="case-form-actions">
         <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
-        <a id="naesteTrinLink" class="case-primary-link skjult" href="#">Næste trin</a>
-        <button type="submit">Gem trin</button>
+        <button id="naesteTrinKnap" class="case-primary-link skjult" type="submit" data-action="next">
+          Gem og gå videre
+        </button>
+        <button type="submit">Gem</button>
       </div>
     </form>
   </main>
