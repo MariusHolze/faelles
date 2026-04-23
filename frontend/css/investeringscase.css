@@ -161,7 +161,8 @@
 }
 
 .case-hent-knap,
-.case-rediger-knap {
+.case-rediger-knap,
+.case-slet-knap {
   flex: 1;
   padding: 14px 16px;
   border-radius: 8px;
@@ -193,8 +194,20 @@
   border-color: #94a3b8;
 }
 
+.case-slet-knap {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.case-slet-knap:hover:not(:disabled) {
+  background: #ffe4e6;
+  border-color: #fca5a5;
+}
+
 .case-hent-knap:disabled,
-.case-rediger-knap:disabled {
+.case-rediger-knap:disabled,
+.case-slet-knap:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -290,7 +303,8 @@
 }
 
 .case-hent-knap,
-.case-rediger-knap {
+.case-rediger-knap,
+.case-slet-knap {
   flex: 1;
   padding: 14px 16px;
   border-radius: 8px;
@@ -319,6 +333,17 @@
 .case-rediger-knap:hover {
   background: #f8fafc;
   border-color: #94a3b8;
+}
+
+.case-slet-knap {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.case-slet-knap:hover {
+  background: #ffe4e6;
+  border-color: #fca5a5;
 }
 
 @media (max-width: 1000px) {

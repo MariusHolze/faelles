@@ -292,7 +292,6 @@ function hentEjendomKortHtml(ejendom) {
     </div>
 
     <div class="ejendom-knapper">
-      <button class="knap rediger-ejendom-fra-profil" type="button">Rediger ejendom</button>
       <button class="knap sekundaer-knap slet-ejendom-fra-profil" type="button">Slet ejendom</button>
       <button class="knap opret-case-fra-profil" type="button">Opret case</button>
       <a class="knap sekundaer-knap" href="investeringscase.html">Se cases</a>
@@ -320,8 +319,6 @@ function hentEjendomKortHtml(ejendom) {
 }
 
 function bindEjendomKort(kort, ejendom) {
-  bindRedigerEjendomPanel(kort, ejendom);
-
   const sletEjendomKnap = kort.querySelector(".slet-ejendom-fra-profil");
   sletEjendomKnap.addEventListener("click", async () => {
     await sletEjendomFraProfil(ejendom);
@@ -503,6 +500,7 @@ async function sletEjendomFraProfil(ejendom) {
     }
 
     await hentProfilEjendomme();
+    alert(data.message || "Ejendom slettet.");
   } catch (error) {
     console.error("Fejl ved sletning af ejendom:", error);
     alert("Server fejl");

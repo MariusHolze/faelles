@@ -394,7 +394,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Denne route arkiverer en ejendom i stedet for at slette den helt.
+// Denne route sletter en ejendom og dens tilknyttede investeringscases.
 router.delete("/:id", async (req, res) => {
   const ejendomID = Number(req.params.id);
   const email = req.query.email;
@@ -407,10 +407,8 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    // Henter databaseforbindelsen.
     const pool = await getPool();
 
-    // Først tjekker vi om brugeren har adgang til den valgte ejendom.
     const adgangResult = await pool.request()
       .input("ejendomID", sql.Int, ejendomID)
       .input("email", sql.VarChar(255), email)
@@ -423,31 +421,48 @@ router.delete("/:id", async (req, res) => {
           AND e.erArkiveret = 0
       `);
 
-    // Hvis ejendommen ikke findes eller ikke tilhører brugeren,
-    // stopper vi her.
     if (adgangResult.recordset.length === 0) {
       return res.status(404).json({
         message: "Ejendom ikke fundet eller ingen adgang"
       });
     }
 
-    // I stedet for at slette rækken sætter vi erArkiveret til 1.
-    // Det gør at ejendommen skjules, men stadig findes i databasen.
-    await pool.request()
-      .input("ejendomID", sql.Int, ejendomID)
-      .query(`
-        UPDATE Ejendomsprofil
-        SET erArkiveret = 1,
-            sidstOpdateret = SYSDATETIME()
-        WHERE ejendomID = @ejendomID
-      `);
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
 
-    // Sender besked tilbage om at ejendommen er arkiveret.
-    res.json({
-      message: "Ejendom arkiveret"
-    });
+    try {
+      await new sql.Request(transaction)
+        .input("ejendomID", sql.Int, ejendomID)
+        .query(`
+          DELETE FROM Investeringscase
+          WHERE ejendomID = @ejendomID
+        `);
+
+      const sletResultat = await new sql.Request(transaction)
+        .input("ejendomID", sql.Int, ejendomID)
+        .query(`
+          DELETE FROM Ejendomsprofil
+          WHERE ejendomID = @ejendomID
+        `);
+
+      if (sletResultat.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({
+          message: "Ejendom ikke fundet"
+        });
+      }
+
+      await transaction.commit();
+
+      res.json({
+        message: "Ejendom og tilknyttede investeringscases slettet"
+      });
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   } catch (error) {
-    console.error("Fejl ved arkivering:", error);
+    console.error("Fejl ved sletning af ejendom:", error);
     res.status(500).json({
       message: "Server fejl"
     });

@@ -204,6 +204,7 @@ function lavCaseHtml(caseData, index) {
       <div class="case-actions">
         <button class="case-hent-knap" type="button" data-index="${index}">Åbn</button>
         <button class="case-rediger-knap" type="button" data-index="${index}">Rediger</button>
+        <button class="case-slet-knap" type="button" data-index="${index}">Slet</button>
       </div>
     </article>
   `;
@@ -412,16 +413,17 @@ function bindOpretCaseDropdown() {
 }
 
 function bindCaseKnapper() {
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const hentKnap = event.target.closest(".case-hent-knap");
     const redigerKnap = event.target.closest(".case-rediger-knap");
+    const sletKnap = event.target.closest(".case-slet-knap");
     const visning = hentCaseVisningFraUrl();
 
-    if ((!hentKnap && !redigerKnap) || event.target.disabled) {
+    if ((!hentKnap && !redigerKnap && !sletKnap) || event.target.disabled) {
       return;
     }
 
-    const knap = hentKnap || redigerKnap;
+    const knap = hentKnap || redigerKnap || sletKnap;
     const valgtCase = visteInvesteringscases[Number(knap.dataset.index)];
 
     if (!valgtCase) {
@@ -433,9 +435,78 @@ function bindCaseKnapper() {
       return;
     }
 
+    if (sletKnap) {
+      await sletInvesteringscase(valgtCase, sletKnap);
+      return;
+    }
+
     localStorage.setItem("valgtInvesteringscase", JSON.stringify(valgtCase));
     window.location.href = redigerKnap ? findRedigerSide(valgtCase) : "caseOverblik.html";
   });
+}
+
+async function sletInvesteringscase(caseData, knapElement) {
+  const bruger = typeof hentLoggetIndBruger === "function" ? hentLoggetIndBruger() : null;
+
+  if (!bruger || !bruger.email) {
+    alert("Du skal være logget ind for at slette en investeringscase.");
+    return;
+  }
+
+  const erBekraeftet = window.confirm(
+    `Vil du slette investeringscasen "${caseData.navn || `CASE-${caseData.caseID}`}"? Denne handling kan ikke fortrydes.`
+  );
+
+  if (!erBekraeftet) {
+    return;
+  }
+
+  const oprindeligTekst = knapElement.textContent;
+
+  try {
+    knapElement.disabled = true;
+    knapElement.textContent = "Sletter...";
+
+    const response = await fetch(`/api/investeringscases/${caseData.caseID}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ ownerEmail: bruger.email })
+    });
+
+    const responseTekst = await response.text();
+    let data = {};
+
+    try {
+      data = responseTekst ? JSON.parse(responseTekst) : {};
+    } catch {
+      data = { message: responseTekst };
+    }
+
+    if (!response.ok) {
+      if (responseTekst.includes("<!DOCTYPE") || responseTekst.includes("<html")) {
+        throw new Error("Sletning fejlede, fordi backend ikke returnerede JSON. Genstart serveren og prøv igen.");
+      }
+
+      throw new Error(data.message || "Kunne ikke slette investeringscase.");
+    }
+
+    const valgtCase = hentValgtCaseFraStorage();
+
+    if (valgtCase?.caseID === caseData.caseID) {
+      localStorage.removeItem("valgtInvesteringscase");
+    }
+
+    await visInvesteringscases();
+    alert(data.message || "Investeringscase slettet.");
+  } catch (error) {
+    console.error("Fejl ved sletning af investeringscase:", error);
+    alert(error.message || "Serverfejl ved sletning af investeringscase.");
+  } finally {
+    knapElement.disabled = false;
+    knapElement.textContent = oprindeligTekst;
+  }
 }
 
 async function hentCaseAnalyseFraApi(caseID, email) {

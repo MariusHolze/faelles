@@ -424,6 +424,41 @@ router.get("/:caseID/analyse", async (req, res) => {
 });
 
 // Gemmer data for ét trin i den guidede formular.
+// Sletter en investeringscase, hvis brugeren ejer den.
+router.delete("/:caseID", async (req, res) => {
+  const { caseID } = req.params;
+  const { ownerEmail } = req.body;
+
+  if (!ownerEmail) {
+    return res.status(400).json({ message: "Email mangler" });
+  }
+
+  try {
+    const pool = await getPool();
+    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, ownerEmail);
+
+    if (!harAdgang) {
+      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    }
+
+    const result = await pool.request()
+      .input("caseID", sql.Int, Number(caseID))
+      .query(`
+        DELETE FROM Investeringscase
+        WHERE caseID = @caseID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Case ikke fundet" });
+    }
+
+    res.json({ message: "Investeringscase slettet" });
+  } catch (error) {
+    console.error("Fejl ved sletning af investeringscase:", error);
+    res.status(500).json({ message: "Server fejl" });
+  }
+});
+
 router.put("/:caseID/trin/:trin", async (req, res) => {
   const { caseID, trin } = req.params;
   const { ownerEmail, data } = req.body;
