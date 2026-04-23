@@ -14,84 +14,7 @@ const BYGNING_ANVENDELSE = {
   160: "Boligbygning til døgninstitution",
   185: "Anneks i tilknytning til helårsbolig",
   190: "Anden bygning til helårsbeboelse",
-  211: "Stald til svin",
-  212: "Stald til kvæg, får mv.",
-  213: "Stald til fjerkræ",
-  214: "Minkhal",
-  215: "Væksthus",
-  216: "Lade til foder, afgrøder mv.",
-  217: "Maskinhus, garage mv.",
-  218: "Lade til halm, hø mv.",
-  219: "Anden bygning til landbrug mv.",
-  221: "Bygning til industri med integreret produktionsapparat",
-  222: "Bygning til industri uden integreret produktionsapparat",
-  223: "Værksted",
-  229: "Anden bygning til produktion",
-  231: "Bygning til energiproduktion",
-  232: "Bygning til energidistribution",
-  233: "Bygning til vandforsyning",
-  234: "Bygning til håndtering af affald og spildevand",
-  239: "Anden bygning til energiproduktion og forsyning",
-  311: "Bygning til jernbane- og busdrift",
-  312: "Bygning til luftfart",
-  313: "Bygning til parkering- og transportanlæg",
-  314: "Bygning til parkering af flere end to køretøjer i tilknytning til boliger",
-  315: "Havneanlæg",
-  319: "Andet transportanlæg",
-  321: "Bygning til kontor",
-  322: "Bygning til detailhandel",
-  323: "Bygning til lager",
-  324: "Butikscenter",
-  325: "Tankstation",
-  329: "Anden bygning til kontor, handel og lager",
-  331: "Hotel, kro eller konferencecenter med overnatning",
-  332: "Bed & breakfast mv.",
-  333: "Restaurant, cafe og konferencecenter uden overnatning",
-  334: "Privat servicevirksomhed",
-  339: "Anden bygning til serviceerhverv",
-  411: "Biograf, teater, koncertsted mv.",
-  412: "Museum",
-  413: "Bibliotek",
-  414: "Kirke eller anden bygning til trosudøvelse",
-  415: "Forsamlingshus",
-  416: "Forlystelsespark",
-  419: "Anden bygning til kulturelle formål",
-  421: "Grundskole",
-  422: "Universitet",
-  429: "Anden bygning til undervisning og forskning",
-  431: "Hospital og sygehus",
-  432: "Hospice, behandlingshjem mv.",
-  433: "Sundhedscenter, lægehus, fødeklinik mv.",
-  439: "Anden bygning til sundhedsformål",
-  441: "Daginstitution",
-  442: "Servicefunktion på døgninstitution",
-  443: "Kaserne",
-  444: "Fængsel, arresthus mv.",
-  449: "Anden bygning til institutionsformål",
-  451: "Beskyttelsesrum",
-  510: "Sommerhus",
-  521: "Feriecenter, center til campingplads mv.",
-  522: "Bygning med ferielejligheder til erhvervsmæssig udlejning",
-  523: "Bygning med ferielejligheder til eget brug",
-  529: "Anden bygning til ferieformål",
-  531: "Klubhus i forbindelse med fritid og idræt",
-  532: "Svømmehal",
-  533: "Idrætshal",
-  534: "Tribune i forbindelse med stadion",
-  535: "Bygning til træning og opstaldning af heste",
-  539: "Anden bygning til idrætformål",
-  540: "Kolonihavehus",
-  585: "Anneks i tilknytning til fritids- og sommerhus",
-  590: "Anden bygning til fritidsformål",
-  910: "Garage",
-  920: "Carport",
-  930: "Udhus",
-  940: "Drivhus",
-  950: "Fritliggende overdækning",
-  960: "Fritliggende udestue",
-  970: "Tiloversbleven landbrugsbygning",
-  990: "Faldefærdig bygning",
-  999: "Ukendt bygning"
+  510: "Sommerhus"
 };
 
 const ENHED_BOLIGTYPE = {
@@ -101,6 +24,12 @@ const ENHED_BOLIGTYPE = {
   4: "Fællesbolig",
   5: "Sommer-/fritidsbolig"
 };
+
+const TILLADTE_BYGNINGSKODER_TIL_EJENDOMSPROFIL = new Set(
+  Object.keys(BYGNING_ANVENDELSE).map(Number)
+);
+
+const TILLADTE_ENHED_BOLIGTYPER_TIL_EJENDOMSPROFIL = new Set([1, 2, 3, 4, 5]);
 
 function hentBbrConfig() {
   return {
@@ -520,6 +449,7 @@ async function hentFraDatafordeler(metode, soegeParametre, config) {
 function lavBbrOverblik(bygninger, enheder, grunde) {
   const bygning = vaelgRelevantBygning(bygninger);
   const enhed = enheder[0] || {};
+  const bbrVurdering = vurderEjendomsprofilMulighed(bygninger, enheder);
   const grund = grunde[0] || {};
   const enhedTypeKode = findFoersteTalIObjekter(
     [enhed],
@@ -543,6 +473,10 @@ function lavBbrOverblik(bygninger, enheder, grunde) {
 
   return {
     boligtype: boligtype ? String(boligtype) : null,
+    bygningAnvendelseKode: bygningTypeKode,
+    bygningAnvendelseTekst: BYGNING_ANVENDELSE[bygningTypeKode] || null,
+    kanOprettesSomEjendomsprofil: bbrVurdering.kanOprettes,
+    afvisningsaarsag: bbrVurdering.aarsag,
     byggeaar: findFoersteTalIObjekter(
       [bygning],
       "byg026Opfoerelsesaar",
@@ -570,6 +504,82 @@ function lavBbrOverblik(bygninger, enheder, grunde) {
       "Grundareal"
     )
   };
+}
+
+function vurderEjendomsprofilMulighedFraBbrData(bbrData) {
+  if (!bbrData || typeof bbrData !== "object") {
+    return {
+      kanOprettes: true,
+      aarsag: null
+    };
+  }
+
+  if (typeof bbrData.kanOprettesSomEjendomsprofil === "boolean") {
+    return {
+      kanOprettes: bbrData.kanOprettesSomEjendomsprofil,
+      aarsag: bbrData.afvisningsaarsag || null
+    };
+  }
+
+  const bygningAnvendelseKode = findFoersteTal(
+    bbrData.bygningAnvendelseKode,
+    bbrData.byg021BygningensAnvendelse
+  );
+
+  if (!bygningAnvendelseKode) {
+    return {
+      kanOprettes: true,
+      aarsag: null
+    };
+  }
+
+  const bygningAnvendelseTekst =
+    bbrData.bygningAnvendelseTekst ||
+    BYGNING_ANVENDELSE[bygningAnvendelseKode] ||
+    `BBR-kode ${bygningAnvendelseKode}`;
+
+  return {
+    kanOprettes: TILLADTE_BYGNINGSKODER_TIL_EJENDOMSPROFIL.has(bygningAnvendelseKode),
+    aarsag: TILLADTE_BYGNINGSKODER_TIL_EJENDOMSPROFIL.has(bygningAnvendelseKode)
+      ? null
+      : `Adressen kan ikke bruges til en ejendomsprofil, fordi BBR registrerer den som ${bygningAnvendelseTekst}.`
+  };
+}
+
+function vurderEjendomsprofilMulighed(bygninger, enheder) {
+  const harBoligenhed = Array.isArray(enheder) && enheder.some((enhed) => {
+    const boligtype = findFoersteTalIObjekter([enhed], "enh023Boligtype");
+    return TILLADTE_ENHED_BOLIGTYPER_TIL_EJENDOMSPROFIL.has(boligtype);
+  });
+
+  if (harBoligenhed) {
+    return {
+      kanOprettes: true,
+      aarsag: null
+    };
+  }
+
+  const relevantBygning = vaelgRelevantBygning(bygninger);
+  const bygningAnvendelseKode = findFoersteTalIObjekter(
+    [relevantBygning],
+    "byg021BygningensAnvendelse"
+  );
+
+  if (!bygningAnvendelseKode) {
+    return {
+      kanOprettes: true,
+      aarsag: null
+    };
+  }
+
+  return vurderEjendomsprofilMulighedFraBbrData({
+    bygningAnvendelseKode,
+    bygningAnvendelseTekst: findFoersteVaerdiIObjekter(
+      [relevantBygning],
+      "BygningAnvendelseTekst",
+      "byg021BygningensAnvendelseTekst"
+    )
+  });
 }
 
 function vaelgRelevantBygning(bygninger) {
@@ -741,5 +751,6 @@ function findFoersteTal(...values) {
 }
 
 module.exports = {
-  hentBbrData
+  hentBbrData,
+  vurderEjendomsprofilMulighedFraBbrData
 };

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { hentBbrData, vurderEjendomsprofilMulighedFraBbrData } = require("../services/bbrService");
 
 // Denne route bruges til at søge efter adresser.
 // Frontend sender en søgetekst med i URL'en.
@@ -58,9 +59,10 @@ router.get("/", async (req, res) => {
         postnrnavn: adr.postnrnavn || ""
       };
     });
+    const filtreredeAdresser = await filtrerAdresserTilEjendomsprofil(adresser);
 
     // De bearbejdede adresser sendes tilbage til frontend.
-    res.json(adresser);
+    res.json(filtreredeAdresser);
   } catch (error) {
     // Hvis der sker en uventet fejl,
     // logger vi den i terminalen og sender fejlbesked tilbage.
@@ -70,6 +72,24 @@ router.get("/", async (req, res) => {
     });
   }
 });
+
+async function filtrerAdresserTilEjendomsprofil(adresser) {
+  const vurderedeAdresser = await Promise.all(
+    adresser.map(async (adresse) => {
+      try {
+        const bbrData = await hentBbrData(adresse.adresseID, adresse.adgangsadresseID);
+        const vurdering = vurderEjendomsprofilMulighedFraBbrData(bbrData);
+
+        return vurdering.kanOprettes ? adresse : null;
+      } catch (error) {
+        console.error(`BBR-kontrol kunne ikke gennemføres for ${adresse.adresse}:`, error.message);
+        return adresse;
+      }
+    })
+  );
+
+  return vurderedeAdresser.filter(Boolean);
+}
 
 // Gør routeren tilgængelig for server.js
 module.exports = router;

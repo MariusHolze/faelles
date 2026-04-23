@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { sql, getPool } = require("../db");
-const { hentBbrData } = require("../services/bbrService");
+const { hentBbrData, vurderEjendomsprofilMulighedFraBbrData } = require("../services/bbrService");
 
 // Denne route opretter en ny ejendom i databasen.
 router.post("/", async (req, res) => {
@@ -48,6 +48,13 @@ router.post("/", async (req, res) => {
     // Henter brugerens ID fra databasen.
     const brugerID = brugerResult.recordset[0].brugerID;
     const bbrData = await hentBbrData(adresseID, adgangsadresseID); // henter BBR-data ud fra den validerede adresse
+    const bbrVurdering = vurderEjendomsprofilMulighedFraBbrData(bbrData);
+
+    if (!bbrVurdering.kanOprettes) {
+      return res.status(400).json({
+        message: bbrVurdering.aarsag || "Adressen kan ikke bruges til en ejendomsprofil"
+      });
+    }
 
     const harAdresseID = await harKolonne(pool, "Ejendomsprofil", "adresseID");
     const request = pool.request()
@@ -343,6 +350,14 @@ router.put("/:id", async (req, res) => {
 
     // Vi henter friske BBR-data ud fra den validerede adresse.
     const bbrData = await hentBbrData(adresseID, adgangsadresseID);
+    const bbrVurdering = vurderEjendomsprofilMulighedFraBbrData(bbrData);
+
+    if (!bbrVurdering.kanOprettes) {
+      return res.status(400).json({
+        message: bbrVurdering.aarsag || "Adressen kan ikke bruges til en ejendomsprofil"
+      });
+    }
+
     const harAdresseID = await harKolonne(pool, "Ejendomsprofil", "adresseID");
     const request = pool.request()
       .input("ejendomID", sql.Int, ejendomID)
