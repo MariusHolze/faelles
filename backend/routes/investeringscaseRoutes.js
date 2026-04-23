@@ -95,8 +95,12 @@ function harData(data) {
   });
 }
 
-function beregnYdelse(laanebeloeb, rente, loebetid, afdragsfrihed) {
-  const hovedstol = tal(laanebeloeb);
+function beregnHovedstol(laanebeloeb, egenbetaling) {
+  return Math.max(0, tal(laanebeloeb) - tal(egenbetaling));
+}
+
+function beregnYdelse(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling) {
+  const hovedstol = beregnHovedstol(laanebeloeb, egenbetaling);
   const maanedligRente = (tal(rente) / 100) / 12;
   const antalMaaneder = tal(loebetid) * 12;
 
@@ -136,12 +140,14 @@ function beregnAnalyse(trinData) {
   const lejeAarligt = tal(udlejning.maanedligLeje) * 12;
   const tomgangBeloeb = lejeAarligt * (tal(udlejning.tomgangProcent) / 100);
   const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
-  const renteudgiftAarligt = tal(finansiering.laanebeloeb) * (tal(finansiering.rente) / 100);
+  const hovedstol = beregnHovedstol(finansiering.laanebeloeb, finansiering.egenbetaling);
+  const renteudgiftAarligt = hovedstol * (tal(finansiering.rente) / 100);
   const maanedligYdelse = beregnYdelse(
     finansiering.laanebeloeb,
     finansiering.rente,
     finansiering.loebetid,
-    finansiering.afdragsfrihed
+    finansiering.afdragsfrihed,
+    finansiering.egenbetaling
   );
   const ydelseAarligt = maanedligYdelse * 12;
   const resultatFoerFinansiering = lejeEfterTomgang - driftsudgifterAarligt;
