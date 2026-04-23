@@ -196,6 +196,16 @@ function validerForm(trin, data) {
     return "Renten virker meget høj. Angiv renten som procent, fx 4.5.";
   }
 
+  if (trin === "finansiering") {
+    if (!data.laanetype || data.laanebeloeb === "" || data.rente === "" || data.loebetid === "") {
+      return "Vælg lånetype og udfyld lånebeløb, rente og løbetid.";
+    }
+
+    if (data.afdragsfrihed !== "" && Number(data.afdragsfrihed) > Number(data.loebetid)) {
+      return "Afdragsfrihed kan ikke være længere end lånets løbetid.";
+    }
+  }
+
   if (trin === "udlejning" && data.maanedligLeje === "") {
     return "Angiv forventet månedlig leje, også selvom tallet er 0.";
   }
@@ -252,9 +262,9 @@ function visAnalyse(analyse) {
 
   grid.innerHTML = `
     <div>
-      <span>Køb og renovering</span>
-      <strong>${formatKroner(analyse.koebsudgifterIAlt)}</strong>
-      <small>${analyse.antalKoebsposter} poster</small>
+      <span>Samlet investering</span>
+      <strong>${formatKroner(analyse.samletInvestering)}</strong>
+      <small>Køb og renovering</small>
     </div>
     <div>
       <span>Årlig leje efter tomgang</span>
@@ -267,9 +277,9 @@ function visAnalyse(analyse) {
       <small>Skat, forsikring og drift</small>
     </div>
     <div>
-      <span>Årlig renteudgift</span>
-      <strong>${formatKroner(analyse.renteudgiftAarligt)}</strong>
-      <small>Beregnet fra lånebeløb og rente</small>
+      <span>Månedlig låneydelse</span>
+      <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
+      <small>Beregnet fra lån, rente og løbetid</small>
     </div>
     <div>
       <span>Resultat før finansiering</span>
@@ -277,9 +287,9 @@ function visAnalyse(analyse) {
       <small>Leje minus drift</small>
     </div>
     <div>
-      <span>Resultat efter rente</span>
-      <strong>${formatKroner(analyse.resultatEfterRente)}</strong>
-      <small>Enkel årlig bundlinje</small>
+      <span>Årlig cashflow</span>
+      <strong>${formatKroner(analyse.resultatEfterFinansiering)}</strong>
+      <small>Efter drift og låneydelse</small>
     </div>
   `;
 }
@@ -299,7 +309,7 @@ async function opdaterAnalyseHvisMuligt(trin, caseID, email) {
 
 function bindTrinNavigation(trin) {
   const forrige = document.getElementById("forrigeTrinLink");
-  const naeste = document.getElementById("naesteTrinLink");
+  const naeste = document.getElementById("naesteTrinKnap");
   const config = caseTrinSide[trin];
 
   if (forrige && config.forrige) {
@@ -308,7 +318,8 @@ function bindTrinNavigation(trin) {
   }
 
   if (naeste && config.naeste) {
-    naeste.href = config.naeste;
+    // Knappen er en submit-knap, så formularen bliver gemt før brugeren går videre.
+    naeste.dataset.href = config.naeste;
     naeste.classList.remove("skjult");
   }
 }
@@ -376,6 +387,8 @@ async function bindInvesteringscaseTrinForm() {
     visFormFejl("");
     visFormStatus("");
 
+    const trykketKnap = event.submitter;
+    const handling = trykketKnap?.dataset.action || "save";
     const data = hentFormData(trin);
     const fejl = validerForm(trin, data);
 
@@ -388,6 +401,15 @@ async function bindInvesteringscaseTrinForm() {
       await gemTrinData(valgtCase.caseID, trin, bruger.email, data);
       visFormStatus("Gemt.");
       await opdaterAnalyseHvisMuligt(trin, valgtCase.caseID, bruger.email);
+
+      // Efter gem vælger vi retning ud fra den knap brugeren trykkede på.
+      if (handling === "next") {
+        window.location.href = trykketKnap.dataset.href;
+      }
+
+      if (handling === "overview") {
+        window.location.href = "caseOverblik.html";
+      }
     } catch (error) {
       console.error("Fejl ved gem af trindata:", error);
       visFormFejl(error.message);

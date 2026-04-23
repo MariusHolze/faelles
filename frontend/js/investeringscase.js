@@ -31,6 +31,54 @@ function formatKroner(beloeb) {
   return `${Number(beloeb || 0).toLocaleString("da-DK")} kr.`;
 }
 
+function findRedigerSide(caseData) {
+  // Brugeren sendes til det første trin, der mangler data.
+  // Hvis alle trin er udfyldt, starter redigering fra købsudgifter.
+  const sider = {
+    koebsudgifter: "købsudgifter.html",
+    finansiering: "lånedetaljer.html",
+    renovering: "renovering.html",
+    driftsbudget: "driftsbudget.html",
+    udlejning: "udlejning.html"
+  };
+
+  return sider[caseData.naesteTrin] || "købsudgifter.html";
+}
+
+function hentValgtCaseFraStorage() {
+  const tekst = localStorage.getItem("valgtInvesteringscase");
+
+  if (!tekst) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(tekst);
+  } catch (error) {
+    console.error("Fejl ved valgt investeringscase:", error);
+    localStorage.removeItem("valgtInvesteringscase");
+    return null;
+  }
+}
+
+function formatProcent(value) {
+  return `${Number(value || 0).toLocaleString("da-DK")} %`;
+}
+
+function formatTekst(value) {
+  return value || "Ikke udfyldt";
+}
+
+function formatLaanetype(value) {
+  const typer = {
+    realkredit: "Realkreditlån",
+    banklaan: "Banklån",
+    privat: "Privat finansiering"
+  };
+
+  return typer[value] || "Ikke udfyldt";
+}
+
 function lavTomCaseBesked() {
   return `
     <article class="case-card case-card-bred">
@@ -57,78 +105,6 @@ function lavTomOffentligCaseBesked(adresse) {
       </p>
     </article>
   `;
-}
-
-function lavEksempelCase(nummer) {
-  const eksempelCases = [
-    {
-      titel: "Investeringscase 1",
-      adresse: "Søndergade 14, 8000 Aarhus C",
-      caseId: "CASE-1001",
-      oprettet: "12/04/2026",
-      boligareal: "124 m²",
-      etager: "2",
-      byggeaar: "1998"
-    },
-    {
-      titel: "Investeringscase 2",
-      adresse: "Østerbrogade 52, 2100 København Ø",
-      caseId: "CASE-1002",
-      oprettet: "14/04/2026",
-      boligareal: "96 m²",
-      etager: "1",
-      byggeaar: "2007"
-    },
-    {
-      titel: "Investeringscase 3",
-      adresse: "Vestergade 7, 5000 Odense C",
-      caseId: "CASE-1003",
-      oprettet: "15/04/2026",
-      boligareal: "148 m²",
-      etager: "2",
-      byggeaar: "1989"
-    }
-  ];
-
-  const data = eksempelCases[nummer - 1];
-
-  return `
-    <article class="case-card empty">
-      <div class="case-card-top">
-        <span class="case-status tom">Eksempelcase</span>
-      </div>
-
-      <h2>${data.titel}</h2>
-
-      <p class="case-description">
-        Dette er en eksempelvisning af, hvordan en investeringscase kan se ud.
-      </p>
-
-      <div class="case-meta">
-        <div><span>Adresse:</span> ${data.adresse}</div>
-        <div><span>Case-ID:</span> ${data.caseId}</div>
-        <div><span>Oprettelsesdato:</span> ${data.oprettet}</div>
-        <div><span>Boligareal:</span> ${data.boligareal}</div>
-        <div><span>Etager:</span> ${data.etager}</div>
-        <div><span>Byggeår:</span> ${data.byggeaar}</div>
-      </div>
-
-      <div class="case-actions">
-        <button class="case-hent-knap" type="button" disabled>Hent</button>
-        <button class="case-rediger-knap" type="button" disabled>Rediger</button>
-      </div>
-    </article>
-  `;
-}
-
-function lavEksempelCasesHtml(antal) {
-  let html = "";
-
-  for (let i = 1; i <= antal; i += 1) {
-    html += lavEksempelCase(i);
-  }
-
-  return html;
 }
 
 async function opretInvesteringscaseFraProfil(profil) {
@@ -182,10 +158,13 @@ async function opretInvesteringscaseFraProfil(profil) {
 }
 
 function lavCaseHtml(caseData, index) {
+  const udfyldteTrin = Number(caseData.antalUdfyldteTrin || 0);
+  const statusTekst = udfyldteTrin >= 5 ? "Udfyldt" : `${udfyldteTrin}/5 trin udfyldt`;
+
   return `
     <article class="case-card">
       <div class="case-card-top">
-        <span class="case-status aktiv">Aktiv case</span>
+        <span class="case-status aktiv">${statusTekst}</span>
       </div>
 
       <h2>${escapeHtml(caseData.navn || `Investeringscase ${index + 1}`)}</h2>
@@ -194,18 +173,37 @@ function lavCaseHtml(caseData, index) {
         ${escapeHtml(caseData.beskrivelse || "Ingen beskrivelse endnu.")}
       </p>
 
+      <div class="case-noegletal">
+        <div>
+          <span>Samlet investering</span>
+          <strong>${formatKroner(caseData.samletInvestering)}</strong>
+        </div>
+        <div>
+          <span>Årlig cashflow</span>
+          <strong>${formatKroner(caseData.resultatEfterFinansiering)}</strong>
+        </div>
+        <div>
+          <span>Månedlig ydelse</span>
+          <strong>${formatKroner(caseData.maanedligYdelse)}</strong>
+        </div>
+        <div>
+          <span>Egenkapital</span>
+          <strong>${formatKroner(caseData.egenkapitalBehov)}</strong>
+        </div>
+      </div>
+
       <div class="case-meta">
         <div><span>Adresse:</span> ${escapeHtml(caseData.adresse || "Ikke angivet")}</div>
         <div><span>Case-ID:</span> CASE-${caseData.caseID}</div>
         <div><span>Oprettelsesdato:</span> ${formatDato(caseData.oprettetTidspunkt)}</div>
         <div><span>Boligareal:</span> ${caseData.boligareal ? `${caseData.boligareal} m²` : "Ikke angivet"}</div>
         <div><span>Byggeår:</span> ${caseData.byggeaar || "Ikke angivet"}</div>
-        <div><span>Køb og udgifter:</span> ${formatKroner(caseData.koebsudgifterIAlt)}</div>
+        <div><span>Leje efter tomgang:</span> ${formatKroner(caseData.lejeEfterTomgang)}</div>
       </div>
 
       <div class="case-actions">
-        <button class="case-hent-knap" type="button" data-index="${index}">Hent</button>
-        <button class="case-rediger-knap" type="button" data-index="${index}" disabled>Rediger senere</button>
+        <button class="case-hent-knap" type="button" data-index="${index}">Åbn</button>
+        <button class="case-rediger-knap" type="button" data-index="${index}">Rediger</button>
       </div>
     </article>
   `;
@@ -257,7 +255,6 @@ async function hentInvesteringscasesFraApi() {
 
 async function visInvesteringscases() {
   const casesGrid = document.getElementById("casesGrid");
-  const eksempelCasesGrid = document.getElementById("eksempelCasesGrid");
   const opretCaseKnap = document.getElementById("opretCaseKnap");
   const heroTitel = document.querySelector(".cases-hero-text h1");
   const heroTekst = document.querySelector(".cases-hero-text p");
@@ -268,10 +265,6 @@ async function visInvesteringscases() {
   }
 
   casesGrid.innerHTML = "<p class='case-dropdown-empty'>Loader investeringscases...</p>";
-
-  if (eksempelCasesGrid) {
-    eksempelCasesGrid.innerHTML = lavEksempelCasesHtml(3);
-  }
 
   const resultat = await hentInvesteringscasesFraApi();
   visteInvesteringscases = resultat.cases;
@@ -295,9 +288,6 @@ async function visInvesteringscases() {
       sectionTitel.textContent = "Offentlige cases";
     }
 
-    if (eksempelCasesGrid) {
-      eksempelCasesGrid.innerHTML = "";
-    }
   } else if (opretCaseKnap) {
     opretCaseKnap.classList.remove("skjult");
   }
@@ -424,13 +414,15 @@ function bindOpretCaseDropdown() {
 function bindCaseKnapper() {
   document.addEventListener("click", (event) => {
     const hentKnap = event.target.closest(".case-hent-knap");
+    const redigerKnap = event.target.closest(".case-rediger-knap");
     const visning = hentCaseVisningFraUrl();
 
-    if (!hentKnap || hentKnap.disabled) {
+    if ((!hentKnap && !redigerKnap) || event.target.disabled) {
       return;
     }
 
-    const valgtCase = visteInvesteringscases[Number(hentKnap.dataset.index)];
+    const knap = hentKnap || redigerKnap;
+    const valgtCase = visteInvesteringscases[Number(knap.dataset.index)];
 
     if (!valgtCase) {
       return;
@@ -442,8 +434,156 @@ function bindCaseKnapper() {
     }
 
     localStorage.setItem("valgtInvesteringscase", JSON.stringify(valgtCase));
-    window.location.href = "købsudgifter.html";
+    window.location.href = redigerKnap ? findRedigerSide(valgtCase) : "caseOverblik.html";
   });
+}
+
+async function hentCaseAnalyseFraApi(caseID, email) {
+  const response = await fetch(`/api/investeringscases/${caseID}/analyse?email=${encodeURIComponent(email)}`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Kunne ikke hente caseoverblik.");
+  }
+
+  return data;
+}
+
+function lavOverblikNoegletal(analyse) {
+  return `
+    <div>
+      <span>Samlet investering</span>
+      <strong>${formatKroner(analyse.samletInvestering)}</strong>
+      <small>Køb plus renovering</small>
+    </div>
+    <div>
+      <span>Årlig cashflow</span>
+      <strong>${formatKroner(analyse.resultatEfterFinansiering)}</strong>
+      <small>Efter drift og låneydelse</small>
+    </div>
+    <div>
+      <span>Månedlig ydelse</span>
+      <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
+      <small>Beregnet ud fra lånet</small>
+    </div>
+    <div>
+      <span>Egenkapitalbehov</span>
+      <strong>${formatKroner(analyse.egenkapitalBehov)}</strong>
+      <small>Investering minus lån</small>
+    </div>
+  `;
+}
+
+function lavTrinOverblik(trinData) {
+  // Trindata ligger samlet som JSON i databasen.
+  // Her deler vi det op igen, så overblikssiden kan vise hvert trin tydeligt.
+  const koeb = trinData.koebsudgifter || {};
+  const finansiering = trinData.finansiering || {};
+  const renovering = trinData.renovering || {};
+  const drift = trinData.driftsbudget || {};
+  const udlejning = trinData.udlejning || {};
+  const poster = Array.isArray(koeb.poster) ? koeb.poster : [];
+
+  const posterHtml = poster.length
+    ? poster.map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)}</li>`).join("")
+    : "<li>Ingen købsudgifter gemt endnu.</li>";
+
+  return `
+    <article class="case-overblik-section">
+      <h2>Købsudgifter</h2>
+      <ul>${posterHtml}</ul>
+    </article>
+
+    <article class="case-overblik-section">
+      <h2>Finansiering</h2>
+      <p><span>Lånetype:</span> ${formatLaanetype(finansiering.laanetype)}</p>
+      <p><span>Lånebeløb:</span> ${formatKroner(finansiering.laanebeloeb)}</p>
+      <p><span>Egenbetaling:</span> ${formatKroner(finansiering.egenbetaling)}</p>
+      <p><span>Rente:</span> ${formatProcent(finansiering.rente)}</p>
+      <p><span>Løbetid:</span> ${formatTekst(finansiering.loebetid ? `${finansiering.loebetid} år` : "")}</p>
+      <p><span>Afdragsfrihed:</span> ${formatTekst(finansiering.afdragsfrihed ? `${finansiering.afdragsfrihed} år` : "0 år")}</p>
+    </article>
+
+    <article class="case-overblik-section">
+      <h2>Renovering</h2>
+      <p><span>Budget:</span> ${formatKroner(renovering.renoveringsbudget)}</p>
+      <p><span>Buffer:</span> ${formatProcent(renovering.bufferProcent)}</p>
+      <p><span>Varighed:</span> ${formatTekst(renovering.varighedMaaneder ? `${renovering.varighedMaaneder} måneder` : "")}</p>
+      <p><span>Noter:</span> ${escapeHtml(formatTekst(renovering.renoveringsNoter))}</p>
+    </article>
+
+    <article class="case-overblik-section">
+      <h2>Driftsbudget</h2>
+      <p><span>Ejendomsskat:</span> ${formatKroner(drift.ejendomsskat)}</p>
+      <p><span>Forsikring:</span> ${formatKroner(drift.forsikring)}</p>
+      <p><span>Vedligehold:</span> ${formatKroner(drift.vedligehold)}</p>
+      <p><span>Øvrige udgifter:</span> ${formatKroner(drift.oevrigeUdgifter)}</p>
+    </article>
+
+    <article class="case-overblik-section">
+      <h2>Udlejning</h2>
+      <p><span>Månedlig leje:</span> ${formatKroner(udlejning.maanedligLeje)}</p>
+      <p><span>Depositum:</span> ${formatKroner(udlejning.depositum)}</p>
+      <p><span>Tomgang:</span> ${formatProcent(udlejning.tomgangProcent)}</p>
+      <p><span>Noter:</span> ${escapeHtml(formatTekst(udlejning.udlejningsNoter))}</p>
+    </article>
+  `;
+}
+
+async function initCaseOverblikSide() {
+  const overblikGrid = document.getElementById("caseOverblikGrid");
+  const trinGrid = document.getElementById("caseOverblikTrin");
+
+  if (!overblikGrid || !trinGrid) {
+    return;
+  }
+
+  const bruger = hentLoggetIndBruger();
+  const valgtCase = hentValgtCaseFraStorage();
+
+  if (!bruger) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (!valgtCase || !valgtCase.caseID) {
+    window.location.href = "investeringscase.html";
+    return;
+  }
+
+  document.getElementById("caseOverblikTitel").textContent = valgtCase.navn || "Investeringscase";
+  document.getElementById("caseOverblikMeta").textContent = valgtCase.adresse || "Ingen adresse valgt";
+
+  try {
+    // Overblikssiden henter frisk analyse fra backend, så den ikke viser gamle tal fra localStorage.
+    const data = await hentCaseAnalyseFraApi(valgtCase.caseID, bruger.email);
+    const analyse = data.analyse || {};
+    const trinData = data.trinData || {};
+
+    overblikGrid.innerHTML = lavOverblikNoegletal(analyse);
+    trinGrid.innerHTML = lavTrinOverblik(trinData);
+
+    // Opdaterer localStorage, så Rediger-knappen fortsætter fra første manglende trin.
+    localStorage.setItem("valgtInvesteringscase", JSON.stringify({
+      ...valgtCase,
+      naesteTrin: analyse.naesteTrin,
+      antalUdfyldteTrin: analyse.antalUdfyldteTrin
+    }));
+
+    const status = document.getElementById("caseOverblikStatus");
+    const rediger = document.getElementById("caseOverblikRediger");
+
+    if (status) {
+      status.textContent = `${analyse.antalUdfyldteTrin || 0}/5 trin udfyldt`;
+    }
+
+    if (rediger) {
+      rediger.href = findRedigerSide({ ...valgtCase, naesteTrin: analyse.naesteTrin });
+    }
+  } catch (error) {
+    console.error("Fejl ved caseoverblik:", error);
+    overblikGrid.innerHTML = `<p class="case-dropdown-empty">${escapeHtml(error.message)}</p>`;
+  }
 }
 
 function initInvesteringscaseSide() {
