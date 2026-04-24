@@ -146,7 +146,7 @@ router.get("/find", async (req, res) => {
     const harAdresseID = await harKolonne(pool, "Ejendomsprofil", "adresseID");
     const request = pool.request();
 
-    let whereClause = "e.erArkiveret = 0";
+    let whereClause = "1 = 1";
 
     if (harAdresseID && adresseID) {
       request.input("adresseID", sql.VarChar(50), adresseID);
@@ -192,8 +192,8 @@ router.get("/find", async (req, res) => {
 });
 
 async function hentEjendommeForBruger(pool, email, harAdresseID) {
-  // Her henter vi alle aktive ejendomme for brugeren.
-    // Vi tæller også hvor mange cases der er knyttet til hver ejendom.
+  // Her henter vi alle ejendomme for brugeren.
+  // Vi tæller også hvor mange cases der er knyttet til hver ejendom.
   const result = await pool.request()
     .input("email", sql.VarChar(255), email)
     .query(`
@@ -219,7 +219,6 @@ async function hentEjendommeForBruger(pool, email, harAdresseID) {
         JOIN Bruger b ON e.brugerID = b.brugerID
         LEFT JOIN Investeringscase c ON e.ejendomID = c.ejendomID
         WHERE b.email = @email
-          AND e.erArkiveret = 0
         GROUP BY
           e.ejendomID,
           e.adresse,
@@ -338,7 +337,6 @@ router.put("/:id", async (req, res) => {
         JOIN Bruger b ON e.brugerID = b.brugerID
         WHERE e.ejendomID = @ejendomID
           AND b.email = @email
-          AND e.erArkiveret = 0
       `);
 
     // Hvis der ikke findes en match, må brugeren ikke opdatere den.
@@ -433,7 +431,6 @@ router.delete("/:id", async (req, res) => {
         JOIN Bruger b ON e.brugerID = b.brugerID
         WHERE e.ejendomID = @ejendomID
           AND b.email = @email
-          AND e.erArkiveret = 0
       `);
 
     if (adgangResult.recordset.length === 0) {

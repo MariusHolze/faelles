@@ -25,7 +25,6 @@ async function brugerHarAdgangTilCase(pool, caseID, email) {
       JOIN Bruger b ON e.brugerID = b.brugerID
       WHERE c.caseID = @caseID
         AND b.email = @email
-        AND e.erArkiveret = 0
     `);
 
   return result.recordset.length > 0;
@@ -215,7 +214,7 @@ router.get("/", async (req, res) => {
   try {
     const pool = await getPool();
     const request = pool.request();
-    let whereClause = "e.erArkiveret = 0";
+    let whereClause = "1 = 1";
 
     if (email) {
       request.input("email", sql.VarChar(255), email);
@@ -282,7 +281,6 @@ router.post("/", async (req, res) => {
         JOIN Bruger b ON e.brugerID = b.brugerID
         WHERE e.ejendomID = @ejendomID
           AND b.email = @email
-          AND e.erArkiveret = 0
       `);
 
     if (adgang.recordset.length === 0) {

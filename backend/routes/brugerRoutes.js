@@ -213,26 +213,54 @@ router.delete("/profil", async (req, res) => {
   try {
     // Henter forbindelse til databasen.
     const pool = await getPool();
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
 
-    // Her sletter vi brugeren fra databasen.
-    const result = await pool.request()
-      .input("brugerID", sql.Int, brugerID)
-      .query(`
-        DELETE FROM Bruger
-        WHERE brugerID = @brugerID
-      `);
+    try {
+      // Sletter først alle investeringscases for brugerens ejendomme,
+      // så fremmednøgler ikke blokerer konto-sletningen.
+      await new sql.Request(transaction)
+        .input("brugerID", sql.Int, brugerID)
+        .query(`
+          DELETE ic
+          FROM Investeringscase ic
+          JOIN Ejendomsprofil ep ON ic.ejendomID = ep.ejendomID
+          WHERE ep.brugerID = @brugerID
+        `);
 
-    // Hvis ingen rækker blev slettet, findes brugeren ikke.
-    if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({
-        message: "Bruger blev ikke fundet"
+      await new sql.Request(transaction)
+        .input("brugerID", sql.Int, brugerID)
+        .query(`
+          DELETE FROM Ejendomsprofil
+          WHERE brugerID = @brugerID
+        `);
+
+      // Til sidst slettes selve brugeren.
+      const result = await new sql.Request(transaction)
+        .input("brugerID", sql.Int, brugerID)
+        .query(`
+          DELETE FROM Bruger
+          WHERE brugerID = @brugerID
+        `);
+
+      // Hvis ingen rækker blev slettet, findes brugeren ikke.
+      if (result.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({
+          message: "Bruger blev ikke fundet"
+        });
+      }
+
+      await transaction.commit();
+
+      // Hvis alt gik godt, sender vi svar tilbage.
+      res.json({
+        message: "Konto slettet"
       });
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    // Hvis alt gik godt, sender vi svar tilbage.
-    res.json({
-      message: "Konto slettet"
-    });
   } catch (error) {
     // Hvis noget går galt, logger vi fejlen og sender en serverfejl tilbage.
     console.error("Fejl ved sletning af profil:", error);
