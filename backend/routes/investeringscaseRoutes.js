@@ -254,8 +254,23 @@ function beregnAnalyse(trinData) {
   const driftsudgifterMaanedligt = driftsudgifter.maanedligt;
   const driftsudgifterAarligt = driftsudgifter.aarligt;
   const lejeAarligt = udlejningAktiv ? tal(udlejning.maanedligLeje) * 12 : 0;
-  const tomgangBeloeb = udlejningAktiv ? lejeAarligt * (tal(udlejning.tomgangProcent) / 100) : 0;
+  const tomgangDage = udlejning.tomgangDage !== undefined && udlejning.tomgangDage !== null
+    ? Math.min(365, Math.max(0, tal(udlejning.tomgangDage)))
+    : Math.round((Math.min(100, Math.max(0, tal(udlejning.tomgangProcent))) / 100) * 365);
+  const tomgangBeloeb = udlejningAktiv ? lejeAarligt * (tomgangDage / 365) : 0;
   const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
+  const lejeudgifterAarligt = udlejningAktiv
+    ? (tal(udlejning.maanedligeUdlejningsudgifter) * 12) + tal(udlejning.aarligeUdlejningsudgifter)
+    : 0;
+  const lejeudgifterMaanedligt = lejeudgifterAarligt / 12;
+  const nettoLejeAarligt = lejeEfterTomgang - lejeudgifterAarligt;
+  const nettoLejeMaanedligt = nettoLejeAarligt / 12;
+  // Skatteestimatet følger skat.dk's princip om 40% fradrag på lejeindtægt og beskattes her som kapitalindkomst.
+  const skattefritBeloeb = Math.max(0, nettoLejeAarligt) * 0.4;
+  const skattepligtigtBeloeb = Math.max(0, nettoLejeAarligt - skattefritBeloeb);
+  const skatBeloeb = skattepligtigtBeloeb * 0.42;
+  const lejeEfterSkatAarligt = nettoLejeAarligt - skatBeloeb;
+  const lejeEfterSkatMaanedligt = lejeEfterSkatAarligt / 12;
   const finansieringsbehov = Math.max(0, koebsudgifterIAlt - tal(finansiering.egenbetaling));
   const hovedstol = beregnHovedstol(finansieringsbehov, finansiering.egenbetaling);
   const renteudgiftAarligt = hovedstol * (tal(finansiering.rente) / 100);
@@ -274,7 +289,7 @@ function beregnAnalyse(trinData) {
     finansiering.egenbetaling
   );
   const ydelseAarligt = maanedligYdelse * 12;
-  const resultatFoerFinansiering = lejeEfterTomgang - driftsudgifterAarligt;
+  const resultatFoerFinansiering = nettoLejeAarligt - driftsudgifterAarligt;
   const resultatEfterRente = resultatFoerFinansiering - renteudgiftAarligt;
   const resultatEfterFinansiering = resultatFoerFinansiering - ydelseAarligt;
   const egenkapitalBehov = Math.max(0, samletInvestering - finansieringsbehov);
@@ -292,8 +307,18 @@ function beregnAnalyse(trinData) {
     driftsudgifterMaanedligt,
     driftsudgifterAarligt,
     lejeAarligt,
+    tomgangDage,
     tomgangBeloeb,
     lejeEfterTomgang,
+    lejeudgifterMaanedligt,
+    lejeudgifterAarligt,
+    nettoLejeMaanedligt,
+    nettoLejeAarligt,
+    skattefritBeloeb,
+    skattepligtigtBeloeb,
+    skatBeloeb,
+    lejeEfterSkatMaanedligt,
+    lejeEfterSkatAarligt,
     renteudgiftAarligt,
     samletRenteomkostning,
     maanedligYdelse,
@@ -325,6 +350,12 @@ function mapCaseRow(row) {
     egenkapitalBehov: analyse.egenkapitalBehov,
     maanedligYdelse: analyse.maanedligYdelse,
     lejeEfterTomgang: analyse.lejeEfterTomgang,
+    lejeudgifterMaanedligt: analyse.lejeudgifterMaanedligt,
+    lejeudgifterAarligt: analyse.lejeudgifterAarligt,
+    nettoLejeMaanedligt: analyse.nettoLejeMaanedligt,
+    nettoLejeAarligt: analyse.nettoLejeAarligt,
+    lejeEfterSkatMaanedligt: analyse.lejeEfterSkatMaanedligt,
+    lejeEfterSkatAarligt: analyse.lejeEfterSkatAarligt,
     driftsudgifterMaanedligt: analyse.driftsudgifterMaanedligt,
     driftsudgifterAarligt: analyse.driftsudgifterAarligt,
     resultatEfterFinansiering: analyse.resultatEfterFinansiering,

@@ -95,6 +95,27 @@ function formatDriftPeriode(value) {
   return value === "maanedligt" ? "pr. måned" : "pr. år";
 }
 
+function beregnUdlejningOverblikFallback(udlejning = {}, analyse = {}) {
+  const maanedligLeje = Number(udlejning.maanedligLeje || 0);
+  const lejeAarligt = maanedligLeje * 12;
+  const tomgangDage = analyse.tomgangDage ?? udlejning.tomgangDage ?? Math.round((Number(udlejning.tomgangProcent || 0) / 100) * 365);
+  const begrænsedeTomgangDage = Math.min(365, Math.max(0, Number(tomgangDage || 0)));
+  const tomgangBeloeb = lejeAarligt * (begrænsedeTomgangDage / 365);
+  const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
+  const lejeudgifterAarligt =
+    (Number(udlejning.maanedligeUdlejningsudgifter || 0) * 12) +
+    Number(udlejning.aarligeUdlejningsudgifter || 0);
+
+  return {
+    lejeAarligt,
+    tomgangDage: begrænsedeTomgangDage,
+    tomgangBeloeb,
+    lejeudgifterAarligt,
+    nettoLejeAarligt: lejeEfterTomgang - lejeudgifterAarligt,
+    lejeEfterSkatAarligt: (lejeEfterTomgang - lejeudgifterAarligt) - (Math.max(0, (lejeEfterTomgang - lejeudgifterAarligt) * 0.6) * 0.42)
+  };
+}
+
 function lavTomCaseBesked() {
   return `
     <article class="case-card case-card-bred">
@@ -214,7 +235,7 @@ function lavCaseHtml(caseData, index) {
         <div><span>Oprettelsesdato:</span> ${formatDato(caseData.oprettetTidspunkt)}</div>
         <div><span>Boligareal:</span> ${caseData.boligareal ? `${caseData.boligareal} m²` : "Ikke angivet"}</div>
         <div><span>Byggeår:</span> ${caseData.byggeaar || "Ikke angivet"}</div>
-        <div><span>Leje efter tomgang:</span> ${formatKroner(caseData.lejeEfterTomgang)}</div>
+        <div><span>Nettoleje:</span> ${formatKroner(caseData.nettoLejeAarligt ?? caseData.lejeEfterTomgang)}</div>
       </div>
 
       <div class="case-actions">
@@ -582,7 +603,31 @@ function lavTrinOverblik(trinData, analyse = {}) {
   const poster = Array.isArray(koeb.poster) ? koeb.poster : [];
   const renoveringsposter = renovering.aktiv === false ? [] : (Array.isArray(renovering.poster) ? renovering.poster : []);
   const driftsposter = Array.isArray(drift.poster) ? drift.poster : [];
+  const legacyDriftsposter = [
+    { navn: "Ejendomsskat", beloeb: Number(drift.ejendomsskat || 0), periode: "aarligt" },
+    { navn: "Forsikring", beloeb: Number(drift.forsikring || 0), periode: "aarligt" },
+    { navn: "Vedligehold", beloeb: Number(drift.vedligehold || 0), periode: "aarligt" },
+    { navn: "Øvrige udgifter", beloeb: Number(drift.oevrigeUdgifter || 0), periode: "aarligt" }
+  ];
+  const driftsposterTilNoegletal = driftsposter.length ? driftsposter : legacyDriftsposter.filter((post) => post.beloeb > 0);
+  const koebsudgifterIAlt = analyse.koebsudgifterIAlt ?? poster.reduce((sum, post) => sum + Number(post.beloeb || 0), 0);
+  const stoersteKoebspost = [...poster].sort((a, b) => Number(b.beloeb || 0) - Number(a.beloeb || 0))[0];
+  const renoveringAktiv = renovering.aktiv === false ? false : Boolean(renovering.aktiv || renoveringsposter.length);
+  const stoersteRenovering = [...renoveringsposter].sort((a, b) => Number(b.beloeb || 0) - Number(a.beloeb || 0))[0];
+  const driftsposterMedAarligt = driftsposterTilNoegletal.map((post) => ({
+    ...post,
+    aarligtBeloeb: post.periode === "maanedligt" ? Number(post.beloeb || 0) * 12 : Number(post.beloeb || 0)
+  }));
+  const stoersteDriftspost = [...driftsposterMedAarligt].sort((a, b) => b.aarligtBeloeb - a.aarligtBeloeb)[0];
   const laanebeloeb = analyse.finansieringsbehov ?? finansiering.laanebeloeb;
+  const udlejningFallback = beregnUdlejningOverblikFallback(udlejning, analyse);
+  const udlejningAktiv = udlejning.aktiv === false ? false : Boolean(udlejning.aktiv || udlejning.maanedligLeje || udlejning.depositum || udlejning.udlejningsNoter);
+  const lejeAarligt = analyse.lejeAarligt ?? udlejningFallback.lejeAarligt;
+  const tomgangDage = analyse.tomgangDage ?? udlejningFallback.tomgangDage;
+  const tomgangBeloeb = analyse.tomgangBeloeb ?? udlejningFallback.tomgangBeloeb;
+  const lejeudgifterAarligt = analyse.lejeudgifterAarligt ?? udlejningFallback.lejeudgifterAarligt;
+  const nettoLejeAarligt = analyse.nettoLejeAarligt ?? udlejningFallback.nettoLejeAarligt;
+  const lejeEfterSkatAarligt = analyse.lejeEfterSkatAarligt ?? udlejningFallback.lejeEfterSkatAarligt;
 
   const posterHtml = poster.length
     ? poster.map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)}</li>`).join("")
@@ -604,41 +649,134 @@ function lavTrinOverblik(trinData, analyse = {}) {
     `;
 
   return `
-    <article class="case-overblik-section">
+    <article class="case-overblik-section overblik-trin-section overblik-trin-koeb">
       <h2>Købsudgifter</h2>
-      <ul>${posterHtml}</ul>
+      <div class="overblik-card-top">
+        <div class="overblik-resultat">
+          <span>Total køb</span>
+          <strong>${formatKroner(koebsudgifterIAlt)}</strong>
+          <small>${poster.length} gemte købsposter</small>
+        </div>
+        <div class="overblik-status">
+          <span>Største post</span>
+          <strong>${escapeHtml(stoersteKoebspost?.navn || "Ingen endnu")}</strong>
+          <small>${stoersteKoebspost ? formatKroner(stoersteKoebspost.beloeb) : "Udfyld købsposter for at se den."}</small>
+        </div>
+      </div>
+      <ul class="overblik-liste">${posterHtml}</ul>
     </article>
 
-    <article class="case-overblik-section">
+    <article class="case-overblik-section overblik-trin-section overblik-trin-finansiering">
       <h2>Finansiering</h2>
-      <p><span>Lånetype:</span> ${formatLaanetype(finansiering.laanetype)}</p>
-      <p><span>Lånebeløb:</span> ${formatKroner(laanebeloeb)}</p>
-      <p><span>Egenbetaling:</span> ${formatKroner(finansiering.egenbetaling)}</p>
-      <p><span>Rente:</span> ${formatProcent(finansiering.rente)}</p>
-      <p><span>Løbetid:</span> ${formatTekst(finansiering.loebetid ? `${finansiering.loebetid} år` : "")}</p>
-      <p><span>Afdragsfrihed:</span> ${formatTekst(finansiering.afdragsfrihed ? `${finansiering.afdragsfrihed} år` : "0 år")}</p>
+      <div class="overblik-card-top">
+        <div class="overblik-resultat">
+          <span>Månedlig ydelse</span>
+          <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
+          <small>${formatLaanetype(finansiering.laanetype)}</small>
+        </div>
+        <div class="overblik-status">
+          <span>Lånebeløb</span>
+          <strong>${formatKroner(laanebeloeb)}</strong>
+          <small>${formatProcent(finansiering.rente)} i rente</small>
+        </div>
+      </div>
+      <div class="overblik-talrække">
+        <div>
+          <span>Egenbetaling</span>
+          <strong>${formatKroner(finansiering.egenbetaling)}</strong>
+          <small>Indskud i casen</small>
+        </div>
+        <div>
+          <span>Løbetid</span>
+          <strong>${formatTekst(finansiering.loebetid ? `${finansiering.loebetid} år` : "")}</strong>
+          <small>Samlet låneperiode</small>
+        </div>
+        <div>
+          <span>Afdragsfrihed</span>
+          <strong>${formatTekst(finansiering.afdragsfrihed ? `${finansiering.afdragsfrihed} år` : "0 år")}</strong>
+          <small>Før normal afvikling</small>
+        </div>
+        <div>
+          <span>Renteomkostning</span>
+          <strong>${formatKroner(analyse.samletRenteomkostning)}</strong>
+          <small>Over hele lånets løbetid</small>
+        </div>
+      </div>
     </article>
 
-    <article class="case-overblik-section">
+    <article class="case-overblik-section overblik-trin-section overblik-trin-renovering">
       <h2>Renovering</h2>
-      <ul>${renoveringsHtml}</ul>
-      <p><span>Total:</span> ${formatKroner(analyse.renoveringIAlt)}</p>
+      <div class="overblik-card-top">
+        <div class="overblik-resultat">
+          <span>Renovering i alt</span>
+          <strong>${formatKroner(analyse.renoveringIAlt)}</strong>
+          <small>${renoveringAktiv ? `${renoveringsposter.length} renoveringsposter` : "Ingen aktiv renovering"}</small>
+        </div>
+        <div class="overblik-status">
+          <span>Største post</span>
+          <strong>${escapeHtml(stoersteRenovering?.navn || "Ingen endnu")}</strong>
+          <small>${stoersteRenovering ? formatKroner(stoersteRenovering.beloeb) : "Tilføj poster, hvis der renoveres."}</small>
+        </div>
+      </div>
+      <ul class="overblik-liste">${renoveringsHtml}</ul>
     </article>
 
-    <article class="case-overblik-section">
+    <article class="case-overblik-section overblik-trin-section overblik-trin-drift">
       <h2>Driftsbudget</h2>
-      <ul>${driftHtml}</ul>
-      <p><span>Månedligt:</span> ${formatKroner(analyse.driftsudgifterMaanedligt)}</p>
-      <p><span>Årligt:</span> ${formatKroner(analyse.driftsudgifterAarligt)}</p>
+      <div class="overblik-card-top">
+        <div class="overblik-resultat">
+          <span>Årlig drift</span>
+          <strong>${formatKroner(analyse.driftsudgifterAarligt)}</strong>
+          <small>${formatKroner(analyse.driftsudgifterMaanedligt)} pr. måned</small>
+        </div>
+        <div class="overblik-status">
+          <span>Største driftspost</span>
+          <strong>${escapeHtml(stoersteDriftspost?.navn || "Ingen endnu")}</strong>
+          <small>${stoersteDriftspost ? `${formatKroner(stoersteDriftspost.aarligtBeloeb)} pr. år` : "Udfyld driftsbudgettet for at se den."}</small>
+        </div>
+      </div>
+      <ul class="overblik-liste">${driftHtml}</ul>
     </article>
 
-    <article class="case-overblik-section">
+    <article class="case-overblik-section overblik-trin-section overblik-trin-udlejning">
       <h2>Udlejning</h2>
-      <p><span>Udlejning:</span> ${udlejning.aktiv === false ? "Nej" : "Ja"}</p>
-      <p><span>Månedlig leje:</span> ${formatKroner(udlejning.maanedligLeje)}</p>
-      <p><span>Depositum:</span> ${formatKroner(udlejning.depositum)}</p>
-      <p><span>Tomgang:</span> ${formatProcent(udlejning.tomgangProcent)}</p>
-      <p><span>Noter:</span> ${escapeHtml(formatTekst(udlejning.udlejningsNoter))}</p>
+      <div class="overblik-card-top">
+        <div class="overblik-resultat">
+          <span>Estimat efter skat</span>
+          <strong>${formatKroner(lejeEfterSkatAarligt)}</strong>
+          <small>40% fradrag og ca. 42% skat af resten. Kilde: skat.dk.</small>
+        </div>
+        <div class="overblik-status">
+          <span>Status</span>
+          <strong>${udlejningAktiv ? "Udlejes" : "Udlejes ikke"}</strong>
+          <small>${formatKroner(udlejning.maanedligLeje)} pr. måned</small>
+        </div>
+      </div>
+
+      <div class="overblik-talrække">
+        <div>
+          <span>Bruttoleje</span>
+          <strong>${formatKroner(lejeAarligt)}</strong>
+          <small>Før tomgang og udgifter</small>
+        </div>
+        <div>
+          <span>Tomgang</span>
+          <strong>${formatTekst(`${tomgangDage} dage`)}</strong>
+          <small>${formatKroner(tomgangBeloeb)} pr. år</small>
+        </div>
+        <div>
+          <span>Udgifter</span>
+          <strong>${formatKroner(lejeudgifterAarligt)}</strong>
+          <small>Udlejningsudgifter pr. år</small>
+        </div>
+        <div>
+          <span>Nettoleje</span>
+          <strong>${formatKroner(nettoLejeAarligt)}</strong>
+          <small>Efter tomgang og udgifter</small>
+        </div>
+      </div>
+
+      <p class="overblik-note"><span>Noter:</span> ${escapeHtml(formatTekst(udlejning.udlejningsNoter))}</p>
     </article>
   `;
 }

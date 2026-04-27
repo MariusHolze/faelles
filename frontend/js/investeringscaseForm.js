@@ -83,7 +83,12 @@ const formatteredeCaseFelter = {
   laanebeloeb: "currency",
   rente: "percent",
   loebetid: "years",
-  afdragsfrihed: "years"
+  afdragsfrihed: "years",
+  maanedligLeje: "currency",
+  depositum: "currency",
+  tomgangDage: "days",
+  maanedligeUdlejningsudgifter: "currency",
+  aarligeUdlejningsudgifter: "currency"
 };
 
 function parseKronerInputVaerdi(value) {
@@ -114,7 +119,7 @@ function parseFormatteretFeltVaerdi(value, formatType) {
     return Number.NaN;
   }
 
-  if (formatType === "currency" || formatType === "years") {
+  if (formatType === "currency" || formatType === "years" || formatType === "days") {
     const kunCifre = tekst.replace(/\D/g, "");
     return kunCifre ? Number(kunCifre) : Number.NaN;
   }
@@ -152,6 +157,10 @@ function formatFormatteretFeltVaerdi(value, formatType) {
 
   if (formatType === "years") {
     return `${nummer.toLocaleString("da-DK")} år`;
+  }
+
+  if (formatType === "days") {
+    return `${nummer.toLocaleString("da-DK")} dage`;
   }
 
   if (formatType === "percent") {
@@ -242,10 +251,26 @@ const renoveringTidspunktMuligheder = {
 };
 
 const standardDriftsposter = [
-  { navn: "Ejendomsskat", periode: "aarligt", beskrivelse: "Forventet årlig ejendomsskat." },
-  { navn: "Forsikring", periode: "aarligt", beskrivelse: "Forventet årlig forsikring." },
-  { navn: "Vedligehold", periode: "aarligt", beskrivelse: "Løbende vedligehold og småreparationer." },
-  { navn: "Administration/fællesudgifter", periode: "maanedligt", beskrivelse: "Fx administration, ejerforening eller øvrig drift." }
+  {
+    navn: "Ejendomsskat",
+    periode: "aarligt",
+    beskrivelse: "Skriv den forventede årlige grundskyld/ejendomsskat. Find tallet i salgsopstillingen, på Vurderingsportalen eller brug seneste opkrævning som pejlemærke."
+  },
+  {
+    navn: "Forsikring",
+    periode: "aarligt",
+    beskrivelse: "Skriv den forventede årlige bygningsforsikring. Har du ikke en pris endnu, så brug et overslag fra et forsikringsselskab."
+  },
+  {
+    navn: "Vedligehold",
+    periode: "aarligt",
+    beskrivelse: "Sæt et årligt beløb af til løbende vedligehold, småreparationer og udskiftninger. Brug gerne et konservativt estimat, hvis ejendommen er ældre."
+  },
+  {
+    navn: "Administration/fællesudgifter",
+    periode: "maanedligt",
+    beskrivelse: "Skriv månedlige udgifter til administration, ejerforening, vicevært, renovation eller anden fast drift."
+  }
 ];
 
 const driftPeriodeLabels = {
@@ -539,6 +564,14 @@ function beregnDriftTotaler(poster) {
   }, { maanedligt: 0, aarligt: 0 });
 }
 
+function beregnDriftspostAarligt(post) {
+  if (!post.navn || Number.isNaN(post.beloeb) || post.beloeb <= 0) {
+    return 0;
+  }
+
+  return post.periode === "maanedligt" ? post.beloeb * 12 : post.beloeb;
+}
+
 function hentDriftsbudgetDataFraForm() {
   const allePoster = hentDriftsposter();
   const poster = allePoster
@@ -561,6 +594,9 @@ function hentDriftsbudgetDataFraForm() {
 function opdaterDriftsbudgetTotal() {
   const maanedligTotalElement = document.getElementById("driftMaanedligTotal");
   const aarligTotalElement = document.getElementById("driftAarligTotal");
+  const stoerstePostElement = document.getElementById("driftStoerstePost");
+  const stoerstePostNoteElement = document.getElementById("driftStoerstePostNote");
+  const fordelingElement = document.getElementById("driftFordeling");
 
   if (!maanedligTotalElement || !aarligTotalElement) {
     return;
@@ -569,6 +605,60 @@ function opdaterDriftsbudgetTotal() {
   const data = hentDriftsbudgetDataFraForm();
   maanedligTotalElement.textContent = formatKroner(data.driftsudgifterMaanedligt);
   aarligTotalElement.textContent = formatKroner(data.driftsudgifterAarligt);
+
+  const posterMedAarligtBeloeb = data.poster
+    .map((post) => ({
+      ...post,
+      aarligtBeloeb: beregnDriftspostAarligt(post)
+    }))
+    .filter((post) => post.aarligtBeloeb > 0)
+    .sort((a, b) => b.aarligtBeloeb - a.aarligtBeloeb);
+  const stoerstePost = posterMedAarligtBeloeb[0];
+
+  if (stoerstePostElement) {
+    stoerstePostElement.textContent = stoerstePost ? stoerstePost.navn : "Ingen endnu";
+  }
+
+  if (stoerstePostNoteElement) {
+    stoerstePostNoteElement.textContent = stoerstePost
+      ? `${formatKroner(stoerstePost.aarligtBeloeb)} pr. år`
+      : "Udfyld beløb for at se den største udgift.";
+  }
+
+  if (fordelingElement) {
+    if (!posterMedAarligtBeloeb.length || data.driftsudgifterAarligt <= 0) {
+      fordelingElement.innerHTML = '<p>Fordelingen vises, når der er mindst én driftsomkostning med beløb.</p>';
+      return;
+    }
+
+    const synligePoster = posterMedAarligtBeloeb.slice(0, 4);
+    const oevrigeTotal = posterMedAarligtBeloeb
+      .slice(4)
+      .reduce((sum, post) => sum + post.aarligtBeloeb, 0);
+    const fordelingsPoster = oevrigeTotal > 0
+      ? [...synligePoster, { navn: "Øvrige", aarligtBeloeb: oevrigeTotal }]
+      : synligePoster;
+
+    fordelingElement.innerHTML = `
+      <div class="drift-fordeling-bar">
+        ${fordelingsPoster.map((post, index) => {
+          const procent = Math.max(2, (post.aarligtBeloeb / data.driftsudgifterAarligt) * 100);
+          return `<span class="drift-fordeling-segment drift-fordeling-segment-${index % 5}" style="width: ${procent}%"></span>`;
+        }).join("")}
+      </div>
+      <div class="drift-fordeling-list">
+        ${fordelingsPoster.map((post, index) => {
+          const procent = Math.round((post.aarligtBeloeb / data.driftsudgifterAarligt) * 100);
+          return `
+            <span>
+              <i class="drift-fordeling-prik drift-fordeling-prik-${index % 5}" aria-hidden="true"></i>
+              ${escapeHtml(post.navn)} ${procent}%
+            </span>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
 }
 
 function lavLegacyDriftsposter(data = {}) {
@@ -604,30 +694,129 @@ function udfyldDriftsbudgetForm(data) {
 
 function hentUdlejningDataFraForm() {
   const aktiv = document.getElementById("udlejningAktiv")?.checked || false;
+  const maanedligLeje = hentUdlejningTalFelt("maanedligLeje");
+  const depositum = hentUdlejningTalFelt("depositum");
+  const tomgangDage = hentUdlejningTalFelt("tomgangDage");
+  const maanedligeUdlejningsudgifter = hentUdlejningTalFelt("maanedligeUdlejningsudgifter");
+  const aarligeUdlejningsudgifter = hentUdlejningTalFelt("aarligeUdlejningsudgifter");
 
   if (!aktiv) {
     return {
       aktiv: false,
       maanedligLeje: 0,
       depositum: 0,
-      tomgangProcent: 0,
+      tomgangDage: 0,
+      maanedligeUdlejningsudgifter: 0,
+      aarligeUdlejningsudgifter: 0,
+      lejeAarligt: 0,
+      tomgangBeloeb: 0,
+      lejeEfterTomgang: 0,
+      lejeudgifterMaanedligt: 0,
+      lejeudgifterAarligt: 0,
+      nettoLejeMaanedligt: 0,
+      nettoLejeAarligt: 0,
       udlejningsNoter: ""
     };
   }
 
+  const overblik = beregnUdlejningOverblik({
+    maanedligLeje,
+    tomgangDage,
+    maanedligeUdlejningsudgifter,
+    aarligeUdlejningsudgifter
+  });
+
   return {
     aktiv: true,
-    maanedligLeje: document.querySelector('[data-case-field="maanedligLeje"]')?.value === ""
-      ? ""
-      : Number(document.querySelector('[data-case-field="maanedligLeje"]')?.value || 0),
-    depositum: document.querySelector('[data-case-field="depositum"]')?.value === ""
-      ? ""
-      : Number(document.querySelector('[data-case-field="depositum"]')?.value || 0),
-    tomgangProcent: document.querySelector('[data-case-field="tomgangProcent"]')?.value === ""
-      ? ""
-      : Number(document.querySelector('[data-case-field="tomgangProcent"]')?.value || 0),
+    maanedligLeje,
+    depositum,
+    tomgangDage,
+    maanedligeUdlejningsudgifter,
+    aarligeUdlejningsudgifter,
+    ...overblik,
     udlejningsNoter: document.querySelector('[data-case-field="udlejningsNoter"]')?.value.trim() || ""
   };
+}
+
+function hentUdlejningTalFelt(feltnavn) {
+  const felt = document.querySelector(`[data-case-field="${feltnavn}"]`);
+
+  if (!felt || felt.value === "") {
+    return "";
+  }
+
+  const formatType = formatteredeCaseFelter[feltnavn];
+  const value = formatType
+    ? parseFormatteretFeltVaerdi(felt.value, formatType)
+    : Number(felt.value || 0);
+
+  return Number.isNaN(value) ? "" : value;
+}
+
+function beregnUdlejningOverblik(data = {}) {
+  const maanedligLeje = Number(data.maanedligLeje || 0);
+  const tomgangDage = Math.min(365, Math.max(0, Number(data.tomgangDage || 0)));
+  const maanedligeUdlejningsudgifter = Number(data.maanedligeUdlejningsudgifter || 0);
+  const aarligeUdlejningsudgifter = Number(data.aarligeUdlejningsudgifter || 0);
+  const lejeAarligt = maanedligLeje * 12;
+  const tomgangBeloeb = lejeAarligt * (tomgangDage / 365);
+  const lejeEfterTomgang = Math.max(0, lejeAarligt - tomgangBeloeb);
+  const lejeudgifterAarligt = (maanedligeUdlejningsudgifter * 12) + aarligeUdlejningsudgifter;
+  const lejeudgifterMaanedligt = lejeudgifterAarligt / 12;
+  const nettoLejeAarligt = lejeEfterTomgang - lejeudgifterAarligt;
+  const nettoLejeMaanedligt = nettoLejeAarligt / 12;
+  // Skatteestimatet følger skat.dk's princip om 40% fradrag på lejeindtægt og beskattes her som kapitalindkomst.
+  const skattefritBeloeb = Math.max(0, nettoLejeAarligt) * 0.4;
+  const skattepligtigtBeloeb = Math.max(0, nettoLejeAarligt - skattefritBeloeb);
+  const skatBeloeb = skattepligtigtBeloeb * 0.42;
+  const lejeEfterSkatAarligt = nettoLejeAarligt - skatBeloeb;
+  const lejeEfterSkatMaanedligt = lejeEfterSkatAarligt / 12;
+
+  return {
+    lejeAarligt,
+    tomgangBeloeb,
+    lejeEfterTomgang,
+    lejeudgifterMaanedligt,
+    lejeudgifterAarligt,
+    nettoLejeMaanedligt,
+    nettoLejeAarligt,
+    skattefritBeloeb,
+    skattepligtigtBeloeb,
+    skatBeloeb,
+    lejeEfterSkatMaanedligt,
+    lejeEfterSkatAarligt
+  };
+}
+
+function opdaterUdlejningOverblik() {
+  const bruttoAarligtElement = document.getElementById("udlejningAarligBrutto");
+  const bruttoMaanedligtElement = document.getElementById("udlejningMaanedligBrutto");
+  const nettoAarligtElement = document.getElementById("udlejningNettoAarligt");
+  const nettoMaanedligtElement = document.getElementById("udlejningNettoMaanedligt");
+  const efterSkatAarligtElement = document.getElementById("udlejningEfterSkatAarligt");
+  const skatNoteElement = document.getElementById("udlejningSkatNote");
+
+  if (!bruttoAarligtElement || !nettoAarligtElement || !efterSkatAarligtElement) {
+    return;
+  }
+
+  const data = hentUdlejningDataFraForm();
+
+  bruttoAarligtElement.textContent = formatKroner(data.lejeAarligt);
+  nettoAarligtElement.textContent = formatKroner(data.nettoLejeAarligt);
+  efterSkatAarligtElement.textContent = formatKroner(data.lejeEfterSkatAarligt);
+
+  if (bruttoMaanedligtElement) {
+    bruttoMaanedligtElement.textContent = `${formatKroner(data.maanedligLeje)} pr. måned før tomgang og udgifter.`;
+  }
+
+  if (nettoMaanedligtElement) {
+    nettoMaanedligtElement.textContent = `${formatKroner(data.nettoLejeMaanedligt)} pr. måned efter tomgang og udgifter.`;
+  }
+
+  if (skatNoteElement) {
+    skatNoteElement.textContent = `60% beskattes med ca. 42%. Skat ca. ${formatKroner(data.skatBeloeb)}. Kilde: skat.dk.`;
+  }
 }
 
 function visUdlejningDetaljer(aktiv) {
@@ -640,7 +829,15 @@ function visUdlejningDetaljer(aktiv) {
 
 function udfyldUdlejningForm(data) {
   const checkbox = document.getElementById("udlejningAktiv");
-  const aktiv = data?.aktiv === true || Boolean(data?.maanedligLeje || data?.depositum || data?.tomgangProcent || data?.udlejningsNoter);
+  const aktiv = data?.aktiv === true || Boolean(
+    data?.maanedligLeje ||
+    data?.depositum ||
+    data?.tomgangDage ||
+    data?.tomgangProcent ||
+    data?.maanedligeUdlejningsudgifter ||
+    data?.aarligeUdlejningsudgifter ||
+    data?.udlejningsNoter
+  );
 
   if (checkbox) {
     checkbox.checked = aktiv;
@@ -650,11 +847,17 @@ function udfyldUdlejningForm(data) {
 
   document.querySelectorAll("[data-case-field]").forEach((felt) => {
     const navn = felt.dataset.caseField;
+    const formatType = formatteredeCaseFelter[navn];
+    const value = navn === "tomgangDage" && data?.tomgangDage === undefined && data?.tomgangProcent !== undefined
+      ? Math.round((Number(data.tomgangProcent || 0) / 100) * 365)
+      : data?.[navn];
 
-    if (data?.[navn] !== undefined && data?.[navn] !== null) {
-      felt.value = data[navn];
+    if (value !== undefined && value !== null) {
+      felt.value = formatType ? formatFormatteretFeltVaerdi(value, formatType) : value;
     }
   });
+
+  opdaterUdlejningOverblik();
 }
 
 function hentFormData(trin) {
@@ -838,6 +1041,10 @@ function validerForm(trin, data) {
 
   if (trin === "udlejning" && data.aktiv && data.maanedligLeje === "") {
     return "Angiv forventet månedlig leje, også selvom tallet er 0.";
+  }
+
+  if (trin === "udlejning" && data.aktiv && Number(data.tomgangDage || 0) > 365) {
+    return "Tomgang kan maks være 365 dage.";
   }
 
   return "";
@@ -1138,9 +1345,9 @@ function visAnalyse(analyse) {
       <small>Køb og renovering</small>
     </div>
     <div>
-      <span>Årlig leje efter tomgang</span>
-      <strong>${formatKroner(analyse.lejeEfterTomgang)}</strong>
-      <small>Før driftsudgifter</small>
+      <span>Årlig nettoleje</span>
+      <strong>${formatKroner(analyse.nettoLejeAarligt)}</strong>
+      <small>Efter tomgang og udlejningsudgifter</small>
     </div>
     <div>
       <span>Årlige driftsudgifter</span>
@@ -1445,8 +1652,14 @@ async function bindInvesteringscaseTrinForm() {
   const udlejningAktiv = document.getElementById("udlejningAktiv");
 
   if (trin === "udlejning" && udlejningAktiv) {
+    document.querySelectorAll("[data-case-field]").forEach((felt) => {
+      felt.addEventListener("input", opdaterUdlejningOverblik);
+      felt.addEventListener("focusout", opdaterUdlejningOverblik);
+    });
+
     udlejningAktiv.addEventListener("change", () => {
       visUdlejningDetaljer(udlejningAktiv.checked);
+      opdaterUdlejningOverblik();
     });
   }
 

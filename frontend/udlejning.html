@@ -23,8 +23,8 @@
       <section class="case-help">
         <h2>Hjælp til input</h2>
         <p>
-          Angiv den forventede lejeindtægt. Månedlig leje er påkrævet, så beregninger
-          senere kan bruge et fast udgangspunkt.
+          Vælg udlejning, hvis casen skal have lejeindtægt. Indtast månedlig leje,
+          forventet tomgang og simple udgifter forbundet med udlejningen.
         </p>
       </section>
 
@@ -33,23 +33,36 @@
         <span>Skal boligen bruges til udlejning?</span>
       </label>
 
-      <div id="udlejningDetaljer" class="case-field-grid skjult">
+      <div id="udlejningDetaljer" class="skjult">
+        <div class="case-field-grid">
           <label>
-            Månedlig leje
-            <input data-case-field="maanedligLeje" type="number" min="0" step="100" placeholder="fx 12000">
-            <span>Forventet husleje pr. måned.</span>
+            Månedlig lejeindtægt
+            <input data-case-field="maanedligLeje" type="number" min="0" step="100" placeholder="fx 12.000 kr.">
+            <span>Den forventede husleje pr. måned før tomgang og udgifter.</span>
           </label>
 
           <label>
             Depositum
-            <input data-case-field="depositum" type="number" min="0" step="100" placeholder="fx 36000">
-            <span>Eventuelt depositum fra lejer.</span>
+            <input data-case-field="depositum" type="number" min="0" step="100" placeholder="fx 36.000 kr.">
+            <span>Beløb lejer betaler som sikkerhed. Det tæller ikke som løbende indtægt.</span>
           </label>
 
           <label>
-            Forventet tomgang i procent
-            <input data-case-field="tomgangProcent" type="number" min="0" step="1" placeholder="fx 5">
-            <span>Andel af året hvor boligen forventes at stå tom.</span>
+            Forventet tomgang i dage
+            <input data-case-field="tomgangDage" type="number" min="0" max="365" step="1" placeholder="fx 14 dage">
+            <span>Antal dage pr. år hvor boligen forventes at stå tom.</span>
+          </label>
+
+          <label>
+            Månedlige udlejningsudgifter
+            <input data-case-field="maanedligeUdlejningsudgifter" type="number" min="0" step="100" placeholder="fx 500 kr.">
+            <span>Fx annoncering, administration eller småudgifter direkte knyttet til lejer.</span>
+          </label>
+
+          <label>
+            Årlige udlejningsudgifter
+            <input data-case-field="aarligeUdlejningsudgifter" type="number" min="0" step="100" placeholder="fx 3.000 kr.">
+            <span>Fx årlig klargøring, genudlejning eller anden udgift ved udlejning.</span>
           </label>
 
           <label>
@@ -57,25 +70,45 @@
             <textarea data-case-field="udlejningsNoter" rows="4" maxlength="500" placeholder="fx målgruppe, husdyr, møbleret/umøbleret"></textarea>
             <span>Korte noter om udlejningen.</span>
           </label>
+        </div>
+
+        <section class="finansiering-beregning udlejning-beregning" aria-live="polite">
+          <div class="finansiering-beregning-header">
+            <h2>Udlejningsoverblik</h2>
+            <p>
+              Overblikket viser årlig lejeindtægt før og efter udgifter samt et simpelt estimat efter skat.
+            </p>
+          </div>
+
+          <div class="finansiering-beregning-grid finansiering-beregning-grid-tre">
+            <article class="finansiering-highlight udlejning-highlight">
+              <span>Årlig bruttoleje</span>
+              <strong id="udlejningAarligBrutto">0 kr.</strong>
+              <small id="udlejningMaanedligBrutto">0 kr. pr. måned før tomgang og udgifter.</small>
+            </article>
+
+            <article class="finansiering-highlight udlejning-highlight-sekundaer">
+              <span>Årlig indtægt før skat</span>
+              <strong id="udlejningNettoAarligt">0 kr.</strong>
+              <small id="udlejningNettoMaanedligt">Efter tomgang og udlejningsudgifter.</small>
+            </article>
+
+            <article class="finansiering-highlight udlejning-highlight-tertiaer">
+              <span>Estimat efter skat</span>
+              <strong id="udlejningEfterSkatAarligt">0 kr.</strong>
+              <small id="udlejningSkatNote">De resterende 60% beskattes med ca. 42% som kapitalindkomst. Kilde: skat.dk.</small>
+            </article>
+          </div>
+        </section>
       </div>
 
       <p id="caseTrinFejl" class="case-form-fejl"></p>
       <p id="caseTrinStatus" class="case-form-status"></p>
 
-      <section class="case-analyse">
-        <h2>Foreløbig økonomisk analyse</h2>
-        <p>
-          Analysen opdateres ud fra de tal, der er gemt på de fem trin.
-        </p>
-        <div id="caseAnalyseGrid" class="case-analyse-grid">
-          <p class="case-dropdown-empty">Gem trinnet for at opdatere analysen.</p>
-        </div>
-      </section>
-
       <div class="case-form-actions">
         <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
         <button class="case-primary-link" type="submit" data-action="overview">
-          Gem og til caseoverblik
+          Gem og gå til caseoverblik
         </button>
         <button type="submit">Gem</button>
       </div>
