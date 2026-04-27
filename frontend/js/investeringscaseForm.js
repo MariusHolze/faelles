@@ -54,7 +54,7 @@ function visCaseHeader(caseData, trin) {
   }
 
   if (trin === "koebsudgifter" && helpTekst) {
-    helpTekst.textContent = 'Angiv beløb for de faste købsudgifter nedenfor. Felterne er tomme som standard, og værdien 0 kan anvendes, hvis en post ikke medfører en omkostning. Hvis der er yderligere udgifter, kan de tilføjes via "Tilføj udgift".';
+    helpTekst.textContent = 'Angiv beløb for de faste købsudgifter nedenfor. Felterne er tomme som standard, og værdien 0 kan anvendes, hvis en post ikke medfører en omkostning. Renoveringer og forbedringer håndteres på næste trin.';
   }
 }
 
@@ -233,6 +233,65 @@ const fasteKoebspostBeskrivelser = {
   "Køberrådgivning": "Indtast prisen for køberrådgivning, hvis du bruger ekstern rådgiver."
 };
 
+const renoveringTidspunktMuligheder = {
+  straks: { label: "Ved køb / straks", maaned: 1 },
+  indenfor_1_aar: { label: "Inden for 1 år", maaned: 12 },
+  aar_1_3: { label: "1-3 år", maaned: 24 },
+  aar_3_5: { label: "3-5 år", maaned: 48 },
+  aar_5_plus: { label: "5+ år", maaned: 72 }
+};
+
+const standardDriftsposter = [
+  { navn: "Ejendomsskat", periode: "aarligt", beskrivelse: "Forventet årlig ejendomsskat." },
+  { navn: "Forsikring", periode: "aarligt", beskrivelse: "Forventet årlig forsikring." },
+  { navn: "Vedligehold", periode: "aarligt", beskrivelse: "Løbende vedligehold og småreparationer." },
+  { navn: "Administration/fællesudgifter", periode: "maanedligt", beskrivelse: "Fx administration, ejerforening eller øvrig drift." }
+];
+
+const driftPeriodeLabels = {
+  maanedligt: "pr. måned",
+  aarligt: "pr. år"
+};
+
+function findRenoveringTidspunktKey(post = {}) {
+  if (post.tidspunktKey && renoveringTidspunktMuligheder[post.tidspunktKey]) {
+    return post.tidspunktKey;
+  }
+
+  const maaned = Number(post.tidspunktMaaned);
+
+  if (Number.isNaN(maaned)) {
+    return "";
+  }
+
+  if (maaned <= 1) {
+    return "straks";
+  }
+
+  if (maaned <= 12) {
+    return "indenfor_1_aar";
+  }
+
+  if (maaned <= 36) {
+    return "aar_1_3";
+  }
+
+  if (maaned <= 60) {
+    return "aar_3_5";
+  }
+
+  return "aar_5_plus";
+}
+
+function lavRenoveringTidspunktOptions(valgtKey = "") {
+  const start = '<option value="">Vælg tidspunkt</option>';
+  const options = Object.entries(renoveringTidspunktMuligheder)
+    .map(([key, mulighed]) => `<option value="${key}" ${key === valgtKey ? "selected" : ""}>${mulighed.label}</option>`)
+    .join("");
+
+  return `${start}${options}`;
+}
+
 function lavKoebspostRække(navn = "", beloeb = "", fastPost = false) {
   const liste = document.getElementById("koebspostListe");
 
@@ -301,6 +360,303 @@ function opdaterKoebspostTotal() {
   totalElement.textContent = formatKroner(total);
 }
 
+function lavRenoveringspostRække(post = {}) {
+  const liste = document.getElementById("renoveringspostListe");
+
+  if (!liste) {
+    return;
+  }
+
+  const div = document.createElement("div");
+  div.className = "renoveringspost-række";
+  const valgtTidspunkt = findRenoveringTidspunktKey(post);
+  div.innerHTML = `
+    <div class="koebspost-navn-felt">
+      <input class="renoveringspost-navn" type="text" maxlength="100" placeholder="Forbedring" value="${escapeHtml(post.navn || "")}">
+      <small class="koebspost-beskrivelse">Fx køkken, bad, maling eller energiforbedring.</small>
+    </div>
+    <input class="renoveringspost-beloeb" type="text" inputmode="numeric" placeholder="Beløb i kr." value="${escapeHtml(formatKronerInputVaerdi(String(post.beloeb ?? "")))}">
+    <select class="renoveringspost-tidspunkt">
+      ${lavRenoveringTidspunktOptions(valgtTidspunkt)}
+    </select>
+    <button class="fjern-renoveringspost-knap" type="button" aria-label="Fjern forbedring" title="Fjern forbedring">🗑</button>
+  `;
+
+  liste.appendChild(div);
+}
+
+function hentRenoveringsposter() {
+  return Array.from(document.querySelectorAll(".renoveringspost-række"))
+    .map((række) => {
+      const tidspunktKey = række.querySelector(".renoveringspost-tidspunkt").value;
+      const tidspunkt = renoveringTidspunktMuligheder[tidspunktKey] || {};
+
+      return {
+        navn: række.querySelector(".renoveringspost-navn").value.trim(),
+        beloeb: parseKronerInputVaerdi(række.querySelector(".renoveringspost-beloeb").value),
+        tidspunktKey,
+        tidspunktLabel: tidspunkt.label || "",
+        tidspunktMaaned: tidspunkt.maaned
+      };
+    })
+    .filter((post) => post.navn || !Number.isNaN(post.beloeb) || post.tidspunktKey);
+}
+
+function hentRenoveringsDataFraForm() {
+  const aktiv = document.getElementById("renoveringAktiv")?.checked || false;
+
+  if (!aktiv) {
+    return {
+      aktiv: false,
+      allePoster: [],
+      poster: [],
+      total: 0
+    };
+  }
+
+  const allePoster = hentRenoveringsposter();
+  const poster = allePoster
+    .filter((post) =>
+      post.navn &&
+      !Number.isNaN(post.beloeb) &&
+      post.beloeb >= 0 &&
+      post.tidspunktKey
+    );
+  const total = poster.reduce((sum, post) => sum + post.beloeb, 0);
+
+  return {
+    aktiv: true,
+    allePoster,
+    poster,
+    total
+  };
+}
+
+function visRenoveringDetaljer(aktiv) {
+  const detaljer = document.getElementById("renoveringDetaljer");
+
+  if (detaljer) {
+    detaljer.classList.toggle("skjult", !aktiv);
+  }
+}
+
+function opdaterRenoveringTotal() {
+  const totalElement = document.getElementById("renoveringTotal");
+
+  if (!totalElement) {
+    return;
+  }
+
+  totalElement.textContent = formatKroner(hentRenoveringsDataFraForm().total);
+}
+
+function udfyldRenoveringsForm(data) {
+  const checkbox = document.getElementById("renoveringAktiv");
+  const liste = document.getElementById("renoveringspostListe");
+
+  if (liste) {
+    liste.innerHTML = "";
+  }
+
+  const poster = Array.isArray(data?.poster) ? data.poster : [];
+  const aktiv = data?.aktiv === true || poster.length > 0 || Boolean(data?.renoveringsbudget);
+
+  if (checkbox) {
+    checkbox.checked = aktiv;
+  }
+
+  visRenoveringDetaljer(aktiv);
+
+  if (poster.length > 0) {
+    poster.forEach((post) => lavRenoveringspostRække(post));
+  } else if (data?.renoveringsbudget || data?.varighedMaaneder) {
+    lavRenoveringspostRække({
+      navn: "Renovering",
+      beloeb: data.renoveringsbudget || "",
+      tidspunktMaaned: data.varighedMaaneder || 1
+    });
+  } else {
+    lavRenoveringspostRække();
+  }
+
+  opdaterRenoveringTotal();
+}
+
+function lavDriftPeriodeOptions(valgtPeriode = "aarligt") {
+  return Object.entries(driftPeriodeLabels)
+    .map(([key, label]) => `<option value="${key}" ${key === valgtPeriode ? "selected" : ""}>${label}</option>`)
+    .join("");
+}
+
+function lavDriftspostRække(post = {}) {
+  const liste = document.getElementById("driftspostListe");
+
+  if (!liste) {
+    return;
+  }
+
+  const div = document.createElement("div");
+  div.className = "driftspost-række";
+  div.innerHTML = `
+    <div class="koebspost-navn-felt">
+      <input class="driftspost-navn" type="text" maxlength="100" placeholder="Driftsomkostning" value="${escapeHtml(post.navn || "")}">
+      ${post.beskrivelse ? `<small class="koebspost-beskrivelse">${escapeHtml(post.beskrivelse)}</small>` : ""}
+    </div>
+    <input class="driftspost-beloeb" type="text" inputmode="numeric" placeholder="Beløb i kr." value="${escapeHtml(formatKronerInputVaerdi(String(post.beloeb ?? "")))}">
+    <select class="driftspost-periode">
+      ${lavDriftPeriodeOptions(post.periode || "aarligt")}
+    </select>
+    <button class="fjern-driftspost-knap" type="button" aria-label="Fjern driftsomkostning" title="Fjern driftsomkostning">🗑</button>
+  `;
+
+  liste.appendChild(div);
+}
+
+function hentDriftsposter() {
+  return Array.from(document.querySelectorAll(".driftspost-række"))
+    .map((række) => ({
+      navn: række.querySelector(".driftspost-navn").value.trim(),
+      beloeb: parseKronerInputVaerdi(række.querySelector(".driftspost-beloeb").value),
+      periode: række.querySelector(".driftspost-periode").value
+    }));
+}
+
+function beregnDriftTotaler(poster) {
+  return poster.reduce((totaler, post) => {
+    if (!post.navn || Number.isNaN(post.beloeb) || post.beloeb <= 0) {
+      return totaler;
+    }
+
+    if (post.periode === "maanedligt") {
+      totaler.maanedligt += post.beloeb;
+      totaler.aarligt += post.beloeb * 12;
+    } else {
+      totaler.aarligt += post.beloeb;
+      totaler.maanedligt += post.beloeb / 12;
+    }
+
+    return totaler;
+  }, { maanedligt: 0, aarligt: 0 });
+}
+
+function hentDriftsbudgetDataFraForm() {
+  const allePoster = hentDriftsposter();
+  const poster = allePoster
+    .filter((post) =>
+      post.navn &&
+      !Number.isNaN(post.beloeb) &&
+      post.beloeb > 0 &&
+      (post.periode === "maanedligt" || post.periode === "aarligt")
+    );
+  const totaler = beregnDriftTotaler(poster);
+
+  return {
+    allePoster,
+    poster,
+    driftsudgifterMaanedligt: totaler.maanedligt,
+    driftsudgifterAarligt: totaler.aarligt
+  };
+}
+
+function opdaterDriftsbudgetTotal() {
+  const maanedligTotalElement = document.getElementById("driftMaanedligTotal");
+  const aarligTotalElement = document.getElementById("driftAarligTotal");
+
+  if (!maanedligTotalElement || !aarligTotalElement) {
+    return;
+  }
+
+  const data = hentDriftsbudgetDataFraForm();
+  maanedligTotalElement.textContent = formatKroner(data.driftsudgifterMaanedligt);
+  aarligTotalElement.textContent = formatKroner(data.driftsudgifterAarligt);
+}
+
+function lavLegacyDriftsposter(data = {}) {
+  const felter = [
+    { key: "ejendomsskat", navn: "Ejendomsskat", periode: "aarligt" },
+    { key: "forsikring", navn: "Forsikring", periode: "aarligt" },
+    { key: "vedligehold", navn: "Vedligehold", periode: "aarligt" },
+    { key: "oevrigeUdgifter", navn: "Øvrige udgifter", periode: "aarligt" }
+  ];
+
+  return felter
+    .filter((felt) => data[felt.key] !== undefined && data[felt.key] !== null && data[felt.key] !== "")
+    .map((felt) => ({
+      navn: felt.navn,
+      beloeb: data[felt.key],
+      periode: felt.periode
+    }));
+}
+
+function udfyldDriftsbudgetForm(data) {
+  const liste = document.getElementById("driftspostListe");
+
+  if (liste) {
+    liste.innerHTML = "";
+  }
+
+  const poster = Array.isArray(data?.poster) ? data.poster : lavLegacyDriftsposter(data);
+  const vistePoster = poster.length > 0 ? poster : standardDriftsposter;
+
+  vistePoster.forEach((post) => lavDriftspostRække(post));
+  opdaterDriftsbudgetTotal();
+}
+
+function hentUdlejningDataFraForm() {
+  const aktiv = document.getElementById("udlejningAktiv")?.checked || false;
+
+  if (!aktiv) {
+    return {
+      aktiv: false,
+      maanedligLeje: 0,
+      depositum: 0,
+      tomgangProcent: 0,
+      udlejningsNoter: ""
+    };
+  }
+
+  return {
+    aktiv: true,
+    maanedligLeje: document.querySelector('[data-case-field="maanedligLeje"]')?.value === ""
+      ? ""
+      : Number(document.querySelector('[data-case-field="maanedligLeje"]')?.value || 0),
+    depositum: document.querySelector('[data-case-field="depositum"]')?.value === ""
+      ? ""
+      : Number(document.querySelector('[data-case-field="depositum"]')?.value || 0),
+    tomgangProcent: document.querySelector('[data-case-field="tomgangProcent"]')?.value === ""
+      ? ""
+      : Number(document.querySelector('[data-case-field="tomgangProcent"]')?.value || 0),
+    udlejningsNoter: document.querySelector('[data-case-field="udlejningsNoter"]')?.value.trim() || ""
+  };
+}
+
+function visUdlejningDetaljer(aktiv) {
+  const detaljer = document.getElementById("udlejningDetaljer");
+
+  if (detaljer) {
+    detaljer.classList.toggle("skjult", !aktiv);
+  }
+}
+
+function udfyldUdlejningForm(data) {
+  const checkbox = document.getElementById("udlejningAktiv");
+  const aktiv = data?.aktiv === true || Boolean(data?.maanedligLeje || data?.depositum || data?.tomgangProcent || data?.udlejningsNoter);
+
+  if (checkbox) {
+    checkbox.checked = aktiv;
+  }
+
+  visUdlejningDetaljer(aktiv);
+
+  document.querySelectorAll("[data-case-field]").forEach((felt) => {
+    const navn = felt.dataset.caseField;
+
+    if (data?.[navn] !== undefined && data?.[navn] !== null) {
+      felt.value = data[navn];
+    }
+  });
+}
+
 function hentFormData(trin) {
   if (trin === "koebsudgifter") {
     const poster = hentKoebsposter()
@@ -308,6 +664,18 @@ function hentFormData(trin) {
     const total = poster.reduce((sum, post) => sum + post.beloeb, 0);
 
     return { poster, total };
+  }
+
+  if (trin === "renovering") {
+    return hentRenoveringsDataFraForm();
+  }
+
+  if (trin === "driftsbudget") {
+    return hentDriftsbudgetDataFraForm();
+  }
+
+  if (trin === "udlejning") {
+    return hentUdlejningDataFraForm();
   }
 
   const data = {};
@@ -333,12 +701,32 @@ function udfyldForm(trin, data) {
       udfyldFasteKoebsposter(null);
       opdaterKoebspostTotal();
     }
+
+    if (trin === "driftsbudget") {
+      udfyldDriftsbudgetForm(null);
+    }
+
     return;
   }
 
   if (trin === "koebsudgifter") {
     udfyldFasteKoebsposter(data);
     opdaterKoebspostTotal();
+    return;
+  }
+
+  if (trin === "renovering") {
+    udfyldRenoveringsForm(data);
+    return;
+  }
+
+  if (trin === "driftsbudget") {
+    udfyldDriftsbudgetForm(data);
+    return;
+  }
+
+  if (trin === "udlejning") {
+    udfyldUdlejningForm(data);
     return;
   }
 
@@ -368,6 +756,48 @@ function validerForm(trin, data) {
 
     if (ugyldigPost) {
       return "Alle udgiftsposter skal have navn og et beløb på 0 kr. eller mere.";
+    }
+
+    return "";
+  }
+
+  if (trin === "renovering") {
+    if (!data.aktiv) {
+      return "";
+    }
+
+    if (data.poster.length === 0) {
+      return "Tilføj mindst én renovering eller forbedring.";
+    }
+
+    const ugyldigPost = data.allePoster.find((post) =>
+      !post.navn ||
+      Number.isNaN(post.beloeb) ||
+      post.beloeb < 0 ||
+      !post.tidspunktKey
+    );
+
+    if (ugyldigPost) {
+      return "Alle forbedringer skal have navn, beløb og et planlagt tidspunkt.";
+    }
+
+    return "";
+  }
+
+  if (trin === "driftsbudget") {
+    if (data.allePoster.length === 0) {
+      return "";
+    }
+
+    const ugyldigPost = data.allePoster.find((post) =>
+      !post.navn ||
+      Number.isNaN(post.beloeb) ||
+      post.beloeb <= 0 ||
+      !["maanedligt", "aarligt"].includes(post.periode)
+    );
+
+    if (ugyldigPost) {
+      return "Alle viste driftsomkostninger skal have navn, et beløb over 0 kr. og periode. Slet posten, hvis den ikke skal med.";
     }
 
     return "";
@@ -406,7 +836,7 @@ function validerForm(trin, data) {
     }
   }
 
-  if (trin === "udlejning" && data.maanedligLeje === "") {
+  if (trin === "udlejning" && data.aktiv && data.maanedligLeje === "") {
     return "Angiv forventet månedlig leje, også selvom tallet er 0.";
   }
 
@@ -715,7 +1145,7 @@ function visAnalyse(analyse) {
     <div>
       <span>Årlige driftsudgifter</span>
       <strong>${formatKroner(analyse.driftsudgifterAarligt)}</strong>
-      <small>Skat, forsikring og drift</small>
+      <small>${formatKroner(analyse.driftsudgifterMaanedligt)} pr. måned</small>
     </div>
     <div>
       <span>Månedlig låneydelse</span>
@@ -859,6 +1289,10 @@ async function bindInvesteringscaseTrinForm() {
 
   const liste = document.getElementById("koebspostListe");
   const tilfoej = document.getElementById("tilfoejKoebspostKnap");
+  const renoveringsliste = document.getElementById("renoveringspostListe");
+  const tilfoejRenovering = document.getElementById("tilfoejRenoveringspostKnap");
+  const driftspostListe = document.getElementById("driftspostListe");
+  const tilfoejDriftspost = document.getElementById("tilfoejDriftspostKnap");
   const forrigeLink = document.getElementById("forrigeTrinLink");
 
   if (liste) {
@@ -910,6 +1344,109 @@ async function bindInvesteringscaseTrinForm() {
     tilfoej.addEventListener("click", () => {
       lavKoebspostRække();
       opdaterKoebspostTotal();
+    });
+  }
+
+  if (renoveringsliste) {
+    renoveringsliste.addEventListener("input", (event) => {
+      const beloebInput = event.target.closest(".renoveringspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterRenoveringTotal();
+    });
+
+    renoveringsliste.addEventListener("focusout", (event) => {
+      const beloebInput = event.target.closest(".renoveringspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterRenoveringTotal();
+    });
+
+    renoveringsliste.addEventListener("click", (event) => {
+      const knap = event.target.closest(".fjern-renoveringspost-knap");
+
+      if (!knap) {
+        return;
+      }
+
+      knap.closest(".renoveringspost-række").remove();
+      opdaterRenoveringTotal();
+    });
+  }
+
+  if (tilfoejRenovering) {
+    tilfoejRenovering.addEventListener("click", () => {
+      lavRenoveringspostRække();
+      opdaterRenoveringTotal();
+    });
+  }
+
+  if (driftspostListe) {
+    driftspostListe.addEventListener("input", (event) => {
+      const beloebInput = event.target.closest(".driftspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterDriftsbudgetTotal();
+    });
+
+    driftspostListe.addEventListener("change", (event) => {
+      if (event.target.closest(".driftspost-periode")) {
+        opdaterDriftsbudgetTotal();
+      }
+    });
+
+    driftspostListe.addEventListener("focusout", (event) => {
+      const beloebInput = event.target.closest(".driftspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterDriftsbudgetTotal();
+    });
+
+    driftspostListe.addEventListener("click", (event) => {
+      const knap = event.target.closest(".fjern-driftspost-knap");
+
+      if (!knap) {
+        return;
+      }
+
+      knap.closest(".driftspost-række").remove();
+      opdaterDriftsbudgetTotal();
+    });
+  }
+
+  if (tilfoejDriftspost) {
+    tilfoejDriftspost.addEventListener("click", () => {
+      lavDriftspostRække({ periode: "maanedligt" });
+      opdaterDriftsbudgetTotal();
+    });
+  }
+
+  const renoveringAktiv = document.getElementById("renoveringAktiv");
+
+  if (trin === "renovering" && renoveringAktiv) {
+    renoveringAktiv.addEventListener("change", () => {
+      visRenoveringDetaljer(renoveringAktiv.checked);
+      opdaterRenoveringTotal();
+    });
+  }
+
+  const udlejningAktiv = document.getElementById("udlejningAktiv");
+
+  if (trin === "udlejning" && udlejningAktiv) {
+    udlejningAktiv.addEventListener("change", () => {
+      visUdlejningDetaljer(udlejningAktiv.checked);
     });
   }
 

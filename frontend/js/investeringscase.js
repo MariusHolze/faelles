@@ -79,6 +79,22 @@ function formatLaanetype(value) {
   return typer[value] || "Ikke udfyldt";
 }
 
+function formatRenoveringTidspunkt(post) {
+  if (post.tidspunktLabel) {
+    return post.tidspunktLabel;
+  }
+
+  if (post.tidspunktMaaned) {
+    return `måned ${formatTekst(post.tidspunktMaaned)}`;
+  }
+
+  return "Tidspunkt mangler";
+}
+
+function formatDriftPeriode(value) {
+  return value === "maanedligt" ? "pr. måned" : "pr. år";
+}
+
 function lavTomCaseBesked() {
   return `
     <article class="case-card case-card-bred">
@@ -533,6 +549,11 @@ function lavOverblikNoegletal(analyse) {
       <small>Efter drift og låneydelse</small>
     </div>
     <div>
+      <span>Månedlig drift</span>
+      <strong>${formatKroner(analyse.driftsudgifterMaanedligt)}</strong>
+      <small>${formatKroner(analyse.driftsudgifterAarligt)} pr. år</small>
+    </div>
+    <div>
       <span>Månedlig ydelse</span>
       <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
       <small>Beregnet ud fra lånet</small>
@@ -559,11 +580,28 @@ function lavTrinOverblik(trinData, analyse = {}) {
   const drift = trinData.driftsbudget || {};
   const udlejning = trinData.udlejning || {};
   const poster = Array.isArray(koeb.poster) ? koeb.poster : [];
+  const renoveringsposter = renovering.aktiv === false ? [] : (Array.isArray(renovering.poster) ? renovering.poster : []);
+  const driftsposter = Array.isArray(drift.poster) ? drift.poster : [];
   const laanebeloeb = analyse.finansieringsbehov ?? finansiering.laanebeloeb;
 
   const posterHtml = poster.length
     ? poster.map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)}</li>`).join("")
     : "<li>Ingen købsudgifter gemt endnu.</li>";
+  const renoveringsHtml = renoveringsposter.length
+    ? renoveringsposter
+      .map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)} - ${escapeHtml(formatRenoveringTidspunkt(post))}</li>`)
+      .join("")
+    : "<li>Ingen renoveringer gemt endnu.</li>";
+  const driftHtml = driftsposter.length
+    ? driftsposter
+      .map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)} ${formatDriftPeriode(post.periode)}</li>`)
+      .join("")
+    : `
+      <li>Ejendomsskat: ${formatKroner(drift.ejendomsskat)}</li>
+      <li>Forsikring: ${formatKroner(drift.forsikring)}</li>
+      <li>Vedligehold: ${formatKroner(drift.vedligehold)}</li>
+      <li>Øvrige udgifter: ${formatKroner(drift.oevrigeUdgifter)}</li>
+    `;
 
   return `
     <article class="case-overblik-section">
@@ -583,22 +621,20 @@ function lavTrinOverblik(trinData, analyse = {}) {
 
     <article class="case-overblik-section">
       <h2>Renovering</h2>
-      <p><span>Budget:</span> ${formatKroner(renovering.renoveringsbudget)}</p>
-      <p><span>Buffer:</span> ${formatProcent(renovering.bufferProcent)}</p>
-      <p><span>Varighed:</span> ${formatTekst(renovering.varighedMaaneder ? `${renovering.varighedMaaneder} måneder` : "")}</p>
-      <p><span>Noter:</span> ${escapeHtml(formatTekst(renovering.renoveringsNoter))}</p>
+      <ul>${renoveringsHtml}</ul>
+      <p><span>Total:</span> ${formatKroner(analyse.renoveringIAlt)}</p>
     </article>
 
     <article class="case-overblik-section">
       <h2>Driftsbudget</h2>
-      <p><span>Ejendomsskat:</span> ${formatKroner(drift.ejendomsskat)}</p>
-      <p><span>Forsikring:</span> ${formatKroner(drift.forsikring)}</p>
-      <p><span>Vedligehold:</span> ${formatKroner(drift.vedligehold)}</p>
-      <p><span>Øvrige udgifter:</span> ${formatKroner(drift.oevrigeUdgifter)}</p>
+      <ul>${driftHtml}</ul>
+      <p><span>Månedligt:</span> ${formatKroner(analyse.driftsudgifterMaanedligt)}</p>
+      <p><span>Årligt:</span> ${formatKroner(analyse.driftsudgifterAarligt)}</p>
     </article>
 
     <article class="case-overblik-section">
       <h2>Udlejning</h2>
+      <p><span>Udlejning:</span> ${udlejning.aktiv === false ? "Nej" : "Ja"}</p>
       <p><span>Månedlig leje:</span> ${formatKroner(udlejning.maanedligLeje)}</p>
       <p><span>Depositum:</span> ${formatKroner(udlejning.depositum)}</p>
       <p><span>Tomgang:</span> ${formatProcent(udlejning.tomgangProcent)}</p>

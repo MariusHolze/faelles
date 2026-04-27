@@ -23,35 +23,20 @@
       <section class="case-help">
         <h2>Hjælp til input</h2>
         <p>
-          Angiv de forventede årlige driftsudgifter. Hvis en udgift ikke findes,
-          kan du skrive 0.
+          Angiv de løbende driftsomkostninger for casen. Vælg selv posterne og
+          om beløbet er pr. måned eller pr. år. Slet en post, hvis den ikke skal med.
         </p>
       </section>
 
-      <div class="case-field-grid">
-        <label>
-          Ejendomsskat årligt
-          <input data-case-field="ejendomsskat" type="number" min="0" step="100" placeholder="fx 12000">
-          <span>Forventet årlig ejendomsskat.</span>
-        </label>
+      <div id="driftspostListe" class="driftspost-liste"></div>
 
-        <label>
-          Forsikring årligt
-          <input data-case-field="forsikring" type="number" min="0" step="100" placeholder="fx 6500">
-          <span>Forventet årlig forsikring.</span>
-        </label>
+      <button id="tilfoejDriftspostKnap" class="sekundaer-knap" type="button">
+        + Tilføj driftsomkostning
+      </button>
 
-        <label>
-          Vedligehold årligt
-          <input data-case-field="vedligehold" type="number" min="0" step="100" placeholder="fx 10000">
-          <span>Beløb sat af til løbende vedligehold.</span>
-        </label>
-
-        <label>
-          Øvrige udgifter årligt
-          <input data-case-field="oevrigeUdgifter" type="number" min="0" step="100" placeholder="fx 5000">
-          <span>Fx administration, fællesudgifter eller tomgang.</span>
-        </label>
+      <div class="case-total case-total-dobbelt">
+        <span>Månedlig drift: <strong id="driftMaanedligTotal">0 kr.</strong></span>
+        <span>Årlig drift: <strong id="driftAarligTotal">0 kr.</strong></span>
       </div>
 
       <p id="caseTrinFejl" class="case-form-fejl"></p>

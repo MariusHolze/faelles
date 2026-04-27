@@ -506,6 +506,21 @@
   line-height: 1.6;
 }
 
+.case-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.case-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: #2563eb;
+}
+
 .case-field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -524,7 +539,11 @@
 .case-field-grid input,
 .case-field-grid select,
 .case-field-grid textarea,
-.koebspost-række input {
+.koebspost-række input,
+.renoveringspost-række input,
+.renoveringspost-række select,
+.driftspost-række input,
+.driftspost-række select {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #cbd5e1;
@@ -574,13 +593,17 @@
   line-height: 1.35;
 }
 
-.koebspost-liste {
+.koebspost-liste,
+.renoveringspost-liste,
+.driftspost-liste {
   display: grid;
   gap: 12px;
   margin-bottom: 14px;
 }
 
-.koebspost-række {
+.koebspost-række,
+.renoveringspost-række,
+.driftspost-række {
   display: grid;
   grid-template-columns: 1fr 180px auto;
   gap: 10px;
@@ -589,6 +612,14 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
+}
+
+.renoveringspost-række {
+  grid-template-columns: minmax(180px, 1fr) 170px 190px auto;
+}
+
+.driftspost-række {
+  grid-template-columns: minmax(180px, 1fr) 170px 150px auto;
 }
 
 .koebspost-navn-felt {
@@ -623,7 +654,9 @@
   align-self: start;
 }
 
-.fjern-koebspost-knap {
+.fjern-koebspost-knap,
+.fjern-renoveringspost-knap,
+.fjern-driftspost-knap {
   min-width: 48px;
   min-height: 48px;
   display: inline-flex;
@@ -635,6 +668,8 @@
 }
 
 .fjern-koebspost-knap,
+.fjern-renoveringspost-knap,
+.fjern-driftspost-knap,
 .sekundaer-knap,
 .sekundaer-link,
 .case-primary-link,
@@ -647,6 +682,8 @@
 }
 
 .fjern-koebspost-knap,
+.fjern-renoveringspost-knap,
+.fjern-driftspost-knap,
 .sekundaer-knap,
 .sekundaer-link {
   border: 1px solid #cbd5e1;
@@ -664,6 +701,12 @@
 .case-total {
   margin: 18px 0 0;
   color: #0f172a;
+}
+
+.case-total-dobbelt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
 }
 
 .case-form-fejl,
@@ -876,6 +919,8 @@
   .case-field-grid,
   .case-noegletal,
   .koebspost-række,
+  .renoveringspost-række,
+  .driftspost-række,
   .case-analyse-grid,
   .finansiering-beregning-grid,
   .case-overblik-trin {

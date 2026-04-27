@@ -23,35 +23,24 @@
       <section class="case-help">
         <h2>Hjælp til input</h2>
         <p>
-          Brug dette trin til at beskrive renoveringsplanen. Bufferen er en ekstra
-          procentdel til uforudsete udgifter, fx 10.
+          Tilvælg renovering, hvis casen skal indeholde forbedringer. Angiv hver forbedring
+          med beløb og planlagt tidspunkt i investeringsperioden.
         </p>
       </section>
 
-      <div class="case-field-grid">
-        <label>
-          Renoveringsbudget
-          <input data-case-field="renoveringsbudget" type="number" min="0" step="1000" placeholder="fx 150000">
-          <span>Samlet forventet renoveringsbudget i kroner.</span>
-        </label>
+      <label class="case-toggle">
+        <input id="renoveringAktiv" type="checkbox">
+        <span>Skal der renoveres eller forbedres?</span>
+      </label>
 
-        <label>
-          Buffer i procent
-          <input data-case-field="bufferProcent" type="number" min="0" step="1" placeholder="fx 10">
-          <span>Ekstra sikkerhed til uforudsete udgifter.</span>
-        </label>
+      <div id="renoveringDetaljer" class="skjult">
+        <div id="renoveringspostListe" class="renoveringspost-liste"></div>
 
-        <label>
-          Forventet varighed i måneder
-          <input data-case-field="varighedMaaneder" type="number" min="0" step="1" placeholder="fx 3">
-          <span>Hvor lang tid renoveringen forventes at tage.</span>
-        </label>
+        <button id="tilfoejRenoveringspostKnap" class="sekundaer-knap" type="button">
+          + Tilføj forbedring
+        </button>
 
-        <label>
-          Kort beskrivelse
-          <textarea data-case-field="renoveringsNoter" rows="4" maxlength="500" placeholder="fx nyt køkken, maling og gulve"></textarea>
-          <span>Noter hvad der skal forbedres.</span>
-        </label>
+        <p class="case-total">Samlet renovering: <strong id="renoveringTotal">0 kr.</strong></p>
       </div>
 
       <p id="caseTrinFejl" class="case-form-fejl"></p>

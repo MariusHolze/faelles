@@ -43,6 +43,95 @@ function hentKoebsposter(data) {
     .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
 }
 
+function hentRenoveringsposter(data) {
+  if (data && data.aktiv === false) {
+    return [];
+  }
+
+  if (!data || !Array.isArray(data.poster)) {
+    if (!data || !tal(data.renoveringsbudget)) {
+      return [];
+    }
+
+    return [{
+      navn: "Renovering",
+      beloeb: tal(data.renoveringsbudget),
+      tidspunktKey: "",
+      tidspunktLabel: "",
+      tidspunktMaaned: Math.max(1, tal(data.varighedMaaneder) || 1)
+    }];
+  }
+
+  return data.poster
+    .map((post) => {
+      const tidspunktMaaned = post.tidspunktMaaned === null || post.tidspunktMaaned === undefined || post.tidspunktMaaned === ""
+        ? null
+        : Number(post.tidspunktMaaned);
+
+      return {
+        navn: String(post.navn || "").trim(),
+        beloeb: Number(post.beloeb),
+        tidspunktKey: String(post.tidspunktKey || "").trim(),
+        tidspunktLabel: String(post.tidspunktLabel || "").trim(),
+        tidspunktMaaned
+      };
+    })
+    .filter((post) => {
+      const harTidspunkt =
+        post.tidspunktKey ||
+        post.tidspunktLabel ||
+        (!Number.isNaN(post.tidspunktMaaned) && post.tidspunktMaaned >= 1);
+
+      return post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0 && harTidspunkt;
+    });
+}
+
+function hentDriftsposter(data) {
+  if (!data || typeof data !== "object") {
+    return [];
+  }
+
+  if (Array.isArray(data.poster)) {
+    return data.poster
+      .map((post) => ({
+        navn: String(post.navn || "").trim(),
+        beloeb: Number(post.beloeb),
+        periode: post.periode === "maanedligt" ? "maanedligt" : "aarligt"
+      }))
+      .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb > 0);
+  }
+
+  const legacyFelter = [
+    { key: "ejendomsskat", navn: "Ejendomsskat" },
+    { key: "forsikring", navn: "Forsikring" },
+    { key: "vedligehold", navn: "Vedligehold" },
+    { key: "oevrigeUdgifter", navn: "Øvrige udgifter" }
+  ];
+
+  return legacyFelter
+    .filter((felt) => data[felt.key] !== undefined && data[felt.key] !== null && data[felt.key] !== "")
+    .map((felt) => ({
+      navn: felt.navn,
+      beloeb: Number(data[felt.key]),
+      periode: "aarligt"
+    }))
+    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb > 0);
+}
+
+function beregnDriftsudgifter(poster) {
+  return poster.reduce((totaler, post) => {
+    if (post.periode === "maanedligt") {
+      totaler.maanedligt += post.beloeb;
+      totaler.aarligt += post.beloeb * 12;
+    } else {
+      totaler.aarligt += post.beloeb;
+      totaler.maanedligt += post.beloeb / 12;
+    }
+
+    return totaler;
+  }, { maanedligt: 0, aarligt: 0 });
+}
+
 function parseJson(value) {
   if (!value) {
     return {};
@@ -154,18 +243,18 @@ function beregnAnalyse(trinData) {
   const renovering = trinData.renovering || {};
   const drift = trinData.driftsbudget || {};
   const udlejning = trinData.udlejning || {};
+  const udlejningAktiv = udlejning.aktiv !== false;
   const poster = hentKoebsposter(koeb);
   const koebsudgifterIAlt = poster.reduce((sum, post) => sum + post.beloeb, 0);
-  const renoveringsbuffer = tal(renovering.renoveringsbudget) * (tal(renovering.bufferProcent) / 100);
-  const renoveringIAlt = tal(renovering.renoveringsbudget) + renoveringsbuffer;
+  const renoveringsposter = hentRenoveringsposter(renovering);
+  const renoveringIAlt = renoveringsposter.reduce((sum, post) => sum + post.beloeb, 0);
   const samletInvestering = koebsudgifterIAlt + renoveringIAlt;
-  const driftsudgifterAarligt =
-    tal(drift.ejendomsskat) +
-    tal(drift.forsikring) +
-    tal(drift.vedligehold) +
-    tal(drift.oevrigeUdgifter);
-  const lejeAarligt = tal(udlejning.maanedligLeje) * 12;
-  const tomgangBeloeb = lejeAarligt * (tal(udlejning.tomgangProcent) / 100);
+  const driftsposter = hentDriftsposter(drift);
+  const driftsudgifter = beregnDriftsudgifter(driftsposter);
+  const driftsudgifterMaanedligt = driftsudgifter.maanedligt;
+  const driftsudgifterAarligt = driftsudgifter.aarligt;
+  const lejeAarligt = udlejningAktiv ? tal(udlejning.maanedligLeje) * 12 : 0;
+  const tomgangBeloeb = udlejningAktiv ? lejeAarligt * (tal(udlejning.tomgangProcent) / 100) : 0;
   const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
   const finansieringsbehov = Math.max(0, koebsudgifterIAlt - tal(finansiering.egenbetaling));
   const hovedstol = beregnHovedstol(finansieringsbehov, finansiering.egenbetaling);
@@ -194,10 +283,13 @@ function beregnAnalyse(trinData) {
 
   return {
     antalKoebsposter: poster.length,
+    antalRenoveringsposter: renoveringsposter.length,
+    antalDriftsposter: driftsposter.length,
     koebsudgifterIAlt,
     finansieringsbehov,
     renoveringIAlt,
     samletInvestering,
+    driftsudgifterMaanedligt,
     driftsudgifterAarligt,
     lejeAarligt,
     tomgangBeloeb,
@@ -233,6 +325,7 @@ function mapCaseRow(row) {
     egenkapitalBehov: analyse.egenkapitalBehov,
     maanedligYdelse: analyse.maanedligYdelse,
     lejeEfterTomgang: analyse.lejeEfterTomgang,
+    driftsudgifterMaanedligt: analyse.driftsudgifterMaanedligt,
     driftsudgifterAarligt: analyse.driftsudgifterAarligt,
     resultatEfterFinansiering: analyse.resultatEfterFinansiering,
     antalUdfyldteTrin: analyse.antalUdfyldteTrin,

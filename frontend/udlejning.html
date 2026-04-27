@@ -28,30 +28,35 @@
         </p>
       </section>
 
-      <div class="case-field-grid">
-        <label>
-          Månedlig leje
-          <input data-case-field="maanedligLeje" type="number" min="0" step="100" placeholder="fx 12000">
-          <span>Forventet husleje pr. måned.</span>
-        </label>
+      <label class="case-toggle">
+        <input id="udlejningAktiv" type="checkbox">
+        <span>Skal boligen bruges til udlejning?</span>
+      </label>
 
-        <label>
-          Depositum
-          <input data-case-field="depositum" type="number" min="0" step="100" placeholder="fx 36000">
-          <span>Eventuelt depositum fra lejer.</span>
-        </label>
+      <div id="udlejningDetaljer" class="case-field-grid skjult">
+          <label>
+            Månedlig leje
+            <input data-case-field="maanedligLeje" type="number" min="0" step="100" placeholder="fx 12000">
+            <span>Forventet husleje pr. måned.</span>
+          </label>
 
-        <label>
-          Forventet tomgang i procent
-          <input data-case-field="tomgangProcent" type="number" min="0" step="1" placeholder="fx 5">
-          <span>Andel af året hvor boligen forventes at stå tom.</span>
-        </label>
+          <label>
+            Depositum
+            <input data-case-field="depositum" type="number" min="0" step="100" placeholder="fx 36000">
+            <span>Eventuelt depositum fra lejer.</span>
+          </label>
 
-        <label>
-          Udlejningsnoter
-          <textarea data-case-field="udlejningsNoter" rows="4" maxlength="500" placeholder="fx målgruppe, husdyr, møbleret/umøbleret"></textarea>
-          <span>Korte noter om udlejningen.</span>
-        </label>
+          <label>
+            Forventet tomgang i procent
+            <input data-case-field="tomgangProcent" type="number" min="0" step="1" placeholder="fx 5">
+            <span>Andel af året hvor boligen forventes at stå tom.</span>
+          </label>
+
+          <label>
+            Udlejningsnoter
+            <textarea data-case-field="udlejningsNoter" rows="4" maxlength="500" placeholder="fx målgruppe, husdyr, møbleret/umøbleret"></textarea>
+            <span>Korte noter om udlejningen.</span>
+          </label>
       </div>
 
       <p id="caseTrinFejl" class="case-form-fejl"></p>
