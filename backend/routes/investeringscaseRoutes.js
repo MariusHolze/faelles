@@ -95,7 +95,7 @@ function harData(data) {
 }
 
 function beregnHovedstol(laanebeloeb, egenbetaling) {
-  return Math.max(0, tal(laanebeloeb) - tal(egenbetaling));
+  return Math.max(0, tal(laanebeloeb));
 }
 
 function beregnYdelse(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling) {
@@ -120,6 +120,34 @@ function beregnYdelse(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling)
   return hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -antalMaaneder)));
 }
 
+function beregnSamletRenteomkostning(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling) {
+  const hovedstol = beregnHovedstol(laanebeloeb, egenbetaling);
+  const maanedligRente = (tal(rente) / 100) / 12;
+  const antalMaaneder = tal(loebetid) * 12;
+  const afdragsfriMaaneder = Math.min(antalMaaneder, tal(afdragsfrihed) * 12);
+  const tilbagebetalingsMaaneder = Math.max(0, antalMaaneder - afdragsfriMaaneder);
+
+  if (hovedstol <= 0 || antalMaaneder <= 0) {
+    return 0;
+  }
+
+  if (afdragsfriMaaneder > 0) {
+    const renteOnlyYdelse = maanedligRente === 0 ? 0 : hovedstol * maanedligRente;
+    const amortiseretYdelse = tilbagebetalingsMaaneder <= 0
+      ? 0
+      : maanedligRente === 0
+        ? hovedstol / tilbagebetalingsMaaneder
+        : hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -tilbagebetalingsMaaneder)));
+
+    return Math.max(0, (renteOnlyYdelse * afdragsfriMaaneder) +
+      (amortiseretYdelse * tilbagebetalingsMaaneder) -
+      hovedstol);
+  }
+
+  const maanedligYdelse = beregnYdelse(laanebeloeb, rente, loebetid, 0, egenbetaling);
+  return Math.max(0, (maanedligYdelse * antalMaaneder) - hovedstol);
+}
+
 function beregnAnalyse(trinData) {
   const koeb = trinData.koebsudgifter || {};
   const finansiering = trinData.finansiering || {};
@@ -139,10 +167,18 @@ function beregnAnalyse(trinData) {
   const lejeAarligt = tal(udlejning.maanedligLeje) * 12;
   const tomgangBeloeb = lejeAarligt * (tal(udlejning.tomgangProcent) / 100);
   const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
-  const hovedstol = beregnHovedstol(finansiering.laanebeloeb, finansiering.egenbetaling);
+  const finansieringsbehov = Math.max(0, koebsudgifterIAlt - tal(finansiering.egenbetaling));
+  const hovedstol = beregnHovedstol(finansieringsbehov, finansiering.egenbetaling);
   const renteudgiftAarligt = hovedstol * (tal(finansiering.rente) / 100);
   const maanedligYdelse = beregnYdelse(
-    finansiering.laanebeloeb,
+    finansieringsbehov,
+    finansiering.rente,
+    finansiering.loebetid,
+    finansiering.afdragsfrihed,
+    finansiering.egenbetaling
+  );
+  const samletRenteomkostning = beregnSamletRenteomkostning(
+    finansieringsbehov,
     finansiering.rente,
     finansiering.loebetid,
     finansiering.afdragsfrihed,
@@ -152,13 +188,14 @@ function beregnAnalyse(trinData) {
   const resultatFoerFinansiering = lejeEfterTomgang - driftsudgifterAarligt;
   const resultatEfterRente = resultatFoerFinansiering - renteudgiftAarligt;
   const resultatEfterFinansiering = resultatFoerFinansiering - ydelseAarligt;
-  const egenkapitalBehov = Math.max(0, samletInvestering - tal(finansiering.laanebeloeb));
+  const egenkapitalBehov = Math.max(0, samletInvestering - finansieringsbehov);
   const antalUdfyldteTrin = gyldigeTrin.filter((trin) => harData(trinData[trin])).length;
   const naesteTrin = gyldigeTrin.find((trin) => !harData(trinData[trin])) || "koebsudgifter";
 
   return {
     antalKoebsposter: poster.length,
     koebsudgifterIAlt,
+    finansieringsbehov,
     renoveringIAlt,
     samletInvestering,
     driftsudgifterAarligt,
@@ -166,6 +203,7 @@ function beregnAnalyse(trinData) {
     tomgangBeloeb,
     lejeEfterTomgang,
     renteudgiftAarligt,
+    samletRenteomkostning,
     maanedligYdelse,
     ydelseAarligt,
     resultatFoerFinansiering,

@@ -75,7 +75,7 @@ function visFormStatus(besked) {
 }
 
 function formatKroner(beloeb) {
-  return `${Number(beloeb || 0).toLocaleString("da-DK")} kr.`;
+  return `${Math.round(Number(beloeb || 0)).toLocaleString("da-DK")} kr.`;
 }
 
 const formatteredeCaseFelter = {
@@ -389,6 +389,18 @@ function validerForm(trin, data) {
       return "Vælg lånetype og udfyld lånebeløb, rente og løbetid.";
     }
 
+    if (finansieringKoebsudgifterTotal !== null && Number(data.egenbetaling || 0) > finansieringKoebsudgifterTotal) {
+      return "Egenbetaling kan ikke være højere end samlet køb og udgifter.";
+    }
+
+    if (Number(data.loebetid) > 50) {
+      return "Løbetid kan maks være 50 år.";
+    }
+
+    if (data.afdragsfrihed !== "" && Number(data.afdragsfrihed) > 10) {
+      return "Afdragsfri periode kan maks være 10 år.";
+    }
+
     if (data.afdragsfrihed !== "" && Number(data.afdragsfrihed) > Number(data.loebetid)) {
       return "Afdragsfrihed kan ikke være længere end lånets løbetid.";
     }
@@ -403,8 +415,7 @@ function validerForm(trin, data) {
 
 function beregnFinansieringsOverblik(data) {
   const laanebeloeb = Number(data.laanebeloeb || 0);
-  const egenbetaling = Math.max(0, Number(data.egenbetaling || 0));
-  const hovedstol = Math.max(0, laanebeloeb - egenbetaling);
+  const hovedstol = Math.max(0, laanebeloeb);
   const rente = Number(data.rente || 0);
   const loebetid = Number(data.loebetid || 0);
   const afdragsfrihed = Math.max(0, Number(data.afdragsfrihed || 0));
@@ -413,8 +424,9 @@ function beregnFinansieringsOverblik(data) {
   if (hovedstol <= 0 || loebetid <= 0 || antalMaaneder <= 0) {
     return {
       maanedligYdelse: 0,
+      maanedligYdelseEfterAfdragsfrihed: 0,
       samletRenteomkostning: 0,
-      maanedligNote: "Beregnes når lånebeløb, egenbetaling, rente og løbetid er udfyldt."
+      maanedligNote: "Beregnes når lånebeløb, rente og løbetid er udfyldt."
     };
   }
 
@@ -436,9 +448,10 @@ function beregnFinansieringsOverblik(data) {
 
     return {
       maanedligYdelse: renteOnlyYdelse,
+      maanedligYdelseEfterAfdragsfrihed: amortiseretYdelse,
       samletRenteomkostning: Math.max(0, samletRenteomkostning),
       maanedligNote: tilbagebetalingsMaaneder > 0
-        ? `Beregnet ud fra lånebeløb minus egenbetaling. Viser første ydelse i perioden med afdragsfrihed. Efter ${afdragsfrihed} år beregnes ydelsen ud fra restløbetiden.`
+        ? `Beregnet ud fra lånebeløbet. Viser første ydelse i perioden med afdragsfrihed. Efter ${afdragsfrihed} år beregnes ydelsen ud fra restløbetiden.`
         : "Lånet er sat til fuld afdragsfrihed i hele perioden."
     };
   }
@@ -450,18 +463,21 @@ function beregnFinansieringsOverblik(data) {
 
   return {
     maanedligYdelse,
+    maanedligYdelseEfterAfdragsfrihed: maanedligYdelse,
     samletRenteomkostning: Math.max(0, samletRenteomkostning),
-    maanedligNote: "Viser den beregnede månedlige ydelse ud fra lånebeløb, egenbetaling, rente, løbetid og afdragsfrihed."
+    maanedligNote: "Viser den beregnede månedlige ydelse ud fra lånebeløb, rente, løbetid og afdragsfrihed."
   };
 }
 
 function opdaterFinansieringsBeregning() {
   const maanedligYdelseElement = document.getElementById("finansieringMaanedligYdelse");
+  const efterAfdragsfrihedElement = document.getElementById("finansieringEfterAfdragsfrihed");
   const samletRenteElement = document.getElementById("finansieringSamletRente");
   const maanedligNoteElement = document.getElementById("finansieringMaanedligNote");
+  const efterAfdragsfrihedNoteElement = document.getElementById("finansieringEfterAfdragsfrihedNote");
   const samletRenteNoteElement = document.getElementById("finansieringSamletRenteNote");
 
-  if (!maanedligYdelseElement || !samletRenteElement) {
+  if (!maanedligYdelseElement || !samletRenteElement || !efterAfdragsfrihedElement) {
     return;
   }
 
@@ -469,6 +485,7 @@ function opdaterFinansieringsBeregning() {
   const resultat = beregnFinansieringsOverblik(data);
 
   maanedligYdelseElement.textContent = formatKroner(resultat.maanedligYdelse);
+  efterAfdragsfrihedElement.textContent = formatKroner(resultat.maanedligYdelseEfterAfdragsfrihed);
   samletRenteElement.textContent = formatKroner(resultat.samletRenteomkostning);
 
   if (maanedligNoteElement) {
@@ -478,38 +495,162 @@ function opdaterFinansieringsBeregning() {
   if (samletRenteNoteElement) {
     samletRenteNoteElement.textContent = "Viser den samlede renteudgift over hele lånets periode.";
   }
+
+  if (efterAfdragsfrihedNoteElement) {
+    efterAfdragsfrihedNoteElement.textContent = Number(hentFormData("finansiering").afdragsfrihed || 0) > 0
+      ? "Viser den månedlige ydelse, når afdragene starter."
+      : "Der er ingen afdragsfri periode i dette scenarie.";
+  }
+}
+
+const standardVaerdierForLaanetype = {
+  realkredit: {
+    rente: 4.2,
+    loebetid: 30,
+    afdragsfrihed: 0
+  },
+  banklaan: {
+    rente: 8,
+    loebetid: 10,
+    afdragsfrihed: 0
+  },
+  privat: {
+    rente: "",
+    loebetid: "",
+    afdragsfrihed: ""
+  }
+};
+
+let finansieringKoebsudgifterTotal = null;
+let loebetidBlevBegraenset = false;
+let afdragsfrihedBlevBegraenset = false;
+
+function visEgenbetalingFejl(besked) {
+  const fejl = document.getElementById("egenbetalingFejl");
+
+  if (fejl) {
+    fejl.textContent = besked || "";
+  }
+}
+
+function visFeltFejl(id, besked) {
+  const fejl = document.getElementById(id);
+
+  if (fejl) {
+    fejl.textContent = besked || "";
+  }
+}
+
+function begrænsFinansieringAarFelt(felt) {
+  const formatType = formatteredeCaseFelter[felt.dataset.caseField];
+  const værdi = parseFormatteretFeltVaerdi(felt.value, formatType);
+
+  if (Number.isNaN(værdi)) {
+    return;
+  }
+
+  if (felt.dataset.caseField === "loebetid" && værdi > 50) {
+    felt.value = formatFormatteretFeltVaerdi(50, "years");
+    loebetidBlevBegraenset = true;
+    visFeltFejl("loebetidFejl", "Løbetid kan maks være 50 år.");
+  }
+
+  if (felt.dataset.caseField === "afdragsfrihed" && værdi > 10) {
+    felt.value = formatFormatteretFeltVaerdi(10, "years");
+    afdragsfrihedBlevBegraenset = true;
+    visFeltFejl("afdragsfrihedFejl", "Afdragsfri periode kan maks være 10 år.");
+  }
+}
+
+function validerFinansieringAarInline() {
+  const loebetidFelt = document.querySelector('[data-case-field="loebetid"]');
+  const afdragsfrihedFelt = document.querySelector('[data-case-field="afdragsfrihed"]');
+
+  if (!loebetidFelt || !afdragsfrihedFelt) {
+    return;
+  }
+
+  const loebetid = parseFormatteretFeltVaerdi(loebetidFelt.value, "years");
+  const afdragsfrihed = parseFormatteretFeltVaerdi(afdragsfrihedFelt.value, "years");
+
+  if (!Number.isNaN(loebetid) && loebetid <= 50 && !loebetidBlevBegraenset) {
+    visFeltFejl("loebetidFejl", "");
+  }
+
+  if (!Number.isNaN(afdragsfrihed) && afdragsfrihed <= 10 && !afdragsfrihedBlevBegraenset) {
+    visFeltFejl("afdragsfrihedFejl", "");
+  }
+
+  if (!Number.isNaN(loebetid) && !Number.isNaN(afdragsfrihed) && afdragsfrihed > loebetid) {
+    visFeltFejl("afdragsfrihedFejl", "Afdragsfri periode kan ikke være længere end løbetiden.");
+  }
+
+  loebetidBlevBegraenset = false;
+  afdragsfrihedBlevBegraenset = false;
+}
+
+function hentKoebsudgifterTotal(data) {
+  if (!data || typeof data !== "object") {
+    return 0;
+  }
+
+  if (typeof data.total === "number" && !Number.isNaN(data.total)) {
+    return data.total;
+  }
+
+  const poster = Array.isArray(data.poster) ? data.poster : [];
+  return poster.reduce((sum, post) => sum + Number(post.beloeb || 0), 0);
+}
+
+function opdaterLaanebeloebFraEgenbetaling() {
+  if (finansieringKoebsudgifterTotal === null) {
+    return;
+  }
+
+  const egenbetalingFelt = document.querySelector('[data-case-field="egenbetaling"]');
+  const laanebeloebFelt = document.querySelector('[data-case-field="laanebeloeb"]');
+
+  if (!egenbetalingFelt || !laanebeloebFelt) {
+    return;
+  }
+
+  const egenbetaling = parseFormatteretFeltVaerdi(egenbetalingFelt.value, "currency");
+  const begrænsetEgenbetaling = Math.min(
+    finansieringKoebsudgifterTotal,
+    Math.max(0, Number.isNaN(egenbetaling) ? 0 : egenbetaling)
+  );
+
+  if (!Number.isNaN(egenbetaling) && egenbetaling !== begrænsetEgenbetaling) {
+    egenbetalingFelt.value = formatFormatteretFeltVaerdi(begrænsetEgenbetaling, "currency");
+    visEgenbetalingFejl("Egenbetaling kan ikke være højere end samlet køb og udgifter.");
+  } else {
+    visEgenbetalingFejl("");
+  }
+
+  const laanebeloeb = Math.max(0, finansieringKoebsudgifterTotal - begrænsetEgenbetaling);
+  laanebeloebFelt.value = formatFormatteretFeltVaerdi(laanebeloeb, "currency");
 }
 
 function anvendStandardVaerdierForLaanetype() {
   const laanetypeFelt = document.querySelector('[data-case-field="laanetype"]');
   const renteFelt = document.querySelector('[data-case-field="rente"]');
   const loebetidFelt = document.querySelector('[data-case-field="loebetid"]');
+  const afdragsfrihedFelt = document.querySelector('[data-case-field="afdragsfrihed"]');
 
-  if (!laanetypeFelt || !renteFelt || !loebetidFelt) {
+  if (!laanetypeFelt || !renteFelt || !loebetidFelt || !afdragsfrihedFelt) {
     return;
   }
 
-  renteFelt.readOnly = false;
-  loebetidFelt.readOnly = false;
+  const standard = standardVaerdierForLaanetype[laanetypeFelt.value];
 
-  if (laanetypeFelt.value === "realkredit") {
-    renteFelt.value = formatFormatteretFeltVaerdi(4.2, "percent");
-    loebetidFelt.value = formatFormatteretFeltVaerdi(30, "years");
-    renteFelt.readOnly = true;
-    loebetidFelt.readOnly = true;
+  if (!standard) {
     opdaterFinansieringsBeregning();
     return;
   }
 
-  if (laanetypeFelt.value === "banklaan") {
-    renteFelt.value = formatFormatteretFeltVaerdi(8, "percent");
-    loebetidFelt.value = formatFormatteretFeltVaerdi(30, "years");
-    renteFelt.readOnly = true;
-    loebetidFelt.readOnly = true;
-    opdaterFinansieringsBeregning();
-    return;
-  }
-
+  renteFelt.value = standard.rente === "" ? "" : formatFormatteretFeltVaerdi(standard.rente, "percent");
+  loebetidFelt.value = standard.loebetid === "" ? "" : formatFormatteretFeltVaerdi(standard.loebetid, "years");
+  afdragsfrihedFelt.value = standard.afdragsfrihed === "" ? "" : formatFormatteretFeltVaerdi(standard.afdragsfrihed, "years");
   opdaterFinansieringsBeregning();
 }
 
@@ -664,6 +805,13 @@ async function bindInvesteringscaseTrinForm() {
     felt.addEventListener("input", () => {
       formatterCaseFeltInput(felt);
       if (trin === "finansiering") {
+        if (felt.dataset.caseField === "egenbetaling") {
+          opdaterLaanebeloebFraEgenbetaling();
+        }
+        if (felt.dataset.caseField === "loebetid" || felt.dataset.caseField === "afdragsfrihed") {
+          begrænsFinansieringAarFelt(felt);
+          validerFinansieringAarInline();
+        }
         opdaterFinansieringsBeregning();
       }
     });
@@ -671,6 +819,13 @@ async function bindInvesteringscaseTrinForm() {
     felt.addEventListener("focusout", () => {
       formatterCaseFeltInput(felt);
       if (trin === "finansiering") {
+        if (felt.dataset.caseField === "egenbetaling") {
+          opdaterLaanebeloebFraEgenbetaling();
+        }
+        if (felt.dataset.caseField === "loebetid" || felt.dataset.caseField === "afdragsfrihed") {
+          begrænsFinansieringAarFelt(felt);
+          validerFinansieringAarInline();
+        }
         opdaterFinansieringsBeregning();
       }
     });
@@ -688,6 +843,13 @@ async function bindInvesteringscaseTrinForm() {
   try {
     const gemtData = await hentGemtTrinData(valgtCase.caseID, trin, bruger.email);
     udfyldForm(trin, gemtData);
+
+    if (trin === "finansiering") {
+      const koebsudgifterData = await hentGemtTrinData(valgtCase.caseID, "koebsudgifter", bruger.email);
+      finansieringKoebsudgifterTotal = hentKoebsudgifterTotal(koebsudgifterData);
+      opdaterLaanebeloebFraEgenbetaling();
+    }
+
     await opdaterAnalyseHvisMuligt(trin, valgtCase.caseID, bruger.email);
   } catch (error) {
     console.error("Fejl ved hentning af trindata:", error);
@@ -757,11 +919,11 @@ async function bindInvesteringscaseTrinForm() {
     laanetypeFelt.addEventListener("change", () => {
       anvendStandardVaerdierForLaanetype();
     });
-
-    anvendStandardVaerdierForLaanetype();
   }
 
   if (trin === "finansiering") {
+    opdaterLaanebeloebFraEgenbetaling();
+    validerFinansieringAarInline();
     opdaterFinansieringsBeregning();
   }
 

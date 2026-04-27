@@ -28,7 +28,7 @@ function formatDato(dato) {
 }
 
 function formatKroner(beloeb) {
-  return `${Number(beloeb || 0).toLocaleString("da-DK")} kr.`;
+  return `${Math.round(Number(beloeb || 0)).toLocaleString("da-DK")} kr.`;
 }
 
 function findRedigerSide(caseData) {
@@ -538,6 +538,11 @@ function lavOverblikNoegletal(analyse) {
       <small>Beregnet ud fra lånet</small>
     </div>
     <div>
+      <span>Samlet renteomkostning</span>
+      <strong>${formatKroner(analyse.samletRenteomkostning)}</strong>
+      <small>Over hele lånets løbetid</small>
+    </div>
+    <div>
       <span>Egenkapitalbehov</span>
       <strong>${formatKroner(analyse.egenkapitalBehov)}</strong>
       <small>Investering minus lån</small>
@@ -545,7 +550,7 @@ function lavOverblikNoegletal(analyse) {
   `;
 }
 
-function lavTrinOverblik(trinData) {
+function lavTrinOverblik(trinData, analyse = {}) {
   // Trindata ligger samlet som JSON i databasen.
   // Her deler vi det op igen, så overblikssiden kan vise hvert trin tydeligt.
   const koeb = trinData.koebsudgifter || {};
@@ -554,6 +559,7 @@ function lavTrinOverblik(trinData) {
   const drift = trinData.driftsbudget || {};
   const udlejning = trinData.udlejning || {};
   const poster = Array.isArray(koeb.poster) ? koeb.poster : [];
+  const laanebeloeb = analyse.finansieringsbehov ?? finansiering.laanebeloeb;
 
   const posterHtml = poster.length
     ? poster.map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)}</li>`).join("")
@@ -568,7 +574,7 @@ function lavTrinOverblik(trinData) {
     <article class="case-overblik-section">
       <h2>Finansiering</h2>
       <p><span>Lånetype:</span> ${formatLaanetype(finansiering.laanetype)}</p>
-      <p><span>Lånebeløb:</span> ${formatKroner(finansiering.laanebeloeb)}</p>
+      <p><span>Lånebeløb:</span> ${formatKroner(laanebeloeb)}</p>
       <p><span>Egenbetaling:</span> ${formatKroner(finansiering.egenbetaling)}</p>
       <p><span>Rente:</span> ${formatProcent(finansiering.rente)}</p>
       <p><span>Løbetid:</span> ${formatTekst(finansiering.loebetid ? `${finansiering.loebetid} år` : "")}</p>
@@ -632,7 +638,7 @@ async function initCaseOverblikSide() {
     const trinData = data.trinData || {};
 
     overblikGrid.innerHTML = lavOverblikNoegletal(analyse);
-    trinGrid.innerHTML = lavTrinOverblik(trinData);
+    trinGrid.innerHTML = lavTrinOverblik(trinData, analyse);
 
     // Opdaterer localStorage, så Rediger-knappen fortsætter fra første manglende trin.
     localStorage.setItem("valgtInvesteringscase", JSON.stringify({

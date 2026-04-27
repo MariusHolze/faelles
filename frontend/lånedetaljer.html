@@ -37,37 +37,40 @@
             <option value="banklaan">Banklån</option>
             <option value="privat">Privat finansiering</option>
           </select>
-          <span>Bruges til at beskrive hvordan købet finansieres.</span>
+          <span>Standardværdier udfyldes automatisk for realkredit og banklån, men kan ændres bagefter.</span>
         </label>
 
         <label>
           Egenbetaling
           <input data-case-field="egenbetaling" type="number" min="0" step="1000" placeholder="fx 250000">
           <span>Beløb som investoren selv betaler.</span>
+          <small id="egenbetalingFejl" class="case-field-fejl"></small>
         </label>
 
         <label>
           Lånebeløb
-          <input data-case-field="laanebeloeb" type="number" min="0" step="1000" placeholder="fx 1750000">
-          <span>Samlet beløb der skal finansieres med lån.</span>
+          <input data-case-field="laanebeloeb" type="number" min="0" step="1000" placeholder="fx 1750000" readonly>
+          <span>Beregnes som samlet køb og udgifter minus egenbetaling.</span>
         </label>
 
         <label>
           Rente i procent
-          <input data-case-field="rente" type="number" min="0" step="0.1" placeholder="fx 4.5">
+          <input data-case-field="rente" type="number" min="0" step="0.1" placeholder="fx 4,5">
           <span>Årlig rente. Skriv procent uden %-tegn.</span>
         </label>
 
         <label>
           Løbetid i år
-          <input data-case-field="loebetid" type="number" min="0" step="1" placeholder="fx 30">
+          <input data-case-field="loebetid" type="number" min="0" max="50" step="1" placeholder="fx 30">
           <span>Hvor mange år lånet forventes at løbe.</span>
+          <small id="loebetidFejl" class="case-field-fejl"></small>
         </label>
 
         <label>
           Afdragsfrihed i år
-          <input data-case-field="afdragsfrihed" type="number" min="0" step="1" placeholder="fx 5">
+          <input data-case-field="afdragsfrihed" type="number" min="0" max="10" step="1" placeholder="fx 0">
           <span>Antal år uden afdrag. Brug 0 hvis der betales afdrag fra start.</span>
+          <small id="afdragsfrihedFejl" class="case-field-fejl"></small>
         </label>
       </div>
 
@@ -77,11 +80,17 @@
           <p>Felterne opdateres automatisk ud fra dine låneoplysninger.</p>
         </div>
 
-        <div class="finansiering-beregning-grid">
+        <div class="finansiering-beregning-grid finansiering-beregning-grid-tre">
           <article class="finansiering-highlight">
-            <span>Månedlig ydelse</span>
+            <span>Første månedlige ydelse</span>
             <strong id="finansieringMaanedligYdelse">0 kr.</strong>
-            <small id="finansieringMaanedligNote">Beregnes når lånebeløb, rente og løbetid er udfyldt.</small>
+            <small id="finansieringMaanedligNote">Viser ydelsen i starten af lånet.</small>
+          </article>
+
+          <article class="finansiering-highlight finansiering-highlight-tertiaer">
+            <span>Ydelse efter afdragsfrihed</span>
+            <strong id="finansieringEfterAfdragsfrihed">0 kr.</strong>
+            <small id="finansieringEfterAfdragsfrihedNote">Samme som første ydelse, hvis der ikke er afdragsfrihed.</small>
           </article>
 
           <article class="finansiering-highlight finansiering-highlight-sekundaer">
