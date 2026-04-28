@@ -31,6 +31,12 @@ function formatKroner(beloeb) {
   return `${Math.round(Number(beloeb || 0)).toLocaleString("da-DK")} kr.`;
 }
 
+function hentCaseFlowUrl(filnavn) {
+  return window.location.pathname.includes("/investeringscase/")
+    ? filnavn
+    : `investeringscase/${filnavn}`;
+}
+
 function findRedigerSide(caseData) {
   // Brugeren sendes til det første trin, der mangler data.
   // Hvis alle trin er udfyldt, starter redigering fra købsudgifter.
@@ -42,7 +48,7 @@ function findRedigerSide(caseData) {
     udlejning: "udlejning.html"
   };
 
-  return sider[caseData.naesteTrin] || "købsudgifter.html";
+  return hentCaseFlowUrl(sider[caseData.naesteTrin] || "købsudgifter.html");
 }
 
 function hentValgtCaseFraStorage() {
@@ -148,7 +154,7 @@ async function opretInvesteringscaseFraProfil(profil) {
   const bruger = hentLoggetIndBruger();
 
   if (!bruger) {
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
     return;
   }
 
@@ -216,15 +222,15 @@ function lavCaseHtml(caseData, index) {
           <strong>${formatKroner(caseData.samletInvestering)}</strong>
         </div>
         <div>
-          <span>Årlig cashflow</span>
-          <strong>${formatKroner(caseData.resultatEfterFinansiering)}</strong>
+          <span>Årligt cashflow efter låneydelse</span>
+          <strong>${formatKroner(caseData.aarligtCashflowEfterLaaneydelse ?? caseData.resultatEfterFinansiering)}</strong>
         </div>
         <div>
           <span>Månedlig ydelse</span>
           <strong>${formatKroner(caseData.maanedligYdelse)}</strong>
         </div>
         <div>
-          <span>Egenkapital</span>
+          <span>Egenkapitalbehov</span>
           <strong>${formatKroner(caseData.egenkapitalBehov)}</strong>
         </div>
       </div>
@@ -478,7 +484,7 @@ function bindCaseKnapper() {
     }
 
     localStorage.setItem("valgtInvesteringscase", JSON.stringify(valgtCase));
-    window.location.href = redigerKnap ? findRedigerSide(valgtCase) : "caseOverblik.html";
+    window.location.href = redigerKnap ? findRedigerSide(valgtCase) : hentCaseFlowUrl("caseOverblik.html");
   });
 }
 
@@ -557,38 +563,146 @@ async function hentCaseAnalyseFraApi(caseID, email) {
   return data;
 }
 
-function lavOverblikNoegletal(analyse) {
+function talVaerdi(value) {
+  const nummer = Number(value);
+  return Number.isNaN(nummer) ? 0 : nummer;
+}
+
+function beregnNoegletalUdvikling(analyse = {}) {
+  // Backend beregner tidsserien, så frontend kun viser tallene.
+  if (Array.isArray(analyse.noegletalOverTid) && analyse.noegletalOverTid.length > 0) {
+    return analyse.noegletalOverTid.map((punkt) => ({
+      aar: punkt.aar,
+      egenkapitalIEjendom: talVaerdi(punkt.egenkapitalIEjendom),
+      akkumuleretCashflow: talVaerdi(punkt.akkumuleretCashflow),
+      gaeld: talVaerdi(punkt.gaeld ?? punkt.restgaeld),
+      samletInvestorVaerdi: talVaerdi(punkt.samletInvestorVaerdi)
+    }));
+  }
+
+  return [];
+}
+
+function lavSvgPunkter(punkter, felt, xForAar, yForVaerdi) {
+  return punkter
+    .map((punkt) => `${xForAar(punkt.aar).toFixed(1)},${yForVaerdi(punkt[felt]).toFixed(1)}`)
+    .join(" ");
+}
+
+function lavUdviklingsGraf(punkter) {
+  if (!punkter.length) {
+    return "";
+  }
+
+  const bredde = 760;
+  const hoejde = 260;
+  const padding = 34;
+  const vaerdier = punkter.flatMap((punkt) => [
+    punkt.egenkapitalIEjendom,
+    punkt.akkumuleretCashflow,
+    punkt.gaeld
+  ]);
+  const min = Math.min(0, ...vaerdier);
+  const max = Math.max(0, ...vaerdier);
+  const spænd = max - min || 1;
+  const xForAar = (aar) => padding + ((aar - 1) / 29) * (bredde - padding * 2);
+  const yForVaerdi = (value) => hoejde - padding - ((value - min) / spænd) * (hoejde - padding * 2);
+  const egenkapitalLinje = lavSvgPunkter(punkter, "egenkapitalIEjendom", xForAar, yForVaerdi);
+  const cashflowLinje = lavSvgPunkter(punkter, "akkumuleretCashflow", xForAar, yForVaerdi);
+  const gaeldLinje = lavSvgPunkter(punkter, "gaeld", xForAar, yForVaerdi);
+  const nulY = yForVaerdi(0).toFixed(1);
+  const sidste = punkter[punkter.length - 1];
+
   return `
-    <div>
-      <span>Samlet investering</span>
-      <strong>${formatKroner(analyse.samletInvestering)}</strong>
-      <small>Køb plus renovering</small>
+    <div class="noegletal-graf">
+      <div class="noegletal-graf-header">
+        <p>Egenkapital i ejendom, cashflow og gæld baseret på investeringscasens parametre.</p>
+      </div>
+      <div class="noegletal-signatur">
+        <span class="egenkapital">Egenkapital i ejendom</span>
+        <span class="cashflow">Cashflow</span>
+        <span class="gaeld">Gæld</span>
+      </div>
+      <svg viewBox="0 0 ${bredde} ${hoejde}" role="img" aria-label="Udvikling i egenkapital, cashflow og gæld over 30 år">
+        <line x1="${padding}" y1="${nulY}" x2="${bredde - padding}" y2="${nulY}" class="noegletal-nul-linje"></line>
+        <polyline points="${egenkapitalLinje}" class="noegletal-linje noegletal-linje-egenkapital"></polyline>
+        <polyline points="${cashflowLinje}" class="noegletal-linje noegletal-linje-cashflow"></polyline>
+        <polyline points="${gaeldLinje}" class="noegletal-linje noegletal-linje-gaeld"></polyline>
+        <text x="${padding}" y="${hoejde - 8}">År 1</text>
+        <text x="${bredde / 2}" y="${hoejde - 8}" text-anchor="middle">År 15</text>
+        <text x="${bredde - padding}" y="${hoejde - 8}" text-anchor="end">År 30</text>
+      </svg>
     </div>
-    <div>
-      <span>Årlig cashflow</span>
-      <strong>${formatKroner(analyse.resultatEfterFinansiering)}</strong>
-      <small>Efter drift og låneydelse</small>
-    </div>
-    <div>
-      <span>Månedlig drift</span>
-      <strong>${formatKroner(analyse.driftsudgifterMaanedligt)}</strong>
-      <small>${formatKroner(analyse.driftsudgifterAarligt)} pr. år</small>
-    </div>
-    <div>
-      <span>Månedlig ydelse</span>
-      <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
-      <small>Beregnet ud fra lånet</small>
-    </div>
-    <div>
-      <span>Samlet renteomkostning</span>
-      <strong>${formatKroner(analyse.samletRenteomkostning)}</strong>
-      <small>Over hele lånets løbetid</small>
-    </div>
-    <div>
-      <span>Egenkapitalbehov</span>
-      <strong>${formatKroner(analyse.egenkapitalBehov)}</strong>
-      <small>Investering minus lån</small>
-    </div>
+  `;
+}
+
+function lavUdviklingsRækker(punkter) {
+  const valgteAar = new Set([1, 5, 10, 20, 30]);
+
+  return punkter
+    .filter((punkt) => valgteAar.has(punkt.aar))
+    .map((punkt) => `
+      <tr>
+        <td>År ${punkt.aar}</td>
+        <td>${formatKroner(punkt.egenkapitalIEjendom)}</td>
+        <td>${formatKroner(punkt.akkumuleretCashflow)}</td>
+        <td>${formatKroner(punkt.gaeld)}</td>
+        <td>${formatKroner(punkt.samletInvestorVaerdi)}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+function lavOverblikNoegletal(analyse, trinData = {}) {
+  const udvikling = beregnNoegletalUdvikling(analyse);
+  const aar30 = udvikling[29] || {};
+  const finansiering = trinData.finansiering || {};
+  const startGaeld = talVaerdi(analyse.finansieringsbehov ?? finansiering.laanebeloeb);
+
+  return `
+    <article class="noegletal-panel">
+      <div class="noegletal-kort-grid">
+        <div>
+          <span>Egenkapital i ejendom</span>
+          <strong>${formatKroner(aar30.egenkapitalIEjendom)}</strong>
+          <small>Ejendomsværdi minus restgæld efter 30 år.</small>
+        </div>
+        <div>
+          <span>Akkumuleret cashflow</span>
+          <strong>${formatKroner(aar30.akkumuleretCashflow)}</strong>
+          <small>Samlet likviditet fra casen over 30 år.</small>
+        </div>
+        <div>
+          <span>Samlet investorværdi efter 30 år</span>
+          <strong>${formatKroner(aar30.samletInvestorVaerdi)}</strong>
+          <small>Egenkapital i ejendom plus akkumuleret cashflow.</small>
+        </div>
+        <div>
+          <span>Lånebehov / startgæld</span>
+          <strong>${formatKroner(startGaeld)}</strong>
+          <small>Lånebehovet ved investeringens start.</small>
+        </div>
+      </div>
+
+      ${lavUdviklingsGraf(udvikling)}
+
+      <div class="noegletal-tabel-wrapper">
+        <table class="noegletal-tabel">
+          <thead>
+            <tr>
+              <th>År</th>
+              <th>Egenkapital i ejendom</th>
+              <th>Cashflow</th>
+              <th>Gæld</th>
+              <th>Samlet investorværdi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lavUdviklingsRækker(udvikling)}
+          </tbody>
+        </table>
+      </div>
+    </article>
   `;
 }
 
@@ -742,9 +856,9 @@ function lavTrinOverblik(trinData, analyse = {}) {
       <h2>Udlejning</h2>
       <div class="overblik-card-top">
         <div class="overblik-resultat">
-          <span>Estimat efter skat</span>
+          <span>Estimeret leje efter skat</span>
           <strong>${formatKroner(lejeEfterSkatAarligt)}</strong>
-          <small>40% fradrag og ca. 42% skat af resten. Kilde: skat.dk.</small>
+          <small>Estimat: 40% fradrag og ca. 42% skat af resten. Kilde: skat.dk.</small>
         </div>
         <div class="overblik-status">
           <span>Status</span>
@@ -793,12 +907,12 @@ async function initCaseOverblikSide() {
   const valgtCase = hentValgtCaseFraStorage();
 
   if (!bruger) {
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
     return;
   }
 
   if (!valgtCase || !valgtCase.caseID) {
-    window.location.href = "investeringscase.html";
+    window.location.href = "/investeringscase.html";
     return;
   }
 
@@ -811,7 +925,7 @@ async function initCaseOverblikSide() {
     const analyse = data.analyse || {};
     const trinData = data.trinData || {};
 
-    overblikGrid.innerHTML = lavOverblikNoegletal(analyse);
+    overblikGrid.innerHTML = lavOverblikNoegletal(analyse, trinData);
     trinGrid.innerHTML = lavTrinOverblik(trinData, analyse);
 
     // Opdaterer localStorage, så Rediger-knappen fortsætter fra første manglende trin.

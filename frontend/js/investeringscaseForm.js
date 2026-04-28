@@ -317,7 +317,7 @@ function lavRenoveringTidspunktOptions(valgtKey = "") {
   return `${start}${options}`;
 }
 
-function lavKoebspostRække(navn = "", beloeb = "", fastPost = false) {
+function lavKoebspostRække(navn = "", beloeb = "") {
   const liste = document.getElementById("koebspostListe");
 
   if (!liste) {
@@ -325,15 +325,15 @@ function lavKoebspostRække(navn = "", beloeb = "", fastPost = false) {
   }
 
   const div = document.createElement("div");
-  div.className = `koebspost-række${fastPost ? " koebspost-fast" : ""}`;
+  div.className = "koebspost-række";
   const beskrivelse = fasteKoebspostBeskrivelser[navn] || "";
   div.innerHTML = `
     <div class="koebspost-navn-felt">
-      <input class="koebspost-navn" type="text" maxlength="100" placeholder="Navn på udgift" value="${escapeHtml(navn)}" ${fastPost ? "readonly" : ""}>
-      ${fastPost && beskrivelse ? `<small class="koebspost-beskrivelse">${escapeHtml(beskrivelse)}</small>` : ""}
+      <input class="koebspost-navn" type="text" maxlength="100" placeholder="Navn på udgift" value="${escapeHtml(navn)}">
+      ${beskrivelse ? `<small class="koebspost-beskrivelse">${escapeHtml(beskrivelse)}</small>` : ""}
     </div>
     <input class="koebspost-beloeb" type="text" inputmode="numeric" placeholder="Beløb i kr." value="${escapeHtml(formatKronerInputVaerdi(String(beloeb)))}">
-    ${fastPost ? '<span class="koebspost-fast-plads"></span>' : '<button class="fjern-koebspost-knap" type="button" aria-label="Fjern udgift" title="Fjern udgift">🗑</button>'}
+    <button class="fjern-koebspost-knap" type="button" aria-label="Fjern udgift" title="Fjern udgift">×</button>
   `;
 
   liste.appendChild(div);
@@ -342,14 +342,12 @@ function lavKoebspostRække(navn = "", beloeb = "", fastPost = false) {
 function udfyldFasteKoebsposter(data) {
   const poster = Array.isArray(data?.poster) ? data.poster : [];
 
-  fasteKoebsposter.forEach((navn) => {
-    const eksisterendePost = poster.find((post) => post.navn === navn);
-    lavKoebspostRække(navn, eksisterendePost?.beloeb ?? "", true);
-  });
+  if (poster.length > 0) {
+    poster.forEach((post) => lavKoebspostRække(post.navn, post.beloeb));
+    return;
+  }
 
-  poster
-    .filter((post) => !fasteKoebsposter.includes(post.navn))
-    .forEach((post) => lavKoebspostRække(post.navn, post.beloeb));
+  fasteKoebsposter.forEach((navn) => lavKoebspostRække(navn, ""));
 }
 
 function hentKoebsposter() {
@@ -359,16 +357,6 @@ function hentKoebsposter() {
       beloeb: parseKronerInputVaerdi(række.querySelector(".koebspost-beloeb").value)
     }))
     .filter((post) => post.navn || !Number.isNaN(post.beloeb));
-}
-
-function hentManglendeFasteKoebsposter() {
-  return Array.from(document.querySelectorAll(".koebspost-fast"))
-    .map((række) => ({
-      navn: række.querySelector(".koebspost-navn").value.trim(),
-      beloebTekst: række.querySelector(".koebspost-beloeb").value.trim()
-    }))
-    .filter((post) => post.navn && post.beloebTekst === "")
-    .map((post) => post.navn);
 }
 
 function opdaterKoebspostTotal() {
@@ -404,7 +392,7 @@ function lavRenoveringspostRække(post = {}) {
     <select class="renoveringspost-tidspunkt">
       ${lavRenoveringTidspunktOptions(valgtTidspunkt)}
     </select>
-    <button class="fjern-renoveringspost-knap" type="button" aria-label="Fjern forbedring" title="Fjern forbedring">🗑</button>
+    <button class="fjern-renoveringspost-knap" type="button" aria-label="Fjern forbedring" title="Fjern forbedring">×</button>
   `;
 
   liste.appendChild(div);
@@ -531,7 +519,7 @@ function lavDriftspostRække(post = {}) {
     <select class="driftspost-periode">
       ${lavDriftPeriodeOptions(post.periode || "aarligt")}
     </select>
-    <button class="fjern-driftspost-knap" type="button" aria-label="Fjern driftsomkostning" title="Fjern driftsomkostning">🗑</button>
+    <button class="fjern-driftspost-knap" type="button" aria-label="Fjern driftsomkostning" title="Fjern driftsomkostning">×</button>
   `;
 
   liste.appendChild(div);
@@ -815,7 +803,7 @@ function opdaterUdlejningOverblik() {
   }
 
   if (skatNoteElement) {
-    skatNoteElement.textContent = `60% beskattes med ca. 42%. Skat ca. ${formatKroner(data.skatBeloeb)}. Kilde: skat.dk.`;
+    skatNoteElement.textContent = `Estimeret skat af udlejning: ca. ${formatKroner(data.skatBeloeb)}. Kilde: skat.dk.`;
   }
 }
 
@@ -945,12 +933,6 @@ function udfyldForm(trin, data) {
 
 function validerForm(trin, data) {
   if (trin === "koebsudgifter") {
-    const manglendeFastePoster = hentManglendeFasteKoebsposter();
-
-    if (manglendeFastePoster.length > 0) {
-      return "Udfyld beløb for alle 5 faste købsudgifter, før du går videre.";
-    }
-
     if (data.poster.length === 0) {
       return "Tilføj mindst én købs- eller renoveringsudgift.";
     }
@@ -1023,7 +1005,7 @@ function validerForm(trin, data) {
     }
 
     if (finansieringKoebsudgifterTotal !== null && Number(data.egenbetaling || 0) > finansieringKoebsudgifterTotal) {
-      return "Egenbetaling kan ikke være højere end samlet køb og udgifter.";
+      return "Egenbetaling kan ikke være højere end samlet investering.";
     }
 
     if (Number(data.loebetid) > 50) {
@@ -1239,6 +1221,19 @@ function hentKoebsudgifterTotal(data) {
   return poster.reduce((sum, post) => sum + Number(post.beloeb || 0), 0);
 }
 
+function hentRenoveringTotal(data) {
+  if (!data || typeof data !== "object" || data.aktiv === false) {
+    return 0;
+  }
+
+  if (typeof data.total === "number" && !Number.isNaN(data.total)) {
+    return data.total;
+  }
+
+  const poster = Array.isArray(data.poster) ? data.poster : [];
+  return poster.reduce((sum, post) => sum + Number(post.beloeb || 0), 0);
+}
+
 function opdaterLaanebeloebFraEgenbetaling() {
   if (finansieringKoebsudgifterTotal === null) {
     return;
@@ -1259,7 +1254,7 @@ function opdaterLaanebeloebFraEgenbetaling() {
 
   if (!Number.isNaN(egenbetaling) && egenbetaling !== begrænsetEgenbetaling) {
     egenbetalingFelt.value = formatFormatteretFeltVaerdi(begrænsetEgenbetaling, "currency");
-    visEgenbetalingFejl("Egenbetaling kan ikke være højere end samlet køb og udgifter.");
+    visEgenbetalingFejl("Egenbetaling kan ikke være højere end samlet investering.");
   } else {
     visEgenbetalingFejl("");
   }
@@ -1320,71 +1315,6 @@ async function gemTrinData(caseID, trin, email, data) {
   }
 }
 
-async function hentAnalyse(caseID, email) {
-  const response = await fetch(`/api/investeringscases/${caseID}/analyse?email=${encodeURIComponent(email)}`);
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Kunne ikke hente analyse.");
-  }
-
-  return result.analyse;
-}
-
-function visAnalyse(analyse) {
-  const grid = document.getElementById("caseAnalyseGrid");
-
-  if (!grid || !analyse) {
-    return;
-  }
-
-  grid.innerHTML = `
-    <div>
-      <span>Samlet investering</span>
-      <strong>${formatKroner(analyse.samletInvestering)}</strong>
-      <small>Køb og renovering</small>
-    </div>
-    <div>
-      <span>Årlig nettoleje</span>
-      <strong>${formatKroner(analyse.nettoLejeAarligt)}</strong>
-      <small>Efter tomgang og udlejningsudgifter</small>
-    </div>
-    <div>
-      <span>Årlige driftsudgifter</span>
-      <strong>${formatKroner(analyse.driftsudgifterAarligt)}</strong>
-      <small>${formatKroner(analyse.driftsudgifterMaanedligt)} pr. måned</small>
-    </div>
-    <div>
-      <span>Månedlig låneydelse</span>
-      <strong>${formatKroner(analyse.maanedligYdelse)}</strong>
-      <small>Beregnet fra lån, rente og løbetid</small>
-    </div>
-    <div>
-      <span>Resultat før finansiering</span>
-      <strong>${formatKroner(analyse.resultatFoerFinansiering)}</strong>
-      <small>Leje minus drift</small>
-    </div>
-    <div>
-      <span>Årlig cashflow</span>
-      <strong>${formatKroner(analyse.resultatEfterFinansiering)}</strong>
-      <small>Efter drift og låneydelse</small>
-    </div>
-  `;
-}
-
-async function opdaterAnalyseHvisMuligt(trin, caseID, email) {
-  if (trin !== "udlejning") {
-    return;
-  }
-
-  try {
-    const analyse = await hentAnalyse(caseID, email);
-    visAnalyse(analyse);
-  } catch (error) {
-    console.error("Fejl ved opdatering af analyse:", error);
-  }
-}
-
 function bindTrinNavigation(trin) {
   const forrige = document.getElementById("forrigeTrinLink");
   const naeste = document.getElementById("naesteTrinKnap");
@@ -1414,12 +1344,12 @@ async function bindInvesteringscaseTrinForm() {
   const valgtCase = hentValgtInvesteringscase();
 
   if (!bruger) {
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
     return;
   }
 
   if (!valgtCase || !valgtCase.caseID) {
-    window.location.href = "investeringscase.html";
+    window.location.href = "/investeringscase.html";
     return;
   }
 
@@ -1483,11 +1413,11 @@ async function bindInvesteringscaseTrinForm() {
 
     if (trin === "finansiering") {
       const koebsudgifterData = await hentGemtTrinData(valgtCase.caseID, "koebsudgifter", bruger.email);
-      finansieringKoebsudgifterTotal = hentKoebsudgifterTotal(koebsudgifterData);
+      const renoveringData = await hentGemtTrinData(valgtCase.caseID, "renovering", bruger.email);
+      finansieringKoebsudgifterTotal = hentKoebsudgifterTotal(koebsudgifterData) + hentRenoveringTotal(renoveringData);
       opdaterLaanebeloebFraEgenbetaling();
     }
 
-    await opdaterAnalyseHvisMuligt(trin, valgtCase.caseID, bruger.email);
   } catch (error) {
     console.error("Fejl ved hentning af trindata:", error);
     udfyldForm(trin, null);
@@ -1710,7 +1640,6 @@ async function bindInvesteringscaseTrinForm() {
     try {
       await gemTrinData(valgtCase.caseID, trin, bruger.email, data);
       visFormStatus("Gemt.");
-      await opdaterAnalyseHvisMuligt(trin, valgtCase.caseID, bruger.email);
 
       // Efter gem vælger vi retning ud fra den knap brugeren trykkede på.
       if (handling === "next") {

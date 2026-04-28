@@ -550,7 +550,7 @@ async function opretInvesteringscaseFraProfil(ejendom) {
       adresse: ejendom.adresse || ""
     }));
 
-    window.location.href = "købsudgifter.html";
+    window.location.href = "investeringscase/købsudgifter.html";
   } catch (error) {
     console.error("Fejl ved oprettelse af investeringscase fra profil:", error);
     alert("Serverfejl ved oprettelse af investeringscase.");

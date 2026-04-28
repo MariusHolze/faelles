@@ -246,6 +246,10 @@ async function opdaterBbrDataForEjendom(pool, ejendom) {
     return;
   }
 
+  if (!skalOpdatereBbrData(ejendom.sidstOpdateret)) {
+    return;
+  }
+
   try {
     const bbrData = await hentBbrData(ejendom.adresseID, ejendom.adgangsadresseID);
 
@@ -273,6 +277,21 @@ async function opdaterBbrDataForEjendom(pool, ejendom) {
   } catch (error) {
     console.error(`Fejl ved opdatering af BBR-data for ejendom ${ejendom.id}:`, error.message);
   }
+}
+
+function skalOpdatereBbrData(sidstOpdateret) {
+  if (!sidstOpdateret) {
+    return true;
+  }
+
+  const sidstOpdateretTid = new Date(sidstOpdateret).getTime();
+
+  if (Number.isNaN(sidstOpdateretTid)) {
+    return true;
+  }
+
+  const enDagIMs = 24 * 60 * 60 * 1000;
+  return Date.now() - sidstOpdateretTid > enDagIMs;
 }
 
 function harBbrVaerdier(bbrData) {

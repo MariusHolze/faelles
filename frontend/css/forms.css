@@ -1,68 +1,81 @@
-/* ===== KNAPPER ===== */
 button,
 .knap,
-.login-knap {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  background-color: #508fcd;
-  color: white;
-  cursor: pointer;
-  transition: 0.2s;
-  font-size: 14px;
+.login-knap,
+.case-primary-link,
+.sekundaer-link,
+.sekundaer-knap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #508fcd;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 button:hover,
 .knap:hover,
-.login-knap:hover {
-  background-color: #3c6fa3;
+.login-knap:hover,
+.case-primary-link:hover {
+  background: #3c6fa3;
 }
 
-/* ===== FORM LAYOUT ===== */
+.sekundaer-link,
+.sekundaer-knap {
+  background: #eef2f7;
+  border-color: #d9e3ee;
+  color: #243244;
+}
+
+.sekundaer-link:hover,
+.sekundaer-knap:hover {
+  background: #dce5ef;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #c9d7e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #182330;
+  font: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #508fcd;
+}
+
 #login-form,
 #opret-form {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   max-width: 420px;
   margin: 30px auto;
+  padding: 24px;
+  border: 1px solid #d9e3ee;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
-/* ===== INPUT FELTER ===== */
-#login-form input,
-#opret-form input,
-#opret-form select {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: 0.2s;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* ===== LABELS ===== */
 #opret-form label {
+  font-weight: 700;
   text-align: left;
-  width: 100%;
-  font-weight: bold;
-  margin-bottom: 4px;
 }
 
-/* ===== FOCUS STATE ===== */
-input:focus,
-select:focus {
-  outline: none;
-  border-color: #508fcd;
-  box-shadow: 0 0 0 2px rgba(80, 143, 205, 0.2);
-}
-
-/* ===== CONTAINERS ===== */
 .container {
   display: flex;
   flex-direction: column;
@@ -71,12 +84,10 @@ select:focus {
   text-align: center;
 }
 
-/* ===== FEJLBESKEDER ===== */
 #loginFejl,
 #error-message-age,
 #error-message-password {
   color: #c0392b;
-  font-weight: bold;
-  margin-top: 10px;
+  font-weight: 700;
   text-align: center;
 }

@@ -44,7 +44,7 @@ CREATE TABLE Investeringscase (
     ejendomID INT NOT NULL, -- reference til ejendom
     navn VARCHAR(100) NOT NULL, -- navn på casen
     beskrivelse VARCHAR(500) NULL, -- valgfri beskrivelse
-    dataJson NVARCHAR(MAX) NULL, -- gemmer alle case-trin samlet som JSON
+    dataJson NVARCHAR(MAX) NULL, -- prototypevalg: gemmer de fleksible formulartrin samlet som JSON
     oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(), -- oprettet tidspunkt
 
     CONSTRAINT PK_Investeringscase PRIMARY KEY (caseID), -- primærnøgle

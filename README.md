@@ -1,44 +1,137 @@
-## Kørsel af projektet lokalt
+# Estate Scope
 
-Projektet er en prototype og kræver adgang til en SQL Server database for at fungere fuldt ud.
+Estate Scope er en prototype til PROG-eksamen 2026. Appen bruges til at oprette ejendomsprofiler og simple investeringscases med køb, finansiering, renovering, drift og udlejning.
 
-### Hurtig test (uden database)
-Frontend kan åbnes direkte via:
+Projektet er bevidst lavet med almindelig HTML, CSS, JavaScript, Node.js, Express og SQL Server. Der bruges ikke frontend-frameworks.
 
+## Kørsel Lokalt
+
+1. Installer backend-afhængigheder:
+
+```bash
+cd backend
+npm install
+```
+
+2. Opret en lokal `.env` i `backend`:
+
+```bash
+cp .env.example .env
+```
+
+3. Udfyld databaseoplysninger i `backend/.env`:
+
+```text
+PORT=3000
+DB_USER=DIT_BRUGERNAVN
+DB_PASSWORD=DIT_PASSWORD
+DB_SERVER=DIT_SERVERNAVN
+DB_DATABASE=DIT_DATABASENAVN
+```
+
+4. Start backend:
+
+```bash
+npm start
+```
+
+5. Åbn frontend i browseren:
+
+```text
 http://localhost:3000/index.html
+```
 
-(hvis backend kører)
+## Arkitektur
 
-### Kørsel med database
-For at få fuld funktionalitet (oprettelse af bruger og ejendomme) kræves en databaseforbindelse.
+Projektet er delt i tre enkle lag:
 
-1. Opret en lokal .env fil i backend:
+- `frontend/`: HTML, CSS og almindelig JavaScript. Frontend viser UI og kalder backend med `fetch`.
+- `backend/`: Express API-routes, databasekald og beregningslogik.
+- `database/`: SQL-script til tabeller i SQL Server.
 
-   cp backend/.env.example backend/.env
+Investeringscase-delen er delt sådan:
 
-2. Indsæt dine egne databaseoplysninger:
-    Brugernavn og Password er givet i rapportens bilag.
-    Det er ikke givet på forhånd. Dette er gjort for at optimere sikkerhed af vores database. 
+- `backend/routes/investeringscaseRoutes.js`: API og SQL Server-adgang.
+- `backend/services/investeringscaseBeregner.js`: simple økonomiske beregninger.
+- `frontend/investeringscase/`: HTML-sider for de fem formulartrin og caseoverblik.
+- `frontend/js/investeringscaseForm.js`: formularlogik.
+- `frontend/js/investeringscase.js`: liste og overblik over investeringscases.
 
-    PORT=3000
-    DB_USER=DIT_BRUGERNAVN
-    DB_PASSWORD=DIT_PASSWORD
-    DB_SERVER=eksamensprojektprog2026.database.windows.net
-    DB_DATABASE=Ejendomsinvestering-app
+## Database
 
-3. Installer og start backend:
+Den primære database oprettes med:
 
-   cd backend
-   npm install
-   npm start
+```text
+database/01_schema.sql
+```
 
-### Database-opdatering
+Der er tre centrale tabeller:
 
-Hvis databasen oprettes fra bunden, er `database/01_schema.sql` nok, fordi den allerede indeholder:
-- `adresseID` på `Ejendomsprofil`
-- kolonnen `dataJson` på `Investeringscase`
+- `Bruger`: login og brugeroplysninger.
+- `Ejendomsprofil`: adresse og BBR-data for en ejendom.
+- `Investeringscase`: en case knyttet til en ejendom.
 
-Hvis databasen allerede fandtes fra en ældre version af projektet, kan de ekstra scripts køres én gang:
+`Investeringscase.dataJson` gemmer formulartrinene samlet som JSON. Det er et bevidst prototypevalg, fordi casens input kan ændre sig under udvikling uden at databasen skal ændres for hvert nyt felt.
+
+## Investeringscase-Beregninger
+
+Beregningerne ligger i:
+
+```text
+backend/services/investeringscaseBeregner.js
+```
+
+De vigtigste formler er:
+
+```text
+samletInvestering = købsudgifter + renovering
+finansieringsbehov = samletInvestering - egenbetaling
+nettoleje = leje efter tomgang - udlejningsudgifter
+cashflow = nettoleje - driftsudgifter - låneydelse
+egenkapital i ejendom = ejendomsværdi - restgæld
+samlet investorværdi = egenkapital i ejendom + akkumuleret cashflow
+```
+
+Låneydelsen kan indeholde afdrag. Derfor kaldes tallet efter låneydelse for **cashflow** og ikke regnskabsmæssigt resultat.
+
+Ejendomsværdi fremskrives ikke i den nuværende prototype. Købsprisen bruges som en konservativ værdi.
+
+Skat af udlejning vises kun som et estimat.
+
+## Test Af Beregninger
+
+Der findes simple console-baserede tests:
+
+```bash
+node backend/testInvesteringscaseBeregninger.js
+```
+
+Testene dækker:
+
+- case uden renovering
+- case med renovering
+- case hvor egenbetaling dækker hele investeringen
+- case med negativt cashflow
+- case hvor lån afdrages over 30 år
+
+## Bevidst Simple Designvalg
+
+Projektet er en prototype og prioriterer forklarbarhed:
+
+- Ingen React eller andre frontend-frameworks.
+- Ingen TypeScript.
+- Simple Express-routes.
+- Simple SQL-tabeller.
+- Investeringscase-input gemmes som JSON for fleksibilitet.
+- Skatteberegning er kun et estimat.
+- Ejendomsværdi holdes konservativt uændret.
+
+## Database-Opdateringer
+
+Hvis databasen oprettes fra bunden, er `database/01_schema.sql` nok.
+
+Hvis databasen allerede findes fra en ældre version, kan disse scripts køres én gang:
+
 - `database/02_add_adresseID.sql`
 - `database/03_add_investeringscase_koebspost.sql`
 - `database/04_add_investeringscase_trindata.sql`

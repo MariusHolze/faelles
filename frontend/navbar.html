@@ -1,18 +1,18 @@
 <div class="navbar"> <!-- container til hele topmenuen -->
   <nav>
     <div class="nav-left"> <!-- venstre side (statisk navigation) -->
-      <a href="index.html">
-        <img src="img/estatescope.png" alt="Logo" id="logo">
+      <a href="/index.html">
+        <img src="/img/estatescope.png" alt="Logo" id="logo">
         Estate Scope
       </a>
 
-      <a href="omOs.html">Om os</a> <!-- simpel navigation -->
-      <a href="kontakt.html">Kontakt</a>
-      <a href="investeringscase.html">Investeringscase</a> <!-- simpel navigation -->
+      <a href="/omOs.html">Om os</a> <!-- simpel navigation -->
+      <a href="/kontakt.html">Kontakt</a>
+      <a href="/investeringscase.html">Investeringscase</a> <!-- simpel navigation -->
     </div>
 
     <div class="nav-right"> <!-- højre side (login / bruger state) -->
-      <a href="login.html" id="loginNavKnap" class="login-knap">Log ind</a> <!-- vises når IKKE logget ind -->
+      <a href="/login.html" id="loginNavKnap" class="login-knap">Log ind</a> <!-- vises når IKKE logget ind -->
 
       <div id="brugerMenuWrapper" class="bruger-menu-wrapper skjult"> <!-- vises kun når bruger er logget ind (JS toggler .skjult) -->
         <button id="brugerMenuKnap" class="bruger-menu-knap" type="button"> <!-- JS bruger denne til at åbne/lukke dropdown -->
@@ -21,7 +21,7 @@
         </button>
 
         <div id="brugerDropdown" class="bruger-dropdown skjult"> <!-- dropdown menu, skjules/vises via JS -->
-          <a href="profil.html" class="dropdown-link">Min profil</a> <!-- statisk link -->
+          <a href="/profil.html" class="dropdown-link">Min profil</a> <!-- statisk link -->
           <button id="logUdKnap" class="dropdown-knap" type="button">Log ud</button> <!-- JS fanger klik og logger ud -->
         </div>
       </div>

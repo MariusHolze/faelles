@@ -31,6 +31,9 @@ const TILLADTE_BYGNINGSKODER_TIL_EJENDOMSPROFIL = new Set(
 
 const TILLADTE_ENHED_BOLIGTYPER_TIL_EJENDOMSPROFIL = new Set([1, 2, 3, 4, 5]);
 
+let bbrRestAdgangAfvist = false;
+let darBfeAdgangAfvist = false;
+
 function hentBbrConfig() {
   return {
     username: process.env.BBR_USERNAME,
@@ -45,7 +48,11 @@ function hentBbrConfig() {
 }
 
 function harBbrLogin(config) {
-  return Boolean(config.username && config.password && config.baseUrl);
+  return Boolean(config.username && config.password && config.baseUrl && !bbrRestAdgangAfvist);
+}
+
+function harDarBfeLogin(config) {
+  return Boolean(config.username && config.password && config.darBfeBaseUrl && !darBfeAdgangAfvist);
 }
 
 function harBbrApiKey(config) {
@@ -122,8 +129,7 @@ async function hentBbrDataViaGraphql(adresseID, adgangsadresseID, config) {
     bygninger = await hentBygningerForEnhederViaGraphql(enheder, tid, config);
   }
 
-  const jordstykkeID = findFoersteVaerdiIObjekter(bygninger, "jordstykke");
-  const grundareal = jordstykkeID ? await hentGrundarealViaGraphql(jordstykkeID, tid, config) : null;
+  const grundareal = await hentGrundarealForBygningerViaGraphql(bygninger, tid, config);
   const grunde = grundareal ? [{ grundareal }] : [];
 
   return lavBbrOverblik(bygninger, enheder, grunde);
@@ -271,6 +277,21 @@ async function hentGrundarealViaGraphql(jordstykkeID, tid, config) {
   return findFoersteTal(jordstykke?.registreretAreal);
 }
 
+async function hentGrundarealForBygningerViaGraphql(bygninger, tid, config) {
+  const bygning = vaelgRelevantBygning(bygninger);
+  const jordstykkeID = findFoersteVaerdiIObjekter([bygning], "jordstykke");
+  return jordstykkeID ? hentMatJordstykkeArealViaGraphql(jordstykkeID, tid, config) : null;
+}
+
+async function hentMatJordstykkeArealViaGraphql(jordstykkeID, tid, config) {
+  try {
+    return await hentGrundarealViaGraphql(jordstykkeID, tid, config);
+  } catch (error) {
+    console.error("MAT-jordstykkeareal kunne ikke hentes:", error.message);
+    return null;
+  }
+}
+
 async function hentFraGraphql(baseUrl, apiKey, query, variables) {
   const url = `${baseUrl}?apikey=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url, {
@@ -320,6 +341,10 @@ async function hentEnheder(adresseID, config) {
 }
 
 async function hentBfeNumre(adresseID, adgangsadresseID, config) {
+  if (!harDarBfeLogin(config)) {
+    return [];
+  }
+
   const bfeNumre = [];
 
   if (adresseID) {
@@ -381,6 +406,10 @@ async function hentBygningerViaWfs(adgangsadresseID, config) {
 }
 
 async function hentFraDatafordelerMedFallback(metode, parametreListe, config) {
+  if (bbrRestAdgangAfvist) {
+    return [];
+  }
+
   for (const parametre of parametreListe) {
     const harVaerdi = Object.values(parametre).some(Boolean);
 
@@ -393,6 +422,12 @@ async function hentFraDatafordelerMedFallback(metode, parametreListe, config) {
     try {
       data = await hentFraDatafordeler(metode, parametre, config);
     } catch (error) {
+      if (erAdgangAfvist(error.status)) {
+        bbrRestAdgangAfvist = true;
+        console.error(`BBR REST-login afvist med status ${error.status}. REST-fallback springes over indtil serveren genstartes.`);
+        return [];
+      }
+
       console.error(`BBR ${metode} kunne ikke hentes med de valgte parametre:`, error.message);
       continue;
     }
@@ -406,6 +441,10 @@ async function hentFraDatafordelerMedFallback(metode, parametreListe, config) {
 }
 
 async function hentFraDarBfe(metode, soegeParametre, config) {
+  if (darBfeAdgangAfvist) {
+    return [];
+  }
+
   const baseUrl = config.darBfeBaseUrl.replace(/\/$/, "").replace("/REST", "/rest");
 
   const params = new URLSearchParams({
@@ -418,6 +457,12 @@ async function hentFraDarBfe(metode, soegeParametre, config) {
   const response = await fetch(`${baseUrl}/${metode}?${params.toString()}`);
 
   if (!response.ok) {
+    if (erAdgangAfvist(response.status)) {
+      darBfeAdgangAfvist = true;
+      console.error(`DAR-BFE-login afvist med status ${response.status}. DAR-BFE-opslag springes over indtil serveren genstartes.`);
+      return [];
+    }
+
     console.error(`DAR-BFE ${metode} svarede med status ${response.status}`);
     return [];
   }
@@ -439,11 +484,17 @@ async function hentFraDatafordeler(metode, soegeParametre, config) {
   const response = await fetch(`${baseUrl}/${metode}?${params.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`BBR ${metode} svarede med status ${response.status}`);
+    const error = new Error(`BBR ${metode} svarede med status ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   const data = await response.json();
   return normaliserBbrListe(data);
+}
+
+function erAdgangAfvist(status) {
+  return status === 401 || status === 403;
 }
 
 function lavBbrOverblik(bygninger, enheder, grunde) {
