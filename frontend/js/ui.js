@@ -6,7 +6,7 @@ async function indsætNavbar() {
   }
 
   try {
-    const response = await fetch("navbar.html"); // henter HTML-filen med navbar
+    const response = await fetch("/navbar.html"); // henter HTML-filen med navbar
     const html = await response.text(); // læser svaret som tekst
     navbarContainer.innerHTML = html; // sætter navbar ind på siden
   } catch (error) {
@@ -68,7 +68,7 @@ function bindLogoutKnap() {
   document.addEventListener("click", function (event) {
     if (event.target && event.target.id === "logUdKnap") {
       fjernLoggetIndBruger(); // sletter gemt bruger
-      window.location.href = "index.html"; // sender tilbage til forsiden
+      window.location.href = "/index.html"; // sender tilbage til forsiden
     }
   });
 }

@@ -1,17 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const { sql, getPool } = require("../db");
-
-const gyldigeTrin = [
-  "koebsudgifter",
-  "finansiering",
-  "renovering",
-  "driftsbudget",
-  "udlejning"
-];
+const {
+  GYLDIGE_TRIN,
+  beregnAnalyse,
+  lavTomCaseData,
+  mergeTrinData,
+  parseJson
+} = require("../services/investeringscaseBeregner");
 
 function erGyldigtTrin(trin) {
-  return gyldigeTrin.includes(trin);
+  return GYLDIGE_TRIN.includes(trin);
+}
+
+function erGyldigtId(value) {
+  return Number.isInteger(Number(value)) && Number(value) > 0;
 }
 
 async function brugerHarAdgangTilCase(pool, caseID, email) {
@@ -30,311 +33,8 @@ async function brugerHarAdgangTilCase(pool, caseID, email) {
   return result.recordset.length > 0;
 }
 
-function hentKoebsposter(data) {
-  if (!data || !Array.isArray(data.poster)) {
-    return [];
-  }
-
-  return data.poster
-    .map((post) => ({
-      navn: String(post.navn || "").trim(),
-      beloeb: Number(post.beloeb)
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
-}
-
-function hentRenoveringsposter(data) {
-  if (data && data.aktiv === false) {
-    return [];
-  }
-
-  if (!data || !Array.isArray(data.poster)) {
-    if (!data || !tal(data.renoveringsbudget)) {
-      return [];
-    }
-
-    return [{
-      navn: "Renovering",
-      beloeb: tal(data.renoveringsbudget),
-      tidspunktKey: "",
-      tidspunktLabel: "",
-      tidspunktMaaned: Math.max(1, tal(data.varighedMaaneder) || 1)
-    }];
-  }
-
-  return data.poster
-    .map((post) => {
-      const tidspunktMaaned = post.tidspunktMaaned === null || post.tidspunktMaaned === undefined || post.tidspunktMaaned === ""
-        ? null
-        : Number(post.tidspunktMaaned);
-
-      return {
-        navn: String(post.navn || "").trim(),
-        beloeb: Number(post.beloeb),
-        tidspunktKey: String(post.tidspunktKey || "").trim(),
-        tidspunktLabel: String(post.tidspunktLabel || "").trim(),
-        tidspunktMaaned
-      };
-    })
-    .filter((post) => {
-      const harTidspunkt =
-        post.tidspunktKey ||
-        post.tidspunktLabel ||
-        (!Number.isNaN(post.tidspunktMaaned) && post.tidspunktMaaned >= 1);
-
-      return post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0 && harTidspunkt;
-    });
-}
-
-function hentDriftsposter(data) {
-  if (!data || typeof data !== "object") {
-    return [];
-  }
-
-  if (Array.isArray(data.poster)) {
-    return data.poster
-      .map((post) => ({
-        navn: String(post.navn || "").trim(),
-        beloeb: Number(post.beloeb),
-        periode: post.periode === "maanedligt" ? "maanedligt" : "aarligt"
-      }))
-      .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb > 0);
-  }
-
-  const legacyFelter = [
-    { key: "ejendomsskat", navn: "Ejendomsskat" },
-    { key: "forsikring", navn: "Forsikring" },
-    { key: "vedligehold", navn: "Vedligehold" },
-    { key: "oevrigeUdgifter", navn: "Øvrige udgifter" }
-  ];
-
-  return legacyFelter
-    .filter((felt) => data[felt.key] !== undefined && data[felt.key] !== null && data[felt.key] !== "")
-    .map((felt) => ({
-      navn: felt.navn,
-      beloeb: Number(data[felt.key]),
-      periode: "aarligt"
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb > 0);
-}
-
-function beregnDriftsudgifter(poster) {
-  return poster.reduce((totaler, post) => {
-    if (post.periode === "maanedligt") {
-      totaler.maanedligt += post.beloeb;
-      totaler.aarligt += post.beloeb * 12;
-    } else {
-      totaler.aarligt += post.beloeb;
-      totaler.maanedligt += post.beloeb / 12;
-    }
-
-    return totaler;
-  }, { maanedligt: 0, aarligt: 0 });
-}
-
-function parseJson(value) {
-  if (!value) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
-}
-
-function lavTomCaseData() {
-  return {
-    koebsudgifter: {},
-    finansiering: {},
-    renovering: {},
-    driftsbudget: {},
-    udlejning: {}
-  };
-}
-
-function mergeTrinData(eksisterendeData, trin, data) {
-  const samletData = {
-    ...lavTomCaseData(),
-    ...(eksisterendeData || {})
-  };
-
-  samletData[trin] = data || {};
-  return samletData;
-}
-
-function tal(value) {
-  const nummer = Number(value);
-  return Number.isNaN(nummer) ? 0 : nummer;
-}
-
-function harData(data) {
-  if (!data || typeof data !== "object") {
-    return false;
-  }
-
-  return Object.values(data).some((value) => {
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
-
-    return value !== "" && value !== null && value !== undefined;
-  });
-}
-
-function beregnHovedstol(laanebeloeb, egenbetaling) {
-  return Math.max(0, tal(laanebeloeb));
-}
-
-function beregnYdelse(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling) {
-  const hovedstol = beregnHovedstol(laanebeloeb, egenbetaling);
-  const maanedligRente = (tal(rente) / 100) / 12;
-  const antalMaaneder = tal(loebetid) * 12;
-
-  // Hvis der mangler lånedata, kan vi ikke beregne en ydelse endnu.
-  if (hovedstol <= 0 || antalMaaneder <= 0) {
-    return 0;
-  }
-
-  // Hvis casen har afdragsfrihed, viser vi den første ydelse som rente-only.
-  if (tal(afdragsfrihed) > 0) {
-    return hovedstol * maanedligRente;
-  }
-
-  if (maanedligRente === 0) {
-    return hovedstol / antalMaaneder;
-  }
-
-  return hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -antalMaaneder)));
-}
-
-function beregnSamletRenteomkostning(laanebeloeb, rente, loebetid, afdragsfrihed, egenbetaling) {
-  const hovedstol = beregnHovedstol(laanebeloeb, egenbetaling);
-  const maanedligRente = (tal(rente) / 100) / 12;
-  const antalMaaneder = tal(loebetid) * 12;
-  const afdragsfriMaaneder = Math.min(antalMaaneder, tal(afdragsfrihed) * 12);
-  const tilbagebetalingsMaaneder = Math.max(0, antalMaaneder - afdragsfriMaaneder);
-
-  if (hovedstol <= 0 || antalMaaneder <= 0) {
-    return 0;
-  }
-
-  if (afdragsfriMaaneder > 0) {
-    const renteOnlyYdelse = maanedligRente === 0 ? 0 : hovedstol * maanedligRente;
-    const amortiseretYdelse = tilbagebetalingsMaaneder <= 0
-      ? 0
-      : maanedligRente === 0
-        ? hovedstol / tilbagebetalingsMaaneder
-        : hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -tilbagebetalingsMaaneder)));
-
-    return Math.max(0, (renteOnlyYdelse * afdragsfriMaaneder) +
-      (amortiseretYdelse * tilbagebetalingsMaaneder) -
-      hovedstol);
-  }
-
-  const maanedligYdelse = beregnYdelse(laanebeloeb, rente, loebetid, 0, egenbetaling);
-  return Math.max(0, (maanedligYdelse * antalMaaneder) - hovedstol);
-}
-
-function beregnAnalyse(trinData) {
-  const koeb = trinData.koebsudgifter || {};
-  const finansiering = trinData.finansiering || {};
-  const renovering = trinData.renovering || {};
-  const drift = trinData.driftsbudget || {};
-  const udlejning = trinData.udlejning || {};
-  const udlejningAktiv = udlejning.aktiv !== false;
-  const poster = hentKoebsposter(koeb);
-  const koebsudgifterIAlt = poster.reduce((sum, post) => sum + post.beloeb, 0);
-  const renoveringsposter = hentRenoveringsposter(renovering);
-  const renoveringIAlt = renoveringsposter.reduce((sum, post) => sum + post.beloeb, 0);
-  const samletInvestering = koebsudgifterIAlt + renoveringIAlt;
-  const driftsposter = hentDriftsposter(drift);
-  const driftsudgifter = beregnDriftsudgifter(driftsposter);
-  const driftsudgifterMaanedligt = driftsudgifter.maanedligt;
-  const driftsudgifterAarligt = driftsudgifter.aarligt;
-  const lejeAarligt = udlejningAktiv ? tal(udlejning.maanedligLeje) * 12 : 0;
-  const tomgangDage = udlejning.tomgangDage !== undefined && udlejning.tomgangDage !== null
-    ? Math.min(365, Math.max(0, tal(udlejning.tomgangDage)))
-    : Math.round((Math.min(100, Math.max(0, tal(udlejning.tomgangProcent))) / 100) * 365);
-  const tomgangBeloeb = udlejningAktiv ? lejeAarligt * (tomgangDage / 365) : 0;
-  const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
-  const lejeudgifterAarligt = udlejningAktiv
-    ? (tal(udlejning.maanedligeUdlejningsudgifter) * 12) + tal(udlejning.aarligeUdlejningsudgifter)
-    : 0;
-  const lejeudgifterMaanedligt = lejeudgifterAarligt / 12;
-  const nettoLejeAarligt = lejeEfterTomgang - lejeudgifterAarligt;
-  const nettoLejeMaanedligt = nettoLejeAarligt / 12;
-  // Skatteestimatet følger skat.dk's princip om 40% fradrag på lejeindtægt og beskattes her som kapitalindkomst.
-  const skattefritBeloeb = Math.max(0, nettoLejeAarligt) * 0.4;
-  const skattepligtigtBeloeb = Math.max(0, nettoLejeAarligt - skattefritBeloeb);
-  const skatBeloeb = skattepligtigtBeloeb * 0.42;
-  const lejeEfterSkatAarligt = nettoLejeAarligt - skatBeloeb;
-  const lejeEfterSkatMaanedligt = lejeEfterSkatAarligt / 12;
-  const finansieringsbehov = Math.max(0, koebsudgifterIAlt - tal(finansiering.egenbetaling));
-  const hovedstol = beregnHovedstol(finansieringsbehov, finansiering.egenbetaling);
-  const renteudgiftAarligt = hovedstol * (tal(finansiering.rente) / 100);
-  const maanedligYdelse = beregnYdelse(
-    finansieringsbehov,
-    finansiering.rente,
-    finansiering.loebetid,
-    finansiering.afdragsfrihed,
-    finansiering.egenbetaling
-  );
-  const samletRenteomkostning = beregnSamletRenteomkostning(
-    finansieringsbehov,
-    finansiering.rente,
-    finansiering.loebetid,
-    finansiering.afdragsfrihed,
-    finansiering.egenbetaling
-  );
-  const ydelseAarligt = maanedligYdelse * 12;
-  const resultatFoerFinansiering = nettoLejeAarligt - driftsudgifterAarligt;
-  const resultatEfterRente = resultatFoerFinansiering - renteudgiftAarligt;
-  const resultatEfterFinansiering = resultatFoerFinansiering - ydelseAarligt;
-  const egenkapitalBehov = Math.max(0, samletInvestering - finansieringsbehov);
-  const antalUdfyldteTrin = gyldigeTrin.filter((trin) => harData(trinData[trin])).length;
-  const naesteTrin = gyldigeTrin.find((trin) => !harData(trinData[trin])) || "koebsudgifter";
-
-  return {
-    antalKoebsposter: poster.length,
-    antalRenoveringsposter: renoveringsposter.length,
-    antalDriftsposter: driftsposter.length,
-    koebsudgifterIAlt,
-    finansieringsbehov,
-    renoveringIAlt,
-    samletInvestering,
-    driftsudgifterMaanedligt,
-    driftsudgifterAarligt,
-    lejeAarligt,
-    tomgangDage,
-    tomgangBeloeb,
-    lejeEfterTomgang,
-    lejeudgifterMaanedligt,
-    lejeudgifterAarligt,
-    nettoLejeMaanedligt,
-    nettoLejeAarligt,
-    skattefritBeloeb,
-    skattepligtigtBeloeb,
-    skatBeloeb,
-    lejeEfterSkatMaanedligt,
-    lejeEfterSkatAarligt,
-    renteudgiftAarligt,
-    samletRenteomkostning,
-    maanedligYdelse,
-    ydelseAarligt,
-    resultatFoerFinansiering,
-    resultatEfterRente,
-    resultatEfterFinansiering,
-    egenkapitalBehov,
-    antalUdfyldteTrin,
-    naesteTrin
-  };
-}
-
 function mapCaseRow(row) {
-  const data = parseJson(row.dataJson);
-  const analyse = beregnAnalyse(data);
+  const analyse = beregnAnalyse(parseJson(row.dataJson));
 
   return {
     caseID: row.caseID,
@@ -347,30 +47,39 @@ function mapCaseRow(row) {
     byggeaar: row.byggeaar,
     koebsudgifterIAlt: analyse.koebsudgifterIAlt,
     samletInvestering: analyse.samletInvestering,
+    finansieringsbehov: analyse.finansieringsbehov,
     egenkapitalBehov: analyse.egenkapitalBehov,
     maanedligYdelse: analyse.maanedligYdelse,
-    lejeEfterTomgang: analyse.lejeEfterTomgang,
-    lejeudgifterMaanedligt: analyse.lejeudgifterMaanedligt,
-    lejeudgifterAarligt: analyse.lejeudgifterAarligt,
-    nettoLejeMaanedligt: analyse.nettoLejeMaanedligt,
     nettoLejeAarligt: analyse.nettoLejeAarligt,
-    lejeEfterSkatMaanedligt: analyse.lejeEfterSkatMaanedligt,
     lejeEfterSkatAarligt: analyse.lejeEfterSkatAarligt,
-    driftsudgifterMaanedligt: analyse.driftsudgifterMaanedligt,
     driftsudgifterAarligt: analyse.driftsudgifterAarligt,
     resultatEfterFinansiering: analyse.resultatEfterFinansiering,
+    aarligtCashflowEfterLaaneydelse: analyse.aarligtCashflowEfterLaaneydelse,
     antalUdfyldteTrin: analyse.antalUdfyldteTrin,
     naesteTrin: analyse.naesteTrin
   };
 }
 
-// Henter alle cases for en bruger eller for en bestemt ejendom.
+function hentGyldigeKoebsposter(koebsposter) {
+  const poster = Array.isArray(koebsposter) ? koebsposter : [];
+
+  return poster
+    .map((post) => ({
+      navn: String(post.navn || "").trim(),
+      beloeb: Number(post.beloeb)
+    }))
+    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
+}
+
 router.get("/", async (req, res) => {
-  const email = req.query.email;
-  const ejendomID = req.query.ejendomID;
+  const { email, ejendomID } = req.query;
 
   if (!email && !ejendomID) {
     return res.status(400).json({ message: "Email eller ejendomID mangler" });
+  }
+
+  if (ejendomID && !erGyldigtId(ejendomID)) {
+    return res.status(400).json({ message: "Ugyldigt ejendoms-ID" });
   }
 
   try {
@@ -389,40 +98,36 @@ router.get("/", async (req, res) => {
     }
 
     const result = await request.query(`
-        SELECT
-          c.caseID,
-          c.ejendomID,
-          c.navn,
-          c.beskrivelse,
-          c.oprettetTidspunkt,
-          c.dataJson,
-          e.adresse,
-          e.boligareal,
-          e.byggeaar
-        FROM Investeringscase c
-        JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
-        JOIN Bruger b ON e.brugerID = b.brugerID
-        WHERE ${whereClause}
-        ORDER BY c.oprettetTidspunkt DESC
-      `);
+      SELECT
+        c.caseID,
+        c.ejendomID,
+        c.navn,
+        c.beskrivelse,
+        c.oprettetTidspunkt,
+        c.dataJson,
+        e.adresse,
+        e.boligareal,
+        e.byggeaar
+      FROM Investeringscase c
+      JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
+      JOIN Bruger b ON e.brugerID = b.brugerID
+      WHERE ${whereClause}
+      ORDER BY c.oprettetTidspunkt DESC
+    `);
 
-    const cases = result.recordset.map(mapCaseRow);
-
-    res.json(cases);
+    res.json(result.recordset.map(mapCaseRow));
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
-    res.status(500).json({ message: "Server fejl" });
+    res.status(500).json({ message: "Databasefejl ved hentning af investeringscases" });
   }
 });
 
-// Opretter en case med navn, beskrivelse og variable købsposter.
 router.post("/", async (req, res) => {
   const { ejendomID, ownerEmail, navn, beskrivelse, koebsposter } = req.body;
   const caseNavn = String(navn || "").trim();
   const caseBeskrivelse = String(beskrivelse || "").trim();
-  const poster = Array.isArray(koebsposter) ? koebsposter : [];
 
-  if (!ejendomID || !ownerEmail || !caseNavn) {
+  if (!erGyldigtId(ejendomID) || !ownerEmail || !caseNavn) {
     return res.status(400).json({ message: "Ejendom, bruger og navn skal udfyldes" });
   }
 
@@ -432,8 +137,6 @@ router.post("/", async (req, res) => {
 
   try {
     const pool = await getPool();
-
-    // Tjekker at ejendommen tilhører brugeren.
     const adgang = await pool.request()
       .input("ejendomID", sql.Int, Number(ejendomID))
       .input("email", sql.VarChar(255), ownerEmail)
@@ -449,7 +152,6 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "Ejendom ikke fundet eller ingen adgang" });
     }
 
-    // Navnet skal være unikt for brugerens cases.
     const eksisterende = await pool.request()
       .input("email", sql.VarChar(255), ownerEmail)
       .input("navn", sql.VarChar(100), caseNavn)
@@ -466,14 +168,8 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ message: "Du har allerede en case med det navn" });
     }
 
-    const gyldigePoster = poster
-      .map((post) => ({
-        navn: String(post.navn || "").trim(),
-        beloeb: Number(post.beloeb)
-      }))
-      .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
-
     const caseData = lavTomCaseData();
+    const gyldigePoster = hentGyldigeKoebsposter(koebsposter);
 
     if (gyldigePoster.length > 0) {
       caseData.koebsudgifter = {
@@ -493,29 +189,26 @@ router.post("/", async (req, res) => {
         VALUES (@ejendomID, @navn, @beskrivelse, @dataJson)
       `);
 
-    const caseID = caseResult.recordset[0].caseID;
-
     res.status(201).json({
       message: "Investeringscase oprettet",
-      caseID
+      caseID: caseResult.recordset[0].caseID
     });
   } catch (error) {
     console.error("Fejl ved oprettelse af investeringscase:", error);
-    res.status(500).json({ message: "Server fejl" });
+    res.status(500).json({ message: "Databasefejl ved oprettelse af investeringscase" });
   }
 });
 
-// Henter gemte data for ét trin i den guidede formular.
 router.get("/:caseID/trin/:trin", async (req, res) => {
   const { caseID, trin } = req.params;
-  const email = req.query.email;
+  const { email } = req.query;
 
   if (!email) {
     return res.status(400).json({ message: "Email mangler" });
   }
 
-  if (!erGyldigtTrin(trin)) {
-    return res.status(400).json({ message: "Ugyldigt formulartrin" });
+  if (!erGyldigtId(caseID) || !erGyldigtTrin(trin)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID eller formulartrin" });
   }
 
   try {
@@ -534,29 +227,30 @@ router.get("/:caseID/trin/:trin", async (req, res) => {
         WHERE caseID = @caseID
       `);
 
-    if (result.recordset.length === 0) {
-      return res.json({ data: null });
-    }
-
-    const samletData = parseJson(result.recordset[0].dataJson);
+    const samletData = result.recordset.length > 0
+      ? parseJson(result.recordset[0].dataJson)
+      : {};
 
     res.json({
       data: samletData[trin] || null,
-      opdateretTidspunkt: result.recordset[0].oprettetTidspunkt
+      opdateretTidspunkt: result.recordset[0]?.oprettetTidspunkt || null
     });
   } catch (error) {
     console.error("Fejl ved hentning af formulartrin:", error);
-    res.status(500).json({ message: "Server fejl" });
+    res.status(500).json({ message: "Databasefejl ved hentning af formulartrin" });
   }
 });
 
-// Samler de gemte trin til en enkel økonomisk analyse.
 router.get("/:caseID/analyse", async (req, res) => {
   const { caseID } = req.params;
-  const email = req.query.email;
+  const { email } = req.query;
 
   if (!email) {
     return res.status(400).json({ message: "Email mangler" });
+  }
+
+  if (!erGyldigtId(caseID)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID" });
   }
 
   try {
@@ -585,43 +279,7 @@ router.get("/:caseID/analyse", async (req, res) => {
     });
   } catch (error) {
     console.error("Fejl ved beregning af investeringsanalyse:", error);
-    res.status(500).json({ message: "Server fejl" });
-  }
-});
-
-// Gemmer data for ét trin i den guidede formular.
-// Sletter en investeringscase, hvis brugeren ejer den.
-router.delete("/:caseID", async (req, res) => {
-  const { caseID } = req.params;
-  const { ownerEmail } = req.body;
-
-  if (!ownerEmail) {
-    return res.status(400).json({ message: "Email mangler" });
-  }
-
-  try {
-    const pool = await getPool();
-    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, ownerEmail);
-
-    if (!harAdgang) {
-      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
-    }
-
-    const result = await pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .query(`
-        DELETE FROM Investeringscase
-        WHERE caseID = @caseID
-      `);
-
-    if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ message: "Case ikke fundet" });
-    }
-
-    res.json({ message: "Investeringscase slettet" });
-  } catch (error) {
-    console.error("Fejl ved sletning af investeringscase:", error);
-    res.status(500).json({ message: "Server fejl" });
+    res.status(500).json({ message: "Databasefejl ved beregning af analyse" });
   }
 });
 
@@ -633,8 +291,8 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
     return res.status(400).json({ message: "Email mangler" });
   }
 
-  if (!erGyldigtTrin(trin)) {
-    return res.status(400).json({ message: "Ugyldigt formulartrin" });
+  if (!erGyldigtId(caseID) || !erGyldigtTrin(trin)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID eller formulartrin" });
   }
 
   try {
@@ -645,7 +303,6 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
       return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
     }
 
-    const dataJson = JSON.stringify(data || {});
     const eksisterende = await pool.request()
       .input("caseID", sql.Int, Number(caseID))
       .query(`
@@ -672,7 +329,41 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
     res.json({ message: "Formulartrin gemt" });
   } catch (error) {
     console.error("Fejl ved gem af formulartrin:", error);
-    res.status(500).json({ message: "Server fejl" });
+    res.status(500).json({ message: "Databasefejl ved gem af formulartrin" });
+  }
+});
+
+router.delete("/:caseID", async (req, res) => {
+  const { caseID } = req.params;
+  const { ownerEmail } = req.body;
+
+  if (!ownerEmail) {
+    return res.status(400).json({ message: "Email mangler" });
+  }
+
+  if (!erGyldigtId(caseID)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID" });
+  }
+
+  try {
+    const pool = await getPool();
+    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, ownerEmail);
+
+    if (!harAdgang) {
+      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    }
+
+    await pool.request()
+      .input("caseID", sql.Int, Number(caseID))
+      .query(`
+        DELETE FROM Investeringscase
+        WHERE caseID = @caseID
+      `);
+
+    res.json({ message: "Investeringscase slettet" });
+  } catch (error) {
+    console.error("Fejl ved sletning af investeringscase:", error);
+    res.status(500).json({ message: "Databasefejl ved sletning af investeringscase" });
   }
 });
 
