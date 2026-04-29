@@ -670,57 +670,82 @@ function beregnNoegletalUdvikling(analyse = {}) {
   return [];
 }
 
-function lavSvgPunkter(punkter, felt, xForAar, yForVaerdi) {
-  return punkter
-    .map((punkt) => `${xForAar(punkt.aar).toFixed(1)},${yForVaerdi(punkt[felt]).toFixed(1)}`)
-    .join(" ");
-}
-
 function lavUdviklingsGraf(punkter) {
   if (!punkter.length) {
     return "";
   }
-
-  const bredde = 760;
-  const hoejde = 260;
-  const padding = 34;
-  const vaerdier = punkter.flatMap((punkt) => [
-    punkt.egenkapitalIEjendom,
-    punkt.akkumuleretCashflow,
-    punkt.gaeld
-  ]);
-  const min = Math.min(0, ...vaerdier);
-  const max = Math.max(0, ...vaerdier);
-  const spænd = max - min || 1;
-  const xForAar = (aar) => padding + ((aar - 1) / 29) * (bredde - padding * 2);
-  const yForVaerdi = (value) => hoejde - padding - ((value - min) / spænd) * (hoejde - padding * 2);
-  const egenkapitalLinje = lavSvgPunkter(punkter, "egenkapitalIEjendom", xForAar, yForVaerdi);
-  const cashflowLinje = lavSvgPunkter(punkter, "akkumuleretCashflow", xForAar, yForVaerdi);
-  const gaeldLinje = lavSvgPunkter(punkter, "gaeld", xForAar, yForVaerdi);
-  const nulY = yForVaerdi(0).toFixed(1);
-  const sidste = punkter[punkter.length - 1];
 
   return `
     <div class="noegletal-graf">
       <div class="noegletal-graf-header">
         <p>Egenkapital i ejendom, cashflow og gæld baseret på investeringscasens parametre.</p>
       </div>
-      <div class="noegletal-signatur">
-        <span class="egenkapital">Egenkapital i ejendom</span>
-        <span class="cashflow">Cashflow</span>
-        <span class="gaeld">Gæld</span>
-      </div>
-      <svg viewBox="0 0 ${bredde} ${hoejde}" role="img" aria-label="Udvikling i egenkapital, cashflow og gæld over 30 år">
-        <line x1="${padding}" y1="${nulY}" x2="${bredde - padding}" y2="${nulY}" class="noegletal-nul-linje"></line>
-        <polyline points="${egenkapitalLinje}" class="noegletal-linje noegletal-linje-egenkapital"></polyline>
-        <polyline points="${cashflowLinje}" class="noegletal-linje noegletal-linje-cashflow"></polyline>
-        <polyline points="${gaeldLinje}" class="noegletal-linje noegletal-linje-gaeld"></polyline>
-        <text x="${padding}" y="${hoejde - 8}">År 1</text>
-        <text x="${bredde / 2}" y="${hoejde - 8}" text-anchor="middle">År 15</text>
-        <text x="${bredde - padding}" y="${hoejde - 8}" text-anchor="end">År 30</text>
-      </svg>
+      <canvas id="noegletalGrafCanvas" aria-label="Udvikling i egenkapital, cashflow og gæld over 30 år" role="img"></canvas>
     </div>
   `;
+}
+
+function initNoegletalGraf(punkter) {
+  const canvas = document.getElementById("noegletalGrafCanvas");
+  if (!canvas || !punkter.length) {
+    return;
+  }
+
+  new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: punkter.map((p) => `År ${p.aar}`),
+      datasets: [
+        {
+          label: "Egenkapital i ejendom",
+          data: punkter.map((p) => p.egenkapitalIEjendom),
+          borderColor: "#2563eb",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1
+        },
+        {
+          label: "Akkumuleret cashflow",
+          data: punkter.map((p) => p.akkumuleretCashflow),
+          borderColor: "#0f766e",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1
+        },
+        {
+          label: "Gæld",
+          data: punkter.map((p) => p.gaeld),
+          borderColor: "#c94c4c",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "top" },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatKroner(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 10 } },
+        y: {
+          ticks: {
+            callback: (value) => formatKroner(value)
+          }
+        }
+      }
+    }
+  });
 }
 
 function lavUdviklingsRækker(punkter) {
@@ -1132,7 +1157,9 @@ async function initCaseOverblikSide() {
     const analyse = data.analyse || {};
     const trinData = data.trinData || {};
 
+    const udvikling = beregnNoegletalUdvikling(analyse);
     overblikGrid.innerHTML = lavOverblikNoegletal(analyse, trinData);
+    initNoegletalGraf(udvikling);
     trinGrid.innerHTML = lavTrinOverblik(trinData, analyse);
 
     // Opdaterer localStorage, så Rediger-knappen fortsætter fra første manglende trin.

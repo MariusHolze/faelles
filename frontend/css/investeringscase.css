@@ -820,57 +820,15 @@
   border-top: 1px solid #e2e8f0;
 }
 
-.noegletal-graf-header,
-.noegletal-signatur {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+.noegletal-graf-header {
   margin-bottom: 12px;
 }
 
-.noegletal-signatur span {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.noegletal-signatur .egenkapital,
-.noegletal-linje-egenkapital {
-  color: #2563eb;
-}
-
-.noegletal-signatur .cashflow,
-.noegletal-linje-cashflow {
-  color: #0f766e;
-}
-
-.noegletal-signatur .gaeld,
-.noegletal-linje-gaeld {
-  color: #c94c4c;
-}
-
-.noegletal-graf svg {
-  width: 100%;
-  height: auto;
+.noegletal-graf canvas {
+  width: 100% !important;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
-}
-
-.noegletal-linje {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 4;
-}
-
-.noegletal-nul-linje {
-  stroke: #cbd5e1;
-  stroke-dasharray: 5 5;
-}
-
-.noegletal-graf text {
-  fill: #64748b;
-  font-size: 12px;
 }
 
 .noegletal-tabel-wrapper {
