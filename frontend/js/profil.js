@@ -330,47 +330,9 @@ async function sletEjendomFraProfil(ejendom) {
   }
 }
 
-// Opretter en investeringscase fra den valgte ejendom.
-async function opretInvesteringscaseFraProfil(ejendom) {
-  const navn = prompt("Navn på investeringscase:", `Case for ${ejendom.adresse || "valgt ejendom"}`);
-
-  if (!navn || !navn.trim()) {
-    return;
-  }
-
-  const beskrivelse = prompt("Kort beskrivelse af casen:", "Ny investeringscase oprettet fra min profil.") || "";
-
-  try {
-    const response = await fetch("/api/investeringscases", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        ejendomID: ejendom.id,
-        navn: navn.trim(),
-        beskrivelse: beskrivelse.trim(),
-        koebsposter: []
-      })
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(data.message || "Kunne ikke oprette investeringscase.");
-      return;
-    }
-
-    localStorage.setItem("valgtInvesteringscase", JSON.stringify({
-      caseID: data.caseID,
-      navn: navn.trim(),
-      adresse: ejendom.adresse || ""
-    }));
-
-    window.location.href = "investeringscase/købsudgifter.html";
-  } catch (error) {
-    console.error("Fejl ved oprettelse af investeringscase fra profil:", error);
-    alert("Serverfejl ved oprettelse af investeringscase.");
-  }
+// Sender brugeren til den simple 5-trins formular med ejendommen valgt.
+function opretInvesteringscaseFraProfil(ejendom) {
+  window.location.href = `investeringscase.html?ejendomID=${encodeURIComponent(ejendom.id)}`;
 }
 
 function formatVaerdi(value) {
