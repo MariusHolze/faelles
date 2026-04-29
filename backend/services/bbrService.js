@@ -38,7 +38,7 @@ function hentBbrConfig() {
   return {
     username: process.env.BBR_USERNAME,
     password: process.env.BBR_PASSWORD,
-    baseUrl: process.env.BBR_BASE_URL,
+    baseUrl: process.env.BBR_BASE_URL || "https://services.datafordeler.dk/BBR/BBRPublic/1/rest",
     apiKey: process.env.BBR_API_KEY,
     wfsBaseUrl: process.env.BBR_WFS_BASE_URL,
     darBfeBaseUrl: process.env.DAR_BFE_BASE_URL || "https://services.datafordeler.dk/DAR/DAR_BFE_Public/1/rest",
@@ -79,31 +79,20 @@ async function hentBbrData(adresseID, adgangsadresseID) {
 
   const config = hentBbrConfig();
 
-  if (harBbrGraphql(config)) {
-    try {
-      const bbrOverblik = await hentBbrDataViaGraphql(adresseID, adgangsadresseID, config);
-
-      if (harBbrVaerdier(bbrOverblik)) {
-        return bbrOverblik;
-      }
-    } catch (error) {
-      console.error("Fejl ved hentning af BBR-data via GraphQL:", error.message);
-    }
-  }
-
   if (harBbrLogin(config)) {
     try {
       const bygninger = await hentBygninger(adgangsadresseID, config);
       const enheder = await hentEnheder(adresseID, config);
       const bfeNumre = await hentBfeNumre(adresseID, adgangsadresseID, config);
-      const grunde = await hentGrunde(bfeNumre, config);
+      const grundareal = await hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID);
+      const grunde = grundareal ? [{ grundareal }] : await hentGrunde(bfeNumre, config);
       const bbrOverblik = lavBbrOverblik(bygninger, enheder, grunde);
 
       if (harBbrVaerdier(bbrOverblik)) {
         return bbrOverblik;
       }
     } catch (error) {
-      console.error("Fejl ved hentning af BBR-data via REST:", error.message);
+      console.error("Fejl ved hentning af BBR-data via REST:", forklarDatafordelerFejl(error));
     }
   }
 
@@ -116,7 +105,7 @@ async function hentBbrData(adresseID, adgangsadresseID) {
     }
   }
 
-  console.log("BBR-login eller API-key mangler eller kunne ikke bruges");
+  console.log("BBR-data kunne ikke hentes med den nuvaerende REST-konfiguration");
   return {};
 }
 
@@ -293,7 +282,8 @@ async function hentMatJordstykkeArealViaGraphql(jordstykkeID, tid, config) {
 }
 
 async function hentFraGraphql(baseUrl, apiKey, query, variables) {
-  const url = `${baseUrl}?apikey=${encodeURIComponent(apiKey)}`;
+  // Datafordelerens GraphQL-dokumentation bruger parameteren "apiKey".
+  const url = `${baseUrl}?apiKey=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -303,7 +293,11 @@ async function hentFraGraphql(baseUrl, apiKey, query, variables) {
   });
 
   if (!response.ok) {
-    throw new Error(`GraphQL svarede med status ${response.status}`);
+    const errorBody = await laesSvarBody(response);
+    const error = new Error(`GraphQL svarede med status ${response.status}`);
+    error.status = response.status;
+    error.body = errorBody;
+    throw error;
   }
 
   const result = await response.json();
@@ -315,15 +309,40 @@ async function hentFraGraphql(baseUrl, apiKey, query, variables) {
   return result.data || {};
 }
 
+async function laesSvarBody(response) {
+  try {
+    return await response.json();
+  } catch {
+    try {
+      return await response.text();
+    } catch {
+      return null;
+    }
+  }
+}
+
+function forklarDatafordelerFejl(error) {
+  const detail = error?.body?.detail || "";
+  const errorCode = error?.body?.errorCode || "";
+
+  if (errorCode === "DAF-AUTH-0005" || detail.toLowerCase().includes("ip address is not verified")) {
+    return `${error.message}. Datafordeler afviser IP-adressen. Tilfoej den offentlige IPv4-adresse til IP Allowlist paa IT-systemet i Datafordeler Administration.`;
+  }
+
+  if (erAdgangAfvist(error?.status)) {
+    return `${error.message}. Tjek at BBR_USERNAME og BBR_PASSWORD er en gyldig Datafordeler tjenestebruger med adgang til BBR REST.`;
+  }
+
+  return error.message;
+}
+
 async function hentBygninger(adgangsadresseID, config) {
   // Datafordeler bruger normalt Husnummer for adgangsadresse-id'et.
   return hentFraDatafordelerMedFallback(
     "bygning",
     [
       { Husnummer: adgangsadresseID },
-      { husnummer: adgangsadresseID },
-      { AdgangTilOpgang: adgangsadresseID },
-      { adgangTilOpgang: adgangsadresseID }
+      { husnummer: adgangsadresseID }
     ],
     config
   );
@@ -362,6 +381,57 @@ async function hentBfeNumre(adresseID, adgangsadresseID, config) {
   }
 
   return [...new Set(bfeNumre)];
+}
+
+async function hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID) {
+  const jordstykker = [];
+
+  for (const bfeNummer of bfeNumre) {
+    const data = await hentDataforsyningenListe(
+      `https://api.dataforsyningen.dk/jordstykker?bfenummer=${encodeURIComponent(bfeNummer)}`
+    );
+    jordstykker.push(...data);
+  }
+
+  if (jordstykker.length === 0 && adgangsadresseID) {
+    const adgangsadresse = await hentDataforsyningenObjekt(
+      `https://api.dataforsyningen.dk/adgangsadresser/${encodeURIComponent(adgangsadresseID)}`
+    );
+    const jordstykkeUrl = adgangsadresse?.jordstykke?.href;
+
+    if (jordstykkeUrl) {
+      const jordstykke = await hentDataforsyningenObjekt(jordstykkeUrl);
+      if (jordstykke) {
+        jordstykker.push(jordstykke);
+      }
+    }
+  }
+
+  const arealer = jordstykker
+    .map((jordstykke) => findFoersteTalIObjekter([jordstykke], "registreretareal", "registreretAreal"))
+    .filter((areal) => areal !== null);
+
+  if (arealer.length === 0) {
+    return null;
+  }
+
+  return arealer.reduce((sum, areal) => sum + areal, 0);
+}
+
+async function hentDataforsyningenObjekt(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    console.error(`Dataforsyningen svarede med status ${response.status} for ${url}`);
+    return null;
+  }
+
+  return response.json();
+}
+
+async function hentDataforsyningenListe(url) {
+  const data = await hentDataforsyningenObjekt(url);
+  return Array.isArray(data) ? data : [];
 }
 
 async function hentGrunde(bfeNumre, config) {
@@ -486,6 +556,7 @@ async function hentFraDatafordeler(metode, soegeParametre, config) {
   if (!response.ok) {
     const error = new Error(`BBR ${metode} svarede med status ${response.status}`);
     error.status = response.status;
+    error.body = await laesSvarBody(response);
     throw error;
   }
 
@@ -711,7 +782,8 @@ function findAlleBfeNumre(data) {
       if (
         normaliseretKey.includes("bfenummer") ||
         normaliseretKey.includes("bfenr") ||
-        normaliseretKey === "bfe"
+        normaliseretKey === "bfe" ||
+        normaliseretKey === "samletfastejendom"
       ) {
         const nummer = Number(indhold);
 
