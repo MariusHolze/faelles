@@ -1013,19 +1013,13 @@ function validerForm(trin, data) {
   }
 
   if (trin === "driftsbudget") {
-    if (data.allePoster.length === 0) {
-      return "";
-    }
-
     const ugyldigPost = data.allePoster.find((post) =>
-      !post.navn ||
-      Number.isNaN(post.beloeb) ||
-      post.beloeb <= 0 ||
-      !["maanedligt", "aarligt"].includes(post.periode)
+      !Number.isNaN(post.beloeb) &&
+      (!post.navn || post.beloeb <= 0 || !["maanedligt", "aarligt"].includes(post.periode))
     );
 
     if (ugyldigPost) {
-      return "Alle viste driftsomkostninger skal have navn, et beløb over 0 kr. og periode. Slet posten, hvis den ikke skal med.";
+      return "Driftsomkostninger med beløb skal have navn, et beløb over 0 kr. og periode.";
     }
 
     return "";
@@ -1374,6 +1368,103 @@ function bindTrinNavigation(trin) {
   }
 }
 
+function bindDriftsbudgetInteraktioner() {
+  const driftspostListe = document.getElementById("driftspostListe");
+  const tilfoejDriftspost = document.getElementById("tilfoejDriftspostKnap");
+
+  if (driftspostListe && !driftspostListe.dataset.bound) {
+    driftspostListe.dataset.bound = "true";
+
+    driftspostListe.addEventListener("input", (event) => {
+      const beloebInput = event.target.closest(".driftspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterDriftsbudgetTotal();
+    });
+
+    driftspostListe.addEventListener("change", (event) => {
+      if (event.target.closest(".driftspost-periode")) {
+        opdaterDriftsbudgetTotal();
+      }
+    });
+
+    driftspostListe.addEventListener("focusout", (event) => {
+      const beloebInput = event.target.closest(".driftspost-beloeb");
+
+      if (beloebInput) {
+        formatterKronerInput(beloebInput);
+      }
+
+      opdaterDriftsbudgetTotal();
+    });
+
+    driftspostListe.addEventListener("click", (event) => {
+      const knap = event.target.closest(".fjern-driftspost-knap");
+
+      if (!knap) {
+        return;
+      }
+
+      knap.closest(".driftspost-række").remove();
+      opdaterDriftsbudgetTotal();
+    });
+  }
+
+  if (tilfoejDriftspost && !tilfoejDriftspost.dataset.bound) {
+    tilfoejDriftspost.dataset.bound = "true";
+    tilfoejDriftspost.addEventListener("click", () => {
+      lavDriftspostRække({ periode: "maanedligt" });
+      opdaterDriftsbudgetTotal();
+    });
+  }
+}
+
+function bindCaseTrinSubmit(form, trin, valgtCase) {
+  if (form.dataset.submitBound) {
+    return;
+  }
+
+  form.dataset.submitBound = "true";
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    visFormFejl("");
+    visFormStatus("Gemmer...");
+
+    const trykketKnap = event.submitter || document.activeElement || form.querySelector('[type="submit"]');
+    const handling = trykketKnap?.dataset?.action || "save";
+    const data = hentFormData(trin);
+    const fejl = validerForm(trin, data);
+
+    if (fejl) {
+      visFormStatus("");
+      visFormFejl(fejl);
+      return;
+    }
+
+    try {
+      await gemTrinData(valgtCase.caseID, trin, data);
+      visFormStatus("Gemt.");
+
+      if (handling === "next") {
+        window.location.href = trykketKnap?.dataset?.href || caseTrinSide[trin]?.naeste || "caseOverblik.html";
+        return;
+      }
+
+      if (handling === "overview" || handling === "save") {
+        window.location.href = "caseOverblik.html";
+      }
+    } catch (error) {
+      console.error("Fejl ved gem af trindata:", error);
+      visFormStatus("");
+      visFormFejl(error.message);
+    }
+  });
+}
+
 async function bindInvesteringscaseTrinForm() {
   const form = document.getElementById("caseTrinForm");
 
@@ -1391,6 +1482,11 @@ async function bindInvesteringscaseTrinForm() {
 
   visCaseHeader(valgtCase, trin);
   bindTrinNavigation(trin);
+  bindCaseTrinSubmit(form, trin, valgtCase);
+
+  if (trin === "driftsbudget") {
+    bindDriftsbudgetInteraktioner();
+  }
 
   document.querySelectorAll("[data-case-field]").forEach((felt) => {
     const formatType = formatteredeCaseFelter[felt.dataset.caseField];
@@ -1464,8 +1560,6 @@ async function bindInvesteringscaseTrinForm() {
   const tilfoej = document.getElementById("tilfoejKoebspostKnap");
   const renoveringsliste = document.getElementById("renoveringspostListe");
   const tilfoejRenovering = document.getElementById("tilfoejRenoveringspostKnap");
-  const driftspostListe = document.getElementById("driftspostListe");
-  const tilfoejDriftspost = document.getElementById("tilfoejDriftspostKnap");
   const forrigeLink = document.getElementById("forrigeTrinLink");
 
   if (liste) {
@@ -1566,52 +1660,6 @@ async function bindInvesteringscaseTrinForm() {
     });
   }
 
-  if (driftspostListe) {
-    driftspostListe.addEventListener("input", (event) => {
-      const beloebInput = event.target.closest(".driftspost-beloeb");
-
-      if (beloebInput) {
-        formatterKronerInput(beloebInput);
-      }
-
-      opdaterDriftsbudgetTotal();
-    });
-
-    driftspostListe.addEventListener("change", (event) => {
-      if (event.target.closest(".driftspost-periode")) {
-        opdaterDriftsbudgetTotal();
-      }
-    });
-
-    driftspostListe.addEventListener("focusout", (event) => {
-      const beloebInput = event.target.closest(".driftspost-beloeb");
-
-      if (beloebInput) {
-        formatterKronerInput(beloebInput);
-      }
-
-      opdaterDriftsbudgetTotal();
-    });
-
-    driftspostListe.addEventListener("click", (event) => {
-      const knap = event.target.closest(".fjern-driftspost-knap");
-
-      if (!knap) {
-        return;
-      }
-
-      knap.closest(".driftspost-række").remove();
-      opdaterDriftsbudgetTotal();
-    });
-  }
-
-  if (tilfoejDriftspost) {
-    tilfoejDriftspost.addEventListener("click", () => {
-      lavDriftspostRække({ periode: "maanedligt" });
-      opdaterDriftsbudgetTotal();
-    });
-  }
-
   const renoveringAktiv = document.getElementById("renoveringAktiv");
 
   if (trin === "renovering" && renoveringAktiv) {
@@ -1700,42 +1748,6 @@ async function bindInvesteringscaseTrinForm() {
     });
   }
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    visFormFejl("");
-    visFormStatus("");
-
-    const trykketKnap = event.submitter;
-    const handling = trykketKnap?.dataset.action || "save";
-    const data = hentFormData(trin);
-    const fejl = validerForm(trin, data);
-
-    if (fejl) {
-      visFormFejl(fejl);
-      return;
-    }
-
-    try {
-      await gemTrinData(valgtCase.caseID, trin, data);
-      visFormStatus("Gemt.");
-
-      // Efter gem vælger vi retning ud fra den knap brugeren trykkede på.
-      if (handling === "next") {
-        window.location.href = trykketKnap.dataset.href;
-      }
-
-      if (handling === "overview") {
-        window.location.href = "caseOverblik.html";
-      }
-
-      if (handling === "save") {
-        window.location.href = "caseOverblik.html";
-      }
-    } catch (error) {
-      console.error("Fejl ved gem af trindata:", error);
-      visFormFejl(error.message);
-    }
-  });
 }
 
 function escapeHtml(value) {

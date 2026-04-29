@@ -3,11 +3,14 @@ const router = express.Router();
 const { sql, getPool } = require("../db");
 const {
   GYLDIGE_TRIN,
-  beregnAnalyse,
-  lavTomCaseData,
-  mergeTrinData,
-  parseJson
+  beregnAnalyse
 } = require("../services/investeringscaseBeregner");
+const {
+  hentAlleTrinData,
+  hentTrinData,
+  gemTrinData,
+  gyldigeKoebsposter
+} = require("../services/investeringscaseRepository");
 
 function erGyldigtTrin(trin) {
   return GYLDIGE_TRIN.includes(trin);
@@ -25,8 +28,8 @@ async function caseFindes(pool, caseID) {
   return result.recordset.length > 0;
 }
 
-function mapCaseRow(row) {
-  const analyse = beregnAnalyse(parseJson(row.dataJson));
+function mapCaseRow(row, trinData) {
+  const analyse = beregnAnalyse(trinData);
 
   return {
     caseID: row.caseID,
@@ -50,17 +53,6 @@ function mapCaseRow(row) {
     antalUdfyldteTrin: analyse.antalUdfyldteTrin,
     naesteTrin: analyse.naesteTrin
   };
-}
-
-function hentGyldigeKoebsposter(koebsposter) {
-  const poster = Array.isArray(koebsposter) ? koebsposter : [];
-
-  return poster
-    .map((post) => ({
-      navn: String(post.navn || "").trim(),
-      beloeb: Number(post.beloeb)
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
 }
 
 router.get("/", async (req, res) => {
@@ -87,7 +79,6 @@ router.get("/", async (req, res) => {
         c.navn,
         c.beskrivelse,
         c.oprettetTidspunkt,
-        c.dataJson,
         e.adresse,
         e.boligareal,
         e.byggeaar
@@ -97,7 +88,12 @@ router.get("/", async (req, res) => {
       ORDER BY c.oprettetTidspunkt DESC
     `);
 
-    res.json(result.recordset.map(mapCaseRow));
+    const cases = await Promise.all(result.recordset.map(async (row) => {
+      const trinData = await hentAlleTrinData(pool, row.caseID);
+      return mapCaseRow(row, trinData);
+    }));
+
+    res.json(cases);
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
     res.status(500).json({ message: "Databasefejl ved hentning af investeringscases" });
@@ -135,30 +131,29 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ message: "Du har allerede en case med det navn" });
     }
 
-    const caseData = lavTomCaseData();
-    const gyldigePoster = hentGyldigeKoebsposter(koebsposter);
-
-    if (gyldigePoster.length > 0) {
-      caseData.koebsudgifter = {
-        poster: gyldigePoster,
-        total: gyldigePoster.reduce((sum, post) => sum + post.beloeb, 0)
-      };
-    }
+    const gyldigePoster = gyldigeKoebsposter({ poster: koebsposter });
 
     const caseResult = await pool.request()
       .input("ejendomID", sql.Int, Number(ejendomID))
       .input("navn", sql.VarChar(100), caseNavn)
       .input("beskrivelse", sql.VarChar(500), caseBeskrivelse || null)
-      .input("dataJson", sql.NVarChar(sql.MAX), JSON.stringify(caseData))
       .query(`
-        INSERT INTO Investeringscase (ejendomID, navn, beskrivelse, dataJson)
+        INSERT INTO Investeringscase (ejendomID, navn, beskrivelse)
         OUTPUT INSERTED.caseID
-        VALUES (@ejendomID, @navn, @beskrivelse, @dataJson)
+        VALUES (@ejendomID, @navn, @beskrivelse)
       `);
+    const caseID = caseResult.recordset[0].caseID;
+
+    if (gyldigePoster.length > 0) {
+      await gemTrinData(pool, caseID, "koebsudgifter", {
+        poster: gyldigePoster,
+        total: gyldigePoster.reduce((sum, post) => sum + post.beloeb, 0)
+      });
+    }
 
     res.status(201).json({
       message: "Investeringscase oprettet",
-      caseID: caseResult.recordset[0].caseID
+      caseID
     });
   } catch (error) {
     console.error("Fejl ved oprettelse af investeringscase:", error);
@@ -181,21 +176,16 @@ router.get("/:caseID/trin/:trin", async (req, res) => {
       return res.status(404).json({ message: "Case ikke fundet" });
     }
 
-    const result = await pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .query(`
-        SELECT dataJson, oprettetTidspunkt
-        FROM Investeringscase
-        WHERE caseID = @caseID
-      `);
-
-    const samletData = result.recordset.length > 0
-      ? parseJson(result.recordset[0].dataJson)
-      : {};
+    const [trinData, caseResult] = await Promise.all([
+      hentTrinData(pool, caseID, trin),
+      pool.request()
+        .input("caseID", sql.Int, Number(caseID))
+        .query("SELECT oprettetTidspunkt FROM Investeringscase WHERE caseID = @caseID")
+    ]);
 
     res.json({
-      data: samletData[trin] || null,
-      opdateretTidspunkt: result.recordset[0]?.oprettetTidspunkt || null
+      data: trinData,
+      opdateretTidspunkt: caseResult.recordset[0]?.oprettetTidspunkt || null
     });
   } catch (error) {
     console.error("Fejl ved hentning af formulartrin:", error);
@@ -218,17 +208,7 @@ router.get("/:caseID/analyse", async (req, res) => {
       return res.status(404).json({ message: "Case ikke fundet" });
     }
 
-    const result = await pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .query(`
-        SELECT dataJson
-        FROM Investeringscase
-        WHERE caseID = @caseID
-      `);
-
-    const trinData = result.recordset.length > 0
-      ? { ...lavTomCaseData(), ...parseJson(result.recordset[0].dataJson) }
-      : lavTomCaseData();
+    const trinData = await hentAlleTrinData(pool, caseID);
 
     res.json({
       trinData,
@@ -256,28 +236,7 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
       return res.status(404).json({ message: "Case ikke fundet" });
     }
 
-    const eksisterende = await pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .query(`
-        SELECT dataJson
-        FROM Investeringscase
-        WHERE caseID = @caseID
-      `);
-
-    if (eksisterende.recordset.length === 0) {
-      return res.status(404).json({ message: "Case ikke fundet" });
-    }
-
-    const samletData = mergeTrinData(parseJson(eksisterende.recordset[0].dataJson), trin, data || {});
-
-    await pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .input("dataJson", sql.NVarChar(sql.MAX), JSON.stringify(samletData))
-      .query(`
-        UPDATE Investeringscase
-        SET dataJson = @dataJson
-        WHERE caseID = @caseID
-      `);
+    await gemTrinData(pool, caseID, trin, data || {});
 
     res.json({ message: "Formulartrin gemt" });
   } catch (error) {

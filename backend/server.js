@@ -16,7 +16,11 @@ const app = express();
 
 // Serveren kører på den port, der står i .env.
 // Hvis der ikke står noget, bruges port 3000.
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT || 3000);
+
+if (!Number.isInteger(port) || port <= 0) {
+  throw new Error("PORT skal være et positivt heltal");
+}
 
 // Gør at serveren kan modtage JSON fra frontend.
 // Det bruges fx når man sender data fra formularer.
@@ -42,6 +46,16 @@ app.get("/api/test", (req, res) => {
 });
 
 // Starter serveren og får den til at lytte på den valgte port.
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server kører på port ${port}`);
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${port} er allerede i brug`);
+    process.exit(1);
+  }
+
+  console.error("Serveren kunne ikke starte:", error.message);
+  process.exit(1);
 });
