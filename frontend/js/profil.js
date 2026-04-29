@@ -1,18 +1,3 @@
-// Viser den loggede brugers oplysninger på profilsiden.
-function visProfil() {
-  const fornavnElement = document.getElementById("profilFornavn");
-  const efternavnElement = document.getElementById("profilEfternavn");
-  const emailElement = document.getElementById("profilEmail");
-
-  if (!fornavnElement || !efternavnElement || !emailElement) {
-    return;
-  }
-
-  fornavnElement.textContent = "Demo";
-  efternavnElement.textContent = "Prototype";
-  emailElement.textContent = "Fælles database";
-}
-
 // Henter og viser brugerens ejendomsprofiler.
 async function hentProfilEjendomme() {
   const liste = document.getElementById("profilEjendomListe");

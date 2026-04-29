@@ -13,47 +13,58 @@
   <div id="navbar-container"></div>
 
   <main class="cases-page">
-    <section class="case-form-header">
-      <p class="cases-label">Trin 3 af 5</p>
-      <h1 id="caseTrinTitel">Renovering og forbedringer</h1>
-      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
-    </section>
+    <div id="caseTrinIndikator" class="trin-indikator"></div>
 
-    <form id="caseTrinForm" class="case-trin-form" data-trin="renovering">
-      <section class="case-help">
-        <h2>Hjælp til input</h2>
-        <p>
-          Tilvælg renovering, hvis casen skal indeholde forbedringer. Angiv hver forbedring
-          med beløb og planlagt tidspunkt i investeringsperioden.
+    <div class="case-trin-kort">
+      <header class="case-trin-kort-top">
+        <h1 id="caseTrinTitel">Renovering og forbedringer</h1>
+        <p class="case-trin-kort-undertitel">
+          Planlægger du at renovere eller forbedre ejendommen i investeringsperioden?
         </p>
-      </section>
+        <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+      </header>
 
-      <label class="case-toggle">
-        <input id="renoveringAktiv" type="checkbox">
-        <span>Skal der renoveres eller forbedres?</span>
-      </label>
+      <form id="caseTrinForm" class="case-trin-form" data-trin="renovering">
+        <div class="trin-valg-gruppe">
+          <button type="button" id="renoveringJaKort" class="trin-valg-kort">
+            <div class="trin-valg-ikon-wrapper">🔨</div>
+            <div>
+              <strong>Ja, der planlægges renovering</strong>
+              <p>Tilføj forbedringer med beløb og tidspunkt</p>
+            </div>
+          </button>
+          <button type="button" id="renoveringNejKort" class="trin-valg-kort">
+            <div class="trin-valg-ikon-wrapper">✓</div>
+            <div>
+              <strong>Nej, ingen renovering</strong>
+              <p>Ejendommen bruges som den er i perioden</p>
+            </div>
+          </button>
+        </div>
 
-      <div id="renoveringDetaljer" class="skjult">
-        <div id="renoveringspostListe" class="renoveringspost-liste"></div>
+        <input id="renoveringAktiv" type="checkbox" hidden>
 
-        <button id="tilfoejRenoveringspostKnap" class="sekundaer-knap" type="button">
-          + Tilføj forbedring
-        </button>
+        <div id="renoveringDetaljer" class="skjult">
+          <div id="renoveringspostListe" class="renoveringspost-liste"></div>
 
-        <p class="case-total">Samlet renovering: <strong id="renoveringTotal">0 kr.</strong></p>
-      </div>
+          <button id="tilfoejRenoveringspostKnap" class="sekundaer-knap" type="button">
+            + Tilføj forbedring
+          </button>
 
-      <p id="caseTrinFejl" class="case-form-fejl"></p>
-      <p id="caseTrinStatus" class="case-form-status"></p>
+          <p class="case-total">Samlet renovering: <strong id="renoveringTotal">0 kr.</strong></p>
+        </div>
 
-      <div class="case-form-actions">
-        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
-        <button id="naesteTrinKnap" class="case-primary-link skjult" type="submit" data-action="next">
-          Gem og gå videre
-        </button>
-        <button type="submit">Gem</button>
-      </div>
-    </form>
+        <p id="caseTrinFejl" class="case-form-fejl"></p>
+        <p id="caseTrinStatus" class="case-form-status"></p>
+
+        <div class="case-trin-navigation">
+          <a id="forrigeTrinLink" class="forrige-trin-knap skjult" href="#">← Forrige trin</a>
+          <button id="naesteTrinKnap" class="naeste-trin-knap skjult" type="submit" data-action="next">
+            Gem og fortsæt →
+          </button>
+        </div>
+      </form>
+    </div>
   </main>
 
   <script src="../js/ui.js"></script>

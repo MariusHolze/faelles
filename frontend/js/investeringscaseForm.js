@@ -1,24 +1,29 @@
 const caseTrinSide = {
   koebsudgifter: {
+    label: "Ejendom",
     titel: "Købsudgifter",
     naeste: "lånedetaljer.html"
   },
   finansiering: {
+    label: "Finansiering",
     titel: "Finansiering og lånedetaljer",
     forrige: "købsudgifter.html",
     naeste: "renovering.html"
   },
   renovering: {
+    label: "Renovering",
     titel: "Renovering og forbedringer",
     forrige: "lånedetaljer.html",
     naeste: "driftsbudget.html"
   },
   driftsbudget: {
+    label: "Driftsbudget",
     titel: "Driftsbudget",
     forrige: "renovering.html",
     naeste: "udlejning.html"
   },
   udlejning: {
+    label: "Udlejning",
     titel: "Udlejning",
     forrige: "driftsbudget.html"
   }
@@ -40,22 +45,44 @@ function hentValgtInvesteringscase() {
   }
 }
 
+function visTrinsIndikator(aktivTrin) {
+  const indikator = document.getElementById("caseTrinIndikator");
+
+  if (!indikator) {
+    return;
+  }
+
+  const trin = Object.keys(caseTrinSide);
+  const aktivIndex = trin.indexOf(aktivTrin);
+
+  const html = trin.map((key, i) => {
+    const config = caseTrinSide[key];
+    const faerdig = i < aktivIndex;
+    const aktiv = i === aktivIndex;
+    const cirkelKlasse = `trin-cirkel${faerdig ? " trin-faerdig" : aktiv ? " trin-aktiv" : ""}`;
+    const cirkelIndhold = faerdig ? "✓" : String(i + 1);
+    const punktKlasse = `trin-punkt${faerdig ? " faerdig" : aktiv ? " aktiv" : ""}`;
+    const linje = i < trin.length - 1 ? `<span class="trin-linje"></span>` : "";
+
+    return `<div class="${punktKlasse}"><span class="${cirkelKlasse}">${cirkelIndhold}</span><span class="trin-label">${config.label}</span></div>${linje}`;
+  }).join("");
+
+  indikator.innerHTML = html;
+}
+
 function visCaseHeader(caseData, trin) {
   const titel = document.getElementById("caseTrinTitel");
   const info = document.getElementById("caseTrinInfo");
-  const helpTekst = document.querySelector(".case-help p");
 
   if (titel) {
     titel.textContent = caseTrinSide[trin].titel;
   }
 
   if (info) {
-    info.textContent = `${caseData.navn || "Valgt case"} · ${caseData.adresse || "Ingen adresse"}`;
+    info.innerHTML = `<span class="case-adresse-ikon">🏠</span> ${escapeHtml(caseData.adresse || "Ingen adresse")}`;
   }
 
-  if (trin === "koebsudgifter" && helpTekst) {
-    helpTekst.textContent = 'Angiv beløb for de faste købsudgifter nedenfor. Felterne er tomme som standard, og værdien 0 kan anvendes, hvis en post ikke medfører en omkostning. Renoveringer og forbedringer håndteres på næste trin.';
-  }
+  visTrinsIndikator(trin);
 }
 
 function visFormFejl(besked) {
@@ -324,16 +351,20 @@ function lavKoebspostRække(navn = "", beloeb = "") {
     return;
   }
 
+  const fast = fasteKoebsposter.includes(navn);
   const div = document.createElement("div");
   div.className = "koebspost-række";
+  if (fast) {
+    div.dataset.fast = "true";
+  }
   const beskrivelse = fasteKoebspostBeskrivelser[navn] || "";
   div.innerHTML = `
     <div class="koebspost-navn-felt">
-      <input class="koebspost-navn" type="text" maxlength="100" placeholder="Navn på udgift" value="${escapeHtml(navn)}">
+      <input class="koebspost-navn" type="text" maxlength="100" placeholder="Navn på udgift" value="${escapeHtml(navn)}"${fast ? " readonly" : ""}>
       ${beskrivelse ? `<small class="koebspost-beskrivelse">${escapeHtml(beskrivelse)}</small>` : ""}
     </div>
     <input class="koebspost-beloeb" type="text" inputmode="numeric" placeholder="Beløb i kr." value="${escapeHtml(formatKronerInputVaerdi(String(beloeb)))}">
-    <button class="fjern-koebspost-knap" type="button" aria-label="Fjern udgift" title="Fjern udgift">×</button>
+    ${fast ? "" : `<button class="fjern-koebspost-knap" type="button" aria-label="Fjern udgift" title="Fjern udgift">×</button>`}
   `;
 
   liste.appendChild(div);
@@ -463,6 +494,11 @@ function opdaterRenoveringTotal() {
   totalElement.textContent = formatKroner(hentRenoveringsDataFraForm().total);
 }
 
+function syncRenoveringKort(aktiv) {
+  document.getElementById("renoveringJaKort")?.classList.toggle("valg-kort-aktiv", aktiv);
+  document.getElementById("renoveringNejKort")?.classList.toggle("valg-kort-aktiv", !aktiv);
+}
+
 function udfyldRenoveringsForm(data) {
   const checkbox = document.getElementById("renoveringAktiv");
   const liste = document.getElementById("renoveringspostListe");
@@ -478,6 +514,7 @@ function udfyldRenoveringsForm(data) {
     checkbox.checked = aktiv;
   }
 
+  syncRenoveringKort(aktiv);
   visRenoveringDetaljer(aktiv);
 
   if (poster.length > 0) {
@@ -815,6 +852,11 @@ function visUdlejningDetaljer(aktiv) {
   }
 }
 
+function syncUdlejningKort(aktiv) {
+  document.getElementById("udlejningJaKort")?.classList.toggle("valg-kort-aktiv", aktiv);
+  document.getElementById("udlejningNejKort")?.classList.toggle("valg-kort-aktiv", !aktiv);
+}
+
 function udfyldUdlejningForm(data) {
   const checkbox = document.getElementById("udlejningAktiv");
   const aktiv = data?.aktiv === true || Boolean(
@@ -831,6 +873,7 @@ function udfyldUdlejningForm(data) {
     checkbox.checked = aktiv;
   }
 
+  syncUdlejningKort(aktiv);
   visUdlejningDetaljer(aktiv);
 
   document.querySelectorAll("[data-case-field]").forEach((felt) => {
@@ -1465,7 +1508,13 @@ async function bindInvesteringscaseTrinForm() {
         return;
       }
 
-      knap.closest(".koebspost-række").remove();
+      const række = knap.closest(".koebspost-række");
+
+      if (række.dataset.fast === "true") {
+        return;
+      }
+
+      række.remove();
       opdaterKoebspostTotal();
     });
   }
@@ -1567,7 +1616,25 @@ async function bindInvesteringscaseTrinForm() {
 
   if (trin === "renovering" && renoveringAktiv) {
     renoveringAktiv.addEventListener("change", () => {
+      syncRenoveringKort(renoveringAktiv.checked);
       visRenoveringDetaljer(renoveringAktiv.checked);
+      opdaterRenoveringTotal();
+    });
+
+    const jaKort = document.getElementById("renoveringJaKort");
+    const nejKort = document.getElementById("renoveringNejKort");
+
+    jaKort?.addEventListener("click", () => {
+      renoveringAktiv.checked = true;
+      syncRenoveringKort(true);
+      visRenoveringDetaljer(true);
+      opdaterRenoveringTotal();
+    });
+
+    nejKort?.addEventListener("click", () => {
+      renoveringAktiv.checked = false;
+      syncRenoveringKort(false);
+      visRenoveringDetaljer(false);
       opdaterRenoveringTotal();
     });
   }
@@ -1581,7 +1648,25 @@ async function bindInvesteringscaseTrinForm() {
     });
 
     udlejningAktiv.addEventListener("change", () => {
+      syncUdlejningKort(udlejningAktiv.checked);
       visUdlejningDetaljer(udlejningAktiv.checked);
+      opdaterUdlejningOverblik();
+    });
+
+    const udlejningJaKort = document.getElementById("udlejningJaKort");
+    const udlejningNejKort = document.getElementById("udlejningNejKort");
+
+    udlejningJaKort?.addEventListener("click", () => {
+      udlejningAktiv.checked = true;
+      syncUdlejningKort(true);
+      visUdlejningDetaljer(true);
+      opdaterUdlejningOverblik();
+    });
+
+    udlejningNejKort?.addEventListener("click", () => {
+      udlejningAktiv.checked = false;
+      syncUdlejningKort(false);
+      visUdlejningDetaljer(false);
       opdaterUdlejningOverblik();
     });
   }
