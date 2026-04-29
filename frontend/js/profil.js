@@ -1,8 +1,7 @@
-// Henter og viser brugerens ejendomsprofiler.
-async function hentProfilEjendomme() {
-  const liste = document.getElementById("profilEjendomListe");
-  const antalElement = document.getElementById("profilEjendomAntal");
-
+async function hentProfilEjendomme(
+  liste = document.getElementById("profilEjendomListe"),
+  antalElement = document.getElementById("profilEjendomAntal")
+) {
   if (!liste) {
     return;
   }

@@ -1462,14 +1462,25 @@ function bindCaseTrinSubmit(form, trin, valgtCase) {
   });
 }
 
-async function bindInvesteringscaseTrinForm() {
-  const form = document.getElementById("caseTrinForm");
-
-  if (!form) {
-    return;
+class InvesteringscaseForm {
+  constructor(trin) {
+    this.trin = trin;
+    this.form = document.getElementById("caseTrinForm");
   }
 
-  const trin = form.dataset.trin;
+  async init() {
+    const form = this.form;
+
+    if (!form) {
+      return;
+    }
+
+    await startInvesteringscaseTrinForm(form, this.trin);
+  }
+}
+
+async function startInvesteringscaseTrinForm(form, trinFraConstructor) {
+  const trin = trinFraConstructor || form.dataset.trin;
   const valgtCase = hentValgtInvesteringscase();
 
   if (!valgtCase || !valgtCase.caseID) {
@@ -1745,6 +1756,11 @@ async function bindInvesteringscaseTrinForm() {
     });
   }
 
+}
+
+async function bindInvesteringscaseTrinForm() {
+  const form = new InvesteringscaseForm();
+  await form.init();
 }
 
 function escapeHtml(value) {

@@ -30,6 +30,123 @@ const TILLADTE_BYGNINGSKODER_TIL_EJENDOMSPROFIL = new Set(
 );
 const TILLADTE_ENHED_BOLIGTYPER_TIL_EJENDOMSPROFIL = new Set([1, 2, 3, 4, 5]);
 
+class BBRService {
+  constructor(config) {
+    this.baseUrl = config.baseUrl;
+    this.darBfeBaseUrl = config.darBfeBaseUrl;
+    this.username = config.username;
+    this.password = config.password;
+  }
+
+  harCredentials() {
+    return Boolean(this.username && this.password && this.baseUrl && this.darBfeBaseUrl);
+  }
+
+  async hentBbrData(adresseID, adgangsadresseID) {
+    if (!adresseID && !adgangsadresseID) {
+      return {};
+    }
+
+    if (!this.harCredentials()) {
+      console.error("BBR REST kræver BBR_USERNAME, BBR_PASSWORD, BBR_BASE_URL og DAR_BFE_BASE_URL i backend/.env");
+      return {};
+    }
+
+    try {
+      const enheder = adresseID ? await this.hentEnheder(adresseID) : [];
+      const bygningerViaHusnummer = adgangsadresseID ? await this.hentBygninger(adgangsadresseID) : [];
+      const bygningerViaEnhed = await this.hentBygningerFraEnheder(enheder);
+      const bygninger = samlUnikkeBygninger(bygningerViaHusnummer, bygningerViaEnhed);
+      const bfeNumre = await this.hentBfeNumre(adresseID, adgangsadresseID);
+      const grundareal = await this.hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID);
+
+      return lavBbrOverblik(bygninger, enheder, grundareal ? [{ grundareal }] : []);
+    } catch (error) {
+      console.error("Fejl ved hentning af BBR-data via REST:", error.message);
+      return {};
+    }
+  }
+
+  async hentBygninger(adgangsadresseID) {
+    return this.hentFraDatafordeler("bygning", { Husnummer: adgangsadresseID });
+  }
+
+  async hentEnheder(adresseID) {
+    return this.hentFraDatafordeler("enhed", { AdresseIdentificerer: adresseID });
+  }
+
+  async hentBygningerFraEnheder(enheder) {
+    const bygningIDs = [
+      ...new Set(
+        enheder
+          .map((enhed) => findFoersteVaerdiIObjekter([enhed], "bygning"))
+          .filter(Boolean)
+      )
+    ];
+    const bygninger = [];
+
+    for (const bygningID of bygningIDs) {
+      const fundneBygninger = await this.hentFraDatafordeler("bygning", { id: bygningID });
+      bygninger.push(...fundneBygninger);
+    }
+
+    return bygninger;
+  }
+
+  async hentBfeNumre(adresseID, adgangsadresseID) {
+    const bfeNumre = [];
+
+    if (adresseID) {
+      const adresseBfe = await this.hentFraDarBfe("adresseTilEnhedBfe", { adresseId: adresseID });
+      bfeNumre.push(...findAlleBfeNumre(adresseBfe));
+    }
+
+    if (adgangsadresseID) {
+      const bygningBfe = await this.hentFraDarBfe("husnummerTilBygningBfe", { husnummerId: adgangsadresseID });
+      bfeNumre.push(...findAlleBfeNumre(bygningBfe));
+    }
+
+    return [...new Set(bfeNumre)];
+  }
+
+  async hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID) {
+    const jordstykker = [];
+
+    for (const bfeNummer of bfeNumre) {
+      const data = await hentDataforsyningenListe(
+        `https://api.dataforsyningen.dk/jordstykker?bfenummer=${encodeURIComponent(bfeNummer)}`
+      );
+      jordstykker.push(...data);
+    }
+
+    if (jordstykker.length === 0 && adgangsadresseID) {
+      const adgangsadresse = await hentDataforsyningenObjekt(
+        `https://api.dataforsyningen.dk/adgangsadresser/${encodeURIComponent(adgangsadresseID)}`
+      );
+      const jordstykkeUrl = adgangsadresse?.jordstykke?.href;
+
+      if (jordstykkeUrl) {
+        const jordstykke = await hentDataforsyningenObjekt(jordstykkeUrl);
+        if (jordstykke) jordstykker.push(jordstykke);
+      }
+    }
+
+    const arealer = jordstykker
+      .map((jordstykke) => findFoersteTalIObjekter([jordstykke], "registreretareal", "registreretAreal"))
+      .filter((areal) => areal !== null);
+
+    return arealer.length > 0 ? arealer.reduce((sum, areal) => sum + areal, 0) : null;
+  }
+
+  async hentFraDarBfe(metode, soegeParametre) {
+    return hentFraRest(this.darBfeBaseUrl, metode, soegeParametre, this);
+  }
+
+  async hentFraDatafordeler(metode, soegeParametre) {
+    return hentFraRest(this.baseUrl, metode, soegeParametre, this);
+  }
+}
+
 function hentBbrConfig() {
   return {
     username: process.env.BBR_USERNAME,
@@ -39,61 +156,9 @@ function hentBbrConfig() {
   };
 }
 
-function harRestCredentials(config) {
-  return Boolean(config.username && config.password && config.baseUrl && config.darBfeBaseUrl);
-}
-
 async function hentBbrData(adresseID, adgangsadresseID) {
-  if (!adresseID && !adgangsadresseID) {
-    return {};
-  }
-
-  const config = hentBbrConfig();
-
-  if (!harRestCredentials(config)) {
-    console.error("BBR REST kræver BBR_USERNAME, BBR_PASSWORD, BBR_BASE_URL og DAR_BFE_BASE_URL i backend/.env");
-    return {};
-  }
-
-  try {
-    const enheder = adresseID ? await hentEnheder(adresseID, config) : [];
-    const bygningerViaHusnummer = adgangsadresseID ? await hentBygninger(adgangsadresseID, config) : [];
-    const bygningerViaEnhed = await hentBygningerFraEnheder(enheder, config);
-    const bygninger = samlUnikkeBygninger(bygningerViaHusnummer, bygningerViaEnhed);
-    const bfeNumre = await hentBfeNumre(adresseID, adgangsadresseID, config);
-    const grundareal = await hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID);
-
-    return lavBbrOverblik(bygninger, enheder, grundareal ? [{ grundareal }] : []);
-  } catch (error) {
-    console.error("Fejl ved hentning af BBR-data via REST:", error.message);
-    return {};
-  }
-}
-
-async function hentBygninger(adgangsadresseID, config) {
-  return hentFraDatafordeler("bygning", { Husnummer: adgangsadresseID }, config);
-}
-
-async function hentEnheder(adresseID, config) {
-  return hentFraDatafordeler("enhed", { AdresseIdentificerer: adresseID }, config);
-}
-
-async function hentBygningerFraEnheder(enheder, config) {
-  const bygningIDs = [
-    ...new Set(
-      enheder
-        .map((enhed) => findFoersteVaerdiIObjekter([enhed], "bygning"))
-        .filter(Boolean)
-    )
-  ];
-  const bygninger = [];
-
-  for (const bygningID of bygningIDs) {
-    const fundneBygninger = await hentFraDatafordeler("bygning", { id: bygningID }, config);
-    bygninger.push(...fundneBygninger);
-  }
-
-  return bygninger;
+  const service = new BBRService(hentBbrConfig());
+  return service.hentBbrData(adresseID, adgangsadresseID);
 }
 
 function samlUnikkeBygninger(...lister) {
@@ -114,51 +179,6 @@ function samlUnikkeBygninger(...lister) {
   return bygninger;
 }
 
-async function hentBfeNumre(adresseID, adgangsadresseID, config) {
-  const bfeNumre = [];
-
-  if (adresseID) {
-    const adresseBfe = await hentFraDarBfe("adresseTilEnhedBfe", { adresseId: adresseID }, config);
-    bfeNumre.push(...findAlleBfeNumre(adresseBfe));
-  }
-
-  if (adgangsadresseID) {
-    const bygningBfe = await hentFraDarBfe("husnummerTilBygningBfe", { husnummerId: adgangsadresseID }, config);
-    bfeNumre.push(...findAlleBfeNumre(bygningBfe));
-  }
-
-  return [...new Set(bfeNumre)];
-}
-
-async function hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID) {
-  const jordstykker = [];
-
-  for (const bfeNummer of bfeNumre) {
-    const data = await hentDataforsyningenListe(
-      `https://api.dataforsyningen.dk/jordstykker?bfenummer=${encodeURIComponent(bfeNummer)}`
-    );
-    jordstykker.push(...data);
-  }
-
-  if (jordstykker.length === 0 && adgangsadresseID) {
-    const adgangsadresse = await hentDataforsyningenObjekt(
-      `https://api.dataforsyningen.dk/adgangsadresser/${encodeURIComponent(adgangsadresseID)}`
-    );
-    const jordstykkeUrl = adgangsadresse?.jordstykke?.href;
-
-    if (jordstykkeUrl) {
-      const jordstykke = await hentDataforsyningenObjekt(jordstykkeUrl);
-      if (jordstykke) jordstykker.push(jordstykke);
-    }
-  }
-
-  const arealer = jordstykker
-    .map((jordstykke) => findFoersteTalIObjekter([jordstykke], "registreretareal", "registreretAreal"))
-    .filter((areal) => areal !== null);
-
-  return arealer.length > 0 ? arealer.reduce((sum, areal) => sum + areal, 0) : null;
-}
-
 async function hentDataforsyningenObjekt(url) {
   const response = await fetch(url);
 
@@ -175,8 +195,8 @@ async function hentDataforsyningenListe(url) {
   return Array.isArray(data) ? data : [];
 }
 
-async function hentFraDarBfe(metode, soegeParametre, config) {
-  const baseUrl = normaliserRestUrl(config.darBfeBaseUrl);
+async function hentFraRest(baseUrlFraConfig, metode, soegeParametre, config) {
+  const baseUrl = normaliserRestUrl(baseUrlFraConfig);
   const params = new URLSearchParams({
     ...soegeParametre,
     username: config.username,
@@ -186,24 +206,7 @@ async function hentFraDarBfe(metode, soegeParametre, config) {
 
   const response = await fetch(`${baseUrl}/${metode}?${params.toString()}`);
   if (!response.ok) {
-    throw new Error(`DAR-BFE ${metode} svarede med status ${response.status}`);
-  }
-
-  return normaliserListe(await response.json());
-}
-
-async function hentFraDatafordeler(metode, soegeParametre, config) {
-  const baseUrl = normaliserRestUrl(config.baseUrl);
-  const params = new URLSearchParams({
-    ...soegeParametre,
-    username: config.username,
-    password: config.password,
-    Format: "JSON"
-  });
-
-  const response = await fetch(`${baseUrl}/${metode}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`BBR ${metode} svarede med status ${response.status}`);
+    throw new Error(`${metode} svarede med status ${response.status}`);
   }
 
   return normaliserListe(await response.json());
@@ -405,6 +408,7 @@ function findFoersteTal(...values) {
 }
 
 module.exports = {
+  BBRService,
   hentBbrData,
   vurderEjendomsprofilMulighedFraBbrData
 };

@@ -222,7 +222,55 @@ function beregnNoegletalOverTid({
   });
 }
 
+class InvesteringscaseBeregner {
+  constructor(trinData) {
+    this.trinData = {
+      ...lavTomCaseData(),
+      ...(trinData || {})
+    };
+  }
+
+  beregnAnalyse() {
+    return beregnAnalyseForTrinData(this);
+  }
+
+  beregnSamletInvestering(koebsposter, renoveringsposter) {
+    const koebsudgifterIAlt = koebsposter.reduce((sum, post) => sum + post.beloeb, 0);
+    const renoveringIAlt = renoveringsposter.reduce((sum, post) => sum + post.beloeb, 0);
+
+    return {
+      koebsudgifterIAlt,
+      renoveringIAlt,
+      samletInvestering: koebsudgifterIAlt + renoveringIAlt
+    };
+  }
+
+  beregnFinansiering(samletInvestering, egenbetaling) {
+    const finansieringsbehov = Math.max(0, samletInvestering - tal(egenbetaling));
+
+    return {
+      finansieringsbehov,
+      egenkapitalBehov: Math.max(0, samletInvestering - finansieringsbehov)
+    };
+  }
+
+  beregnCashflow(resultatFoerFinansiering, ydelseAarligt) {
+    // Ydelsen kan indeholde afdrag, så dette er cashflow og ikke regnskabsmæssigt resultat.
+    return resultatFoerFinansiering - ydelseAarligt;
+  }
+
+  beregnNoegletalOverTid(input) {
+    return beregnNoegletalOverTid(input);
+  }
+}
+
 function beregnAnalyse(trinData) {
+  const beregner = new InvesteringscaseBeregner(trinData);
+  return beregner.beregnAnalyse();
+}
+
+function beregnAnalyseForTrinData(beregner) {
+  const trinData = beregner.trinData;
   const koeb = trinData.koebsudgifter || {};
   const finansiering = trinData.finansiering || {};
   const renovering = trinData.renovering || {};
@@ -232,17 +280,13 @@ function beregnAnalyse(trinData) {
   const koebsposter = hentKoebsposter(koeb);
   const renoveringsposter = hentRenoveringsposter(renovering);
   const driftsposter = hentDriftsposter(drift);
-
-  const koebsudgifterIAlt = koebsposter.reduce((sum, post) => sum + post.beloeb, 0);
-  const renoveringIAlt = renoveringsposter.reduce((sum, post) => sum + post.beloeb, 0);
-
-  // Samlet investering består af køb + renovering.
-  const samletInvestering = koebsudgifterIAlt + renoveringIAlt;
-  const egenbetaling = tal(finansiering.egenbetaling);
-
-  // Lånebehov beregnes ud fra hele investeringen, ikke kun købet.
-  const finansieringsbehov = Math.max(0, samletInvestering - egenbetaling);
-  const egenkapitalBehov = Math.max(0, samletInvestering - finansieringsbehov);
+  const investering = beregner.beregnSamletInvestering(koebsposter, renoveringsposter);
+  const koebsudgifterIAlt = investering.koebsudgifterIAlt;
+  const renoveringIAlt = investering.renoveringIAlt;
+  const samletInvestering = investering.samletInvestering;
+  const finansieringstal = beregner.beregnFinansiering(samletInvestering, finansiering.egenbetaling);
+  const finansieringsbehov = finansieringstal.finansieringsbehov;
+  const egenkapitalBehov = finansieringstal.egenkapitalBehov;
 
   const driftsudgifter = beregnDriftsudgifter(driftsposter);
   const lejeAarligt = udlejning.aktiv === false ? 0 : tal(udlejning.maanedligLeje) * 12;
@@ -277,10 +321,9 @@ function beregnAnalyse(trinData) {
 
   const resultatFoerFinansiering = nettoLejeAarligt - driftsudgifter.aarligt;
   const aarligtResultatEfterRente = resultatFoerFinansiering - renteudgiftAarligt;
-  // Ydelsen kan indeholde afdrag, så dette er cashflow og ikke regnskabsmæssigt resultat.
-  const aarligtCashflowEfterLaaneydelse = resultatFoerFinansiering - ydelseAarligt;
+  const aarligtCashflowEfterLaaneydelse = beregner.beregnCashflow(resultatFoerFinansiering, ydelseAarligt);
   const ejendomspris = findEjendomspris(koebsposter, koebsudgifterIAlt);
-  const noegletalOverTid = beregnNoegletalOverTid({
+  const noegletalOverTid = beregner.beregnNoegletalOverTid({
     ejendomspris,
     finansieringsbehov,
     rente: finansiering.rente,
@@ -335,6 +378,7 @@ function beregnAnalyse(trinData) {
 
 module.exports = {
   GYLDIGE_TRIN,
+  InvesteringscaseBeregner,
   beregnAnalyse,
   beregnRestgaeldEfterAar,
   beregnNoegletalOverTid,

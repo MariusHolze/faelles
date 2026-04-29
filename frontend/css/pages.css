@@ -84,18 +84,10 @@
 }
 
 #ejendomListe,
-#brugerListe,
 #profilEjendomListe {
   margin-top: 20px;
   padding: 0;
   list-style: none;
-}
-
-#brugerListe li {
-  margin-bottom: 8px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f8fafc;
 }
 
 @media (max-width: 700px) {

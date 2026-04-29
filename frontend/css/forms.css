@@ -1,9 +1,5 @@
 button,
-.knap,
-.login-knap,
-.case-primary-link,
-.sekundaer-link,
-.sekundaer-knap {
+.knap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -22,19 +18,25 @@ button,
 
 button:hover,
 .knap:hover,
-.login-knap:hover,
-.case-primary-link:hover {
+button:focus,
+.knap:focus {
   background: #3c6fa3;
 }
 
-.sekundaer-link,
+button:disabled,
+.knap:disabled,
+button[disabled],
+.knap[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .sekundaer-knap {
   background: #eef2f7;
   border-color: #d9e3ee;
   color: #243244;
 }
 
-.sekundaer-link:hover,
 .sekundaer-knap:hover {
   background: #dce5ef;
 }
@@ -58,36 +60,10 @@ textarea:focus {
   border-color: #508fcd;
 }
 
-#login-form,
-#opret-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-width: 420px;
-  margin: 30px auto;
-  padding: 24px;
-  border: 1px solid #d9e3ee;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-#opret-form label {
-  font-weight: 700;
-  text-align: left;
-}
-
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  text-align: center;
-}
-
-#loginFejl,
-#error-message-age,
-#error-message-password {
-  color: #c0392b;
-  font-weight: 700;
   text-align: center;
 }
