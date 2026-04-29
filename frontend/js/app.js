@@ -31,10 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     initKortdata(); // sætter kortmodal og kortknapper op
   }
 
-  if (typeof visProfil === "function") {
-    visProfil(); // viser fælles prototypeoversigt på profilsiden
-  }
-
   if (typeof hentProfilEjendomme === "function") {
     hentProfilEjendomme(); // henter ejendomme til profilsiden
   }

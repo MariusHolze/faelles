@@ -13,105 +13,102 @@
   <div id="navbar-container"></div>
 
   <main class="cases-page">
-    <section class="case-form-header">
-      <p class="cases-label">Trin 2 af 5</p>
-      <h1 id="caseTrinTitel">Finansiering og lånedetaljer</h1>
-      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
-    </section>
+    <div id="caseTrinIndikator" class="trin-indikator"></div>
 
-    <form id="caseTrinForm" class="case-trin-form" data-trin="finansiering">
-      <section class="case-help">
-        <h2>Hjælp til input</h2>
-        <p>
-          Angiv de vigtigste lånedetaljer. Systemet bruger lånebeløb, rente og løbetid
-          til at beregne en simpel månedlig ydelse til caseoverblikket.
+    <div class="case-trin-kort">
+      <header class="case-trin-kort-top">
+        <h1 id="caseTrinTitel">Finansiering og lånedetaljer</h1>
+        <p class="case-trin-kort-undertitel">
+          Angiv de vigtigste lånedetaljer. Systemet bruger lånebeløb, rente og løbetid til at beregne en simpel månedlig ydelse.
         </p>
-      </section>
+        <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+      </header>
 
-      <div class="case-field-grid">
-        <label>
-          Lånetype
-          <select data-case-field="laanetype">
-            <option value="">Vælg lånetype</option>
-            <option value="realkredit">Realkreditlån</option>
-            <option value="banklaan">Banklån</option>
-            <option value="privat">Privat finansiering</option>
-          </select>
-          <span>Standardværdier udfyldes automatisk for realkredit og banklån, men kan ændres bagefter.</span>
-        </label>
+      <form id="caseTrinForm" class="case-trin-form" data-trin="finansiering">
+        <div class="case-field-grid">
+          <label>
+            Lånetype
+            <select data-case-field="laanetype">
+              <option value="">Vælg lånetype</option>
+              <option value="realkredit">Realkreditlån</option>
+              <option value="banklaan">Banklån</option>
+              <option value="privat">Privat finansiering</option>
+            </select>
+            <span>Standardværdier udfyldes automatisk for realkredit og banklån, men kan ændres bagefter.</span>
+          </label>
 
-        <label>
-          Egenbetaling
-          <input data-case-field="egenbetaling" type="number" min="0" step="1000" placeholder="fx 250000">
-          <span>Beløb som investoren selv betaler.</span>
-          <small id="egenbetalingFejl" class="case-field-fejl"></small>
-        </label>
+          <label>
+            Egenbetaling
+            <input data-case-field="egenbetaling" type="number" min="0" step="1000" placeholder="fx 250000">
+            <span>Beløb som investoren selv betaler.</span>
+            <small id="egenbetalingFejl" class="case-field-fejl"></small>
+          </label>
 
-        <label>
-          Lånebeløb
-          <input data-case-field="laanebeloeb" type="number" min="0" step="1000" placeholder="fx 1750000" readonly>
-          <span>Beregnes som samlet investering inkl. renovering minus egenbetaling.</span>
-        </label>
+          <label>
+            Lånebeløb
+            <input data-case-field="laanebeloeb" type="number" min="0" step="1000" placeholder="fx 1750000" readonly>
+            <span>Beregnes som samlet investering inkl. renovering minus egenbetaling.</span>
+          </label>
 
-        <label>
-          Rente i procent
-          <input data-case-field="rente" type="number" min="0" step="0.1" placeholder="fx 4,5">
-          <span>Årlig rente. Skriv procent uden %-tegn.</span>
-        </label>
+          <label>
+            Rente i procent
+            <input data-case-field="rente" type="number" min="0" step="0.1" placeholder="fx 4,5">
+            <span>Årlig rente. Skriv procent uden %-tegn.</span>
+          </label>
 
-        <label>
-          Løbetid i år
-          <input data-case-field="loebetid" type="number" min="0" max="50" step="1" placeholder="fx 30">
-          <span>Hvor mange år lånet forventes at løbe.</span>
-          <small id="loebetidFejl" class="case-field-fejl"></small>
-        </label>
+          <label>
+            Løbetid i år
+            <input data-case-field="loebetid" type="number" min="0" max="50" step="1" placeholder="fx 30">
+            <span>Hvor mange år lånet forventes at løbe.</span>
+            <small id="loebetidFejl" class="case-field-fejl"></small>
+          </label>
 
-        <label>
-          Afdragsfrihed i år
-          <input data-case-field="afdragsfrihed" type="number" min="0" max="10" step="1" placeholder="fx 0">
-          <span>Antal år uden afdrag. Brug 0 hvis der betales afdrag fra start.</span>
-          <small id="afdragsfrihedFejl" class="case-field-fejl"></small>
-        </label>
-      </div>
-
-      <section class="finansiering-beregning" aria-live="polite">
-        <div class="finansiering-beregning-header">
-          <h2>Beregnet overblik</h2>
-          <p>Felterne opdateres automatisk ud fra dine låneoplysninger.</p>
+          <label>
+            Afdragsfrihed i år
+            <input data-case-field="afdragsfrihed" type="number" min="0" max="10" step="1" placeholder="fx 0">
+            <span>Antal år uden afdrag. Brug 0 hvis der betales afdrag fra start.</span>
+            <small id="afdragsfrihedFejl" class="case-field-fejl"></small>
+          </label>
         </div>
 
-        <div class="finansiering-beregning-grid finansiering-beregning-grid-tre">
-          <article class="finansiering-highlight">
-            <span>Første månedlige ydelse</span>
-            <strong id="finansieringMaanedligYdelse">0 kr.</strong>
-            <small id="finansieringMaanedligNote">Viser ydelsen i starten af lånet.</small>
-          </article>
+        <section class="finansiering-beregning" aria-live="polite">
+          <div class="finansiering-beregning-header">
+            <h2>Beregnet overblik</h2>
+            <p>Felterne opdateres automatisk ud fra dine låneoplysninger.</p>
+          </div>
 
-          <article class="finansiering-highlight finansiering-highlight-tertiaer">
-            <span>Ydelse efter afdragsfrihed</span>
-            <strong id="finansieringEfterAfdragsfrihed">0 kr.</strong>
-            <small id="finansieringEfterAfdragsfrihedNote">Samme som første ydelse, hvis der ikke er afdragsfrihed.</small>
-          </article>
+          <div class="finansiering-beregning-grid finansiering-beregning-grid-tre">
+            <article class="finansiering-highlight">
+              <span>Første månedlige ydelse</span>
+              <strong id="finansieringMaanedligYdelse">0 kr.</strong>
+              <small id="finansieringMaanedligNote">Viser ydelsen i starten af lånet.</small>
+            </article>
 
-          <article class="finansiering-highlight finansiering-highlight-sekundaer">
-            <span>Samlet renteomkostning</span>
-            <strong id="finansieringSamletRente">0 kr.</strong>
-            <small id="finansieringSamletRenteNote">Viser den samlede renteudgift over hele lånets periode.</small>
-          </article>
+            <article class="finansiering-highlight finansiering-highlight-tertiaer">
+              <span>Ydelse efter afdragsfrihed</span>
+              <strong id="finansieringEfterAfdragsfrihed">0 kr.</strong>
+              <small id="finansieringEfterAfdragsfrihedNote">Samme som første ydelse, hvis der ikke er afdragsfrihed.</small>
+            </article>
+
+            <article class="finansiering-highlight finansiering-highlight-sekundaer">
+              <span>Samlet renteomkostning</span>
+              <strong id="finansieringSamletRente">0 kr.</strong>
+              <small id="finansieringSamletRenteNote">Viser den samlede renteudgift over hele lånets periode.</small>
+            </article>
+          </div>
+        </section>
+
+        <p id="caseTrinFejl" class="case-form-fejl"></p>
+        <p id="caseTrinStatus" class="case-form-status"></p>
+
+        <div class="case-trin-navigation">
+          <a id="forrigeTrinLink" class="forrige-trin-knap skjult" href="#">← Forrige trin</a>
+          <button id="naesteTrinKnap" class="naeste-trin-knap skjult" type="submit" data-action="next">
+            Gem og fortsæt →
+          </button>
         </div>
-      </section>
-
-      <p id="caseTrinFejl" class="case-form-fejl"></p>
-      <p id="caseTrinStatus" class="case-form-status"></p>
-
-      <div class="case-form-actions">
-        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
-        <button id="naesteTrinKnap" class="case-primary-link skjult" type="submit" data-action="next">
-          Gem og gå videre
-        </button>
-        <button type="submit">Gem</button>
-      </div>
-    </form>
+      </form>
+    </div>
   </main>
 
   <script src="../js/ui.js"></script>

@@ -13,69 +13,64 @@
   <div id="navbar-container"></div>
 
   <main class="cases-page">
-    <section class="case-form-header">
-      <p class="cases-label">Trin 4 af 5</p>
-      <h1 id="caseTrinTitel">Driftsbudget</h1>
-      <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
-    </section>
+    <div id="caseTrinIndikator" class="trin-indikator"></div>
 
-    <form id="caseTrinForm" class="case-trin-form" data-trin="driftsbudget">
-      <section class="case-help">
-        <h2>Hjælp til input</h2>
-        <p>
-          Angiv de løbende driftsomkostninger for casen. Vælg selv posterne og
-          om beløbet er pr. måned eller pr. år. Hvis du ikke kender det præcise tal endnu,
-          kan du bruge et forsigtigt overslag og rette budgettet senere. Slet en post,
-          hvis den ikke skal med.
+    <div class="case-trin-kort">
+      <header class="case-trin-kort-top">
+        <h1 id="caseTrinTitel">Driftsbudget</h1>
+        <p class="case-trin-kort-undertitel">
+          Angiv de løbende driftsomkostninger for casen. Vælg selv posterne og om beløbet er pr. måned eller pr. år.
         </p>
-      </section>
+        <p id="caseTrinInfo">Valgt investeringscase indlæses...</p>
+      </header>
 
-      <div id="driftspostListe" class="driftspost-liste"></div>
+      <form id="caseTrinForm" class="case-trin-form" data-trin="driftsbudget">
+        <div id="driftspostListe" class="driftspost-liste"></div>
 
-      <button id="tilfoejDriftspostKnap" class="sekundaer-knap" type="button">
-        + Tilføj driftsomkostning
-      </button>
-
-      <section class="finansiering-beregning drift-beregning" aria-live="polite">
-        <div class="finansiering-beregning-header">
-          <h2>Driftsoverblik</h2>
-          <p>Overblikket opdateres automatisk, når du ændrer driftsomkostningerne.</p>
-        </div>
-
-        <div class="finansiering-beregning-grid finansiering-beregning-grid-tre drift-beregning-grid">
-          <article class="finansiering-highlight drift-highlight">
-            <span>Månedlig drift</span>
-            <strong id="driftMaanedligTotal">0 kr.</strong>
-            <small>Beregnet ud fra månedlige og årlige poster.</small>
-          </article>
-
-          <article class="finansiering-highlight drift-highlight-sekundaer">
-            <span>Årlig drift</span>
-            <strong id="driftAarligTotal">0 kr.</strong>
-            <small>Det beløb casen skal kunne bære hvert år før finansiering.</small>
-          </article>
-
-          <article class="finansiering-highlight drift-highlight-tertiaer">
-            <span>Største driftspost</span>
-            <strong id="driftStoerstePost">Ingen endnu</strong>
-            <small id="driftStoerstePostNote">Udfyld beløb for at se den største udgift.</small>
-          </article>
-        </div>
-
-        <div id="driftFordeling" class="drift-fordeling" aria-label="Fordeling af driftsomkostninger"></div>
-      </section>
-
-      <p id="caseTrinFejl" class="case-form-fejl"></p>
-      <p id="caseTrinStatus" class="case-form-status"></p>
-
-      <div class="case-form-actions">
-        <a id="forrigeTrinLink" class="sekundaer-link skjult" href="#">Forrige trin</a>
-        <button id="naesteTrinKnap" class="case-primary-link skjult" type="submit" data-action="next">
-          Gem og gå videre
+        <button id="tilfoejDriftspostKnap" class="sekundaer-knap" type="button">
+          + Tilføj driftsomkostning
         </button>
-        <button type="submit">Gem</button>
-      </div>
-    </form>
+
+        <section class="finansiering-beregning drift-beregning" aria-live="polite">
+          <div class="finansiering-beregning-header">
+            <h2>Driftsoverblik</h2>
+            <p>Overblikket opdateres automatisk, når du ændrer driftsomkostningerne.</p>
+          </div>
+
+          <div class="finansiering-beregning-grid finansiering-beregning-grid-tre drift-beregning-grid">
+            <article class="finansiering-highlight drift-highlight">
+              <span>Månedlig drift</span>
+              <strong id="driftMaanedligTotal">0 kr.</strong>
+              <small>Beregnet ud fra månedlige og årlige poster.</small>
+            </article>
+
+            <article class="finansiering-highlight drift-highlight-sekundaer">
+              <span>Årlig drift</span>
+              <strong id="driftAarligTotal">0 kr.</strong>
+              <small>Det beløb casen skal kunne bære hvert år før finansiering.</small>
+            </article>
+
+            <article class="finansiering-highlight drift-highlight-tertiaer">
+              <span>Største driftspost</span>
+              <strong id="driftStoerstePost">Ingen endnu</strong>
+              <small id="driftStoerstePostNote">Udfyld beløb for at se den største udgift.</small>
+            </article>
+          </div>
+
+          <div id="driftFordeling" class="drift-fordeling" aria-label="Fordeling af driftsomkostninger"></div>
+        </section>
+
+        <p id="caseTrinFejl" class="case-form-fejl"></p>
+        <p id="caseTrinStatus" class="case-form-status"></p>
+
+        <div class="case-trin-navigation">
+          <a id="forrigeTrinLink" class="forrige-trin-knap skjult" href="#">← Forrige trin</a>
+          <button id="naesteTrinKnap" class="naeste-trin-knap skjult" type="submit" data-action="next">
+            Gem og fortsæt →
+          </button>
+        </div>
+      </form>
+    </div>
   </main>
 
   <script src="../js/ui.js"></script>

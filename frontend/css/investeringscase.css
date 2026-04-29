@@ -28,6 +28,223 @@
   background: #ffffff;
 }
 
+/* ---- Trin-indikator ---- */
+.trin-indikator {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+
+.trin-punkt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.trin-cirkel {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #c9d9eb;
+  background: #fff;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.trin-punkt.aktiv .trin-cirkel {
+  border-color: #243244;
+  color: #243244;
+}
+
+.trin-punkt.faerdig .trin-cirkel {
+  border-color: #2a7a52;
+  background: #2a7a52;
+  color: #fff;
+  font-size: 16px;
+}
+
+.trin-label {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.trin-punkt.aktiv .trin-label {
+  color: #243244;
+  font-weight: 700;
+}
+
+.trin-punkt.faerdig .trin-label {
+  color: #2a7a52;
+  font-weight: 600;
+}
+
+.trin-linje {
+  flex: 1;
+  height: 2px;
+  background: #d9e3ee;
+  min-width: 32px;
+  align-self: flex-start;
+  margin-top: 18px;
+}
+
+/* ---- Trin-kort (ny wrapper der erstatter case-form-header + case-trin-form) ---- */
+.case-trin-kort {
+  border: 1px solid #d9e3ee;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.case-trin-kort-top {
+  padding: 32px 36px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.case-trin-kort-top h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  color: #0f172a;
+}
+
+.case-trin-kort-undertitel {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.case-trin-kort .case-trin-form {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 28px 36px;
+}
+
+/* ---- Ja/nej valg-kort ---- */
+.trin-valg-gruppe {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.trin-valg-kort {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+  border: 2px solid #d9e3ee;
+  border-radius: 10px;
+  background: #fff;
+  color: #243244;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.trin-valg-kort:hover {
+  border-color: #508fcd;
+}
+
+.trin-valg-kort.valg-kort-aktiv {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.trin-valg-ikon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: background 0.15s;
+}
+
+.trin-valg-kort.valg-kort-aktiv .trin-valg-ikon-wrapper {
+  background: #bfdbfe;
+}
+
+.trin-valg-kort strong {
+  display: block;
+  font-size: 15px;
+}
+
+.trin-valg-kort p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ---- Ny navigation ---- */
+.case-trin-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.forrige-trin-knap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #d9e3ee;
+  border-radius: 999px;
+  background: #fff;
+  color: #243244;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.forrige-trin-knap:hover {
+  background: #f8fafc;
+  border-color: #b0c4d8;
+}
+
+.naeste-trin-knap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 999px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.naeste-trin-knap:hover {
+  background: #0f172a;
+}
+
+.naeste-trin-knap:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .cases-hero {
   display: flex;
   justify-content: space-between;
@@ -60,8 +277,19 @@
 
 .case-form-header p:last-child {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.3;
+}
+
+#caseTrinInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #eef5fb;
+  border: 1px solid #c5dbf0;
+  border-radius: 999px;
+  font-size: 15px;
+  color: #243244;
+  font-weight: 500;
 }
 
 .case-overblik-header {
@@ -339,6 +567,10 @@
 
 .koebspost-række {
   grid-template-columns: minmax(0, 1fr) minmax(220px, 360px) 44px;
+}
+
+.koebspost-række[data-fast="true"] {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
 }
 
 .renoveringspost-række,
@@ -633,6 +865,31 @@
 
   .case-form-header h1 {
     font-size: 34px;
+  }
+
+  .trin-label {
+    display: none;
+  }
+
+  .trin-valg-gruppe {
+    grid-template-columns: 1fr;
+  }
+
+  .case-trin-kort-top,
+  .case-trin-kort .case-trin-form {
+    padding: 20px;
+  }
+
+  .case-trin-navigation {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .forrige-trin-knap,
+  .naeste-trin-knap {
+    justify-content: center;
+    width: 100%;
   }
 
   .case-overblik-header .cases-label {

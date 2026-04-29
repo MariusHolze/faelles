@@ -8,6 +8,16 @@
   align-items: center;
   min-height: 60px;
   padding: 0 20px;
+  position: relative;
+}
+
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .nav-left,
@@ -94,6 +104,12 @@
     align-items: flex-start;
     gap: 12px;
     padding: 14px 20px;
+  }
+
+  .nav-center {
+    position: static;
+    transform: none;
+    flex-wrap: wrap;
   }
 
   .nav-left,
