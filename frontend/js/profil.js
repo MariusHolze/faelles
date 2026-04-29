@@ -1,14 +1,3 @@
-function hentAktivBruger() {
-  const bruger = hentLoggetIndBruger();
-
-  if (!bruger) {
-    window.location.href = "login.html";
-    return null;
-  }
-
-  return bruger;
-}
-
 // Viser den loggede brugers oplysninger på profilsiden.
 function visProfil() {
   const fornavnElement = document.getElementById("profilFornavn");
@@ -19,140 +8,9 @@ function visProfil() {
     return;
   }
 
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
-  fornavnElement.textContent = bruger.fornavn || "";
-  efternavnElement.textContent = bruger.efternavn || "";
-  emailElement.textContent = bruger.email || "";
-}
-
-// Udfylder felterne på siden til redigering af brugerprofil.
-function udfyldRedigerProfilForm() {
-  const fornavnInput = document.getElementById("redigerFornavn");
-  const efternavnInput = document.getElementById("redigerEfternavn");
-  const telefonInput = document.getElementById("redigerTelefon");
-  const emailInput = document.getElementById("redigerEmail");
-
-  if (!fornavnInput || !efternavnInput || !telefonInput || !emailInput) {
-    return;
-  }
-
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
-  fornavnInput.value = bruger.fornavn || "";
-  efternavnInput.value = bruger.efternavn || "";
-  telefonInput.value = bruger.telefon || "";
-  emailInput.value = bruger.email || "";
-}
-
-// Gemmer ændringer til den loggede brugers profil.
-function bindRedigerProfilForm() {
-  const form = document.getElementById("redigerProfilForm");
-
-  if (!form) {
-    return;
-  }
-
-  form.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const bruger = hentAktivBruger();
-
-    if (!bruger) {
-      return;
-    }
-
-    const fornavnInput = document.getElementById("redigerFornavn");
-    const efternavnInput = document.getElementById("redigerEfternavn");
-    const telefonInput = document.getElementById("redigerTelefon");
-    const emailInput = document.getElementById("redigerEmail");
-
-    try {
-      const response = await fetch("/api/brugere/profil", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          brugerID: bruger.brugerID,
-          fornavn: fornavnInput.value,
-          efternavn: efternavnInput.value,
-          telefon: telefonInput.value,
-          email: emailInput.value
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.message || "Kunne ikke opdatere profil.");
-        return;
-      }
-
-      gemLoggetIndBruger(data.bruger);
-      window.location.href = "profil.html";
-    } catch (error) {
-      console.error("Fejl ved opdatering af profil:", error);
-      alert("Server fejl");
-    }
-  });
-}
-
-// Sletter den loggede brugers konto efter bekræftelse.
-function bindSletKontoKnap() {
-  const sletKnap = document.getElementById("sletKontoKnap");
-
-  if (!sletKnap) {
-    return;
-  }
-
-  sletKnap.addEventListener("click", async function () {
-    const bruger = hentAktivBruger();
-
-    if (!bruger) {
-      return;
-    }
-
-    const erSikker = confirm("Er du sikker på, at du vil slette din konto?");
-
-    if (!erSikker) {
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/brugere/profil", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          brugerID: bruger.brugerID
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.message || "Kunne ikke slette konto.");
-        return;
-      }
-
-      fjernLoggetIndBruger();
-      alert("Din konto er blevet slettet.");
-      window.location.href = "index.html";
-    } catch (error) {
-      console.error("Fejl ved sletning af profil:", error);
-      alert("Server fejl");
-    }
-  });
+  fornavnElement.textContent = "Demo";
+  efternavnElement.textContent = "Prototype";
+  emailElement.textContent = "Fælles database";
 }
 
 // Henter og viser brugerens ejendomsprofiler.
@@ -164,12 +22,6 @@ async function hentProfilEjendomme() {
     return;
   }
 
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
   liste.innerHTML = "Loader...";
 
   if (antalElement) {
@@ -177,7 +29,7 @@ async function hentProfilEjendomme() {
   }
 
   try {
-    const response = await fetch(`/api/ejendomme?email=${encodeURIComponent(bruger.email)}`);
+    const response = await fetch("/api/ejendomme");
     const ejendomme = await response.json();
 
     if (!response.ok) {
@@ -429,12 +281,6 @@ async function visAdresseForslagTilRedigering(soeg, forslagListe, statusElement,
 
 // Opdaterer en ejendomsprofil med en ny valideret adresse.
 async function redigerEjendomFraProfil(ejendom, nyAdresse, statusElement) {
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
   if (!nyAdresse) {
     statusElement.textContent = "Du skal vælge en gyldig adresse fra listen.";
     return;
@@ -453,8 +299,7 @@ async function redigerEjendomFraProfil(ejendom, nyAdresse, statusElement) {
         husnr: nyAdresse.husnr,
         postnr: nyAdresse.postnr,
         bynavn: nyAdresse.postnrnavn,
-        adgangsadresseID: nyAdresse.adgangsadresseID,
-        ownerEmail: bruger.email
+        adgangsadresseID: nyAdresse.adgangsadresseID
       })
     });
 
@@ -475,12 +320,6 @@ async function redigerEjendomFraProfil(ejendom, nyAdresse, statusElement) {
 
 // Arkiverer en ejendom fra profilsiden.
 async function sletEjendomFraProfil(ejendom) {
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
   const erSikker = confirm("Er du sikker på, at du vil slette denne ejendom?");
 
   if (!erSikker) {
@@ -488,7 +327,7 @@ async function sletEjendomFraProfil(ejendom) {
   }
 
   try {
-    const response = await fetch(`/api/ejendomme/${ejendom.id}?email=${encodeURIComponent(bruger.email)}`, {
+    const response = await fetch(`/api/ejendomme/${ejendom.id}`, {
       method: "DELETE"
     });
 
@@ -509,12 +348,6 @@ async function sletEjendomFraProfil(ejendom) {
 
 // Opretter en investeringscase fra den valgte ejendom.
 async function opretInvesteringscaseFraProfil(ejendom) {
-  const bruger = hentAktivBruger();
-
-  if (!bruger) {
-    return;
-  }
-
   const navn = prompt("Navn på investeringscase:", `Case for ${ejendom.adresse || "valgt ejendom"}`);
 
   if (!navn || !navn.trim()) {
@@ -531,7 +364,6 @@ async function opretInvesteringscaseFraProfil(ejendom) {
       },
       body: JSON.stringify({
         ejendomID: ejendom.id,
-        ownerEmail: bruger.email,
         navn: navn.trim(),
         beskrivelse: beskrivelse.trim(),
         koebsposter: []

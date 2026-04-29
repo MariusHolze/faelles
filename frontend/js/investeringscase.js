@@ -38,7 +38,7 @@ function hentCaseFlowUrl(filnavn) {
 }
 
 function findRedigerSide(caseData) {
-  // Brugeren sendes til det første trin, der mangler data.
+  // Casen sendes til det første trin, der mangler data.
   // Hvis alle trin er udfyldt, starter redigering fra købsudgifter.
   const sider = {
     koebsudgifter: "købsudgifter.html",
@@ -101,7 +101,7 @@ function formatDriftPeriode(value) {
   return value === "maanedligt" ? "pr. måned" : "pr. år";
 }
 
-function beregnUdlejningOverblikFallback(udlejning = {}, analyse = {}) {
+function beregnUdlejningOverblikLokalt(udlejning = {}, analyse = {}) {
   const maanedligLeje = Number(udlejning.maanedligLeje || 0);
   const lejeAarligt = maanedligLeje * 12;
   const tomgangDage = analyse.tomgangDage ?? udlejning.tomgangDage ?? Math.round((Number(udlejning.tomgangProcent || 0) / 100) * 365);
@@ -151,13 +151,6 @@ function lavTomOffentligCaseBesked(adresse) {
 }
 
 async function opretInvesteringscaseFraProfil(profil) {
-  const bruger = hentLoggetIndBruger();
-
-  if (!bruger) {
-    window.location.href = "/login.html";
-    return;
-  }
-
   const navn = prompt("Navn på investeringscase:", `Case for ${profil.adresse || "valgt ejendom"}`);
 
   if (!navn || !navn.trim()) {
@@ -174,7 +167,6 @@ async function opretInvesteringscaseFraProfil(profil) {
       },
       body: JSON.stringify({
         ejendomID: profil.id,
-        ownerEmail: bruger.email,
         navn: navn.trim(),
         beskrivelse: beskrivelse.trim(),
         koebsposter: []
@@ -272,18 +264,8 @@ async function hentInvesteringscasesFraApi() {
     }
   }
 
-  if (typeof hentLoggetIndBruger !== "function") {
-    return { fejl: "Brugerfunktionen mangler.", cases: [] };
-  }
-
-  const bruger = hentLoggetIndBruger();
-
-  if (!bruger) {
-    return { fejl: "Du skal være logget ind for at se dine egne investeringscases.", cases: [] };
-  }
-
   try {
-    const response = await fetch(`/api/investeringscases?email=${encodeURIComponent(bruger.email)}`);
+    const response = await fetch("/api/investeringscases");
     const data = await response.json();
 
     if (!response.ok) {
@@ -354,18 +336,8 @@ async function visInvesteringscases() {
 }
 
 async function hentEjendomsprofilerTilDropdown() {
-  if (typeof hentLoggetIndBruger !== "function") {
-    return { fejl: "Brugerfunktionen mangler.", profiler: [] };
-  }
-
-  const bruger = hentLoggetIndBruger();
-
-  if (!bruger) {
-    return { fejl: "Ingen bruger er logget ind.", profiler: [] };
-  }
-
   try {
-    const response = await fetch(`/api/ejendomme?email=${encodeURIComponent(bruger.email)}`);
+    const response = await fetch("/api/ejendomme");
     const data = await response.json();
 
     if (!response.ok) {
@@ -489,13 +461,6 @@ function bindCaseKnapper() {
 }
 
 async function sletInvesteringscase(caseData, knapElement) {
-  const bruger = typeof hentLoggetIndBruger === "function" ? hentLoggetIndBruger() : null;
-
-  if (!bruger || !bruger.email) {
-    alert("Du skal være logget ind for at slette en investeringscase.");
-    return;
-  }
-
   const erBekraeftet = window.confirm(
     `Vil du slette investeringscasen "${caseData.navn || `CASE-${caseData.caseID}`}"? Denne handling kan ikke fortrydes.`
   );
@@ -515,7 +480,7 @@ async function sletInvesteringscase(caseData, knapElement) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ ownerEmail: bruger.email })
+      body: JSON.stringify({})
     });
 
     const responseTekst = await response.text();
@@ -552,8 +517,8 @@ async function sletInvesteringscase(caseData, knapElement) {
   }
 }
 
-async function hentCaseAnalyseFraApi(caseID, email) {
-  const response = await fetch(`/api/investeringscases/${caseID}/analyse?email=${encodeURIComponent(email)}`);
+async function hentCaseAnalyseFraApi(caseID) {
+  const response = await fetch(`/api/investeringscases/${caseID}/analyse`);
   const data = await response.json();
 
   if (!response.ok) {
@@ -734,14 +699,14 @@ function lavTrinOverblik(trinData, analyse = {}) {
   }));
   const stoersteDriftspost = [...driftsposterMedAarligt].sort((a, b) => b.aarligtBeloeb - a.aarligtBeloeb)[0];
   const laanebeloeb = analyse.finansieringsbehov ?? finansiering.laanebeloeb;
-  const udlejningFallback = beregnUdlejningOverblikFallback(udlejning, analyse);
+  const udlejningLokalt = beregnUdlejningOverblikLokalt(udlejning, analyse);
   const udlejningAktiv = udlejning.aktiv === false ? false : Boolean(udlejning.aktiv || udlejning.maanedligLeje || udlejning.depositum || udlejning.udlejningsNoter);
-  const lejeAarligt = analyse.lejeAarligt ?? udlejningFallback.lejeAarligt;
-  const tomgangDage = analyse.tomgangDage ?? udlejningFallback.tomgangDage;
-  const tomgangBeloeb = analyse.tomgangBeloeb ?? udlejningFallback.tomgangBeloeb;
-  const lejeudgifterAarligt = analyse.lejeudgifterAarligt ?? udlejningFallback.lejeudgifterAarligt;
-  const nettoLejeAarligt = analyse.nettoLejeAarligt ?? udlejningFallback.nettoLejeAarligt;
-  const lejeEfterSkatAarligt = analyse.lejeEfterSkatAarligt ?? udlejningFallback.lejeEfterSkatAarligt;
+  const lejeAarligt = analyse.lejeAarligt ?? udlejningLokalt.lejeAarligt;
+  const tomgangDage = analyse.tomgangDage ?? udlejningLokalt.tomgangDage;
+  const tomgangBeloeb = analyse.tomgangBeloeb ?? udlejningLokalt.tomgangBeloeb;
+  const lejeudgifterAarligt = analyse.lejeudgifterAarligt ?? udlejningLokalt.lejeudgifterAarligt;
+  const nettoLejeAarligt = analyse.nettoLejeAarligt ?? udlejningLokalt.nettoLejeAarligt;
+  const lejeEfterSkatAarligt = analyse.lejeEfterSkatAarligt ?? udlejningLokalt.lejeEfterSkatAarligt;
 
   const posterHtml = poster.length
     ? poster.map((post) => `<li>${escapeHtml(post.navn)}: ${formatKroner(post.beloeb)}</li>`).join("")
@@ -903,13 +868,7 @@ async function initCaseOverblikSide() {
     return;
   }
 
-  const bruger = hentLoggetIndBruger();
   const valgtCase = hentValgtCaseFraStorage();
-
-  if (!bruger) {
-    window.location.href = "/login.html";
-    return;
-  }
 
   if (!valgtCase || !valgtCase.caseID) {
     window.location.href = "/investeringscase.html";
@@ -921,7 +880,7 @@ async function initCaseOverblikSide() {
 
   try {
     // Overblikssiden henter frisk analyse fra backend, så den ikke viser gamle tal fra localStorage.
-    const data = await hentCaseAnalyseFraApi(valgtCase.caseID, bruger.email);
+    const data = await hentCaseAnalyseFraApi(valgtCase.caseID);
     const analyse = data.analyse || {};
     const trinData = data.trinData || {};
 

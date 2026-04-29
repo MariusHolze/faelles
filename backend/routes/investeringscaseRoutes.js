@@ -17,18 +17,10 @@ function erGyldigtId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
 }
 
-async function brugerHarAdgangTilCase(pool, caseID, email) {
+async function caseFindes(pool, caseID) {
   const result = await pool.request()
     .input("caseID", sql.Int, Number(caseID))
-    .input("email", sql.VarChar(255), email)
-    .query(`
-      SELECT c.caseID
-      FROM Investeringscase c
-      JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
-      JOIN Bruger b ON e.brugerID = b.brugerID
-      WHERE c.caseID = @caseID
-        AND b.email = @email
-    `);
+    .query("SELECT caseID FROM Investeringscase WHERE caseID = @caseID");
 
   return result.recordset.length > 0;
 }
@@ -72,11 +64,7 @@ function hentGyldigeKoebsposter(koebsposter) {
 }
 
 router.get("/", async (req, res) => {
-  const { email, ejendomID } = req.query;
-
-  if (!email && !ejendomID) {
-    return res.status(400).json({ message: "Email eller ejendomID mangler" });
-  }
+  const { ejendomID } = req.query;
 
   if (ejendomID && !erGyldigtId(ejendomID)) {
     return res.status(400).json({ message: "Ugyldigt ejendoms-ID" });
@@ -86,11 +74,6 @@ router.get("/", async (req, res) => {
     const pool = await getPool();
     const request = pool.request();
     let whereClause = "1 = 1";
-
-    if (email) {
-      request.input("email", sql.VarChar(255), email);
-      whereClause += " AND b.email = @email";
-    }
 
     if (ejendomID) {
       request.input("ejendomID", sql.Int, Number(ejendomID));
@@ -110,7 +93,6 @@ router.get("/", async (req, res) => {
         e.byggeaar
       FROM Investeringscase c
       JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
-      JOIN Bruger b ON e.brugerID = b.brugerID
       WHERE ${whereClause}
       ORDER BY c.oprettetTidspunkt DESC
     `);
@@ -123,12 +105,12 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { ejendomID, ownerEmail, navn, beskrivelse, koebsposter } = req.body;
+  const { ejendomID, navn, beskrivelse, koebsposter } = req.body;
   const caseNavn = String(navn || "").trim();
   const caseBeskrivelse = String(beskrivelse || "").trim();
 
-  if (!erGyldigtId(ejendomID) || !ownerEmail || !caseNavn) {
-    return res.status(400).json({ message: "Ejendom, bruger og navn skal udfyldes" });
+  if (!erGyldigtId(ejendomID) || !caseNavn) {
+    return res.status(400).json({ message: "Ejendom og navn skal udfyldes" });
   }
 
   if (caseNavn.length > 100) {
@@ -139,30 +121,15 @@ router.post("/", async (req, res) => {
     const pool = await getPool();
     const adgang = await pool.request()
       .input("ejendomID", sql.Int, Number(ejendomID))
-      .input("email", sql.VarChar(255), ownerEmail)
-      .query(`
-        SELECT e.ejendomID
-        FROM Ejendomsprofil e
-        JOIN Bruger b ON e.brugerID = b.brugerID
-        WHERE e.ejendomID = @ejendomID
-          AND b.email = @email
-      `);
+      .query("SELECT ejendomID FROM Ejendomsprofil WHERE ejendomID = @ejendomID");
 
     if (adgang.recordset.length === 0) {
       return res.status(404).json({ message: "Ejendom ikke fundet eller ingen adgang" });
     }
 
     const eksisterende = await pool.request()
-      .input("email", sql.VarChar(255), ownerEmail)
       .input("navn", sql.VarChar(100), caseNavn)
-      .query(`
-        SELECT c.caseID
-        FROM Investeringscase c
-        JOIN Ejendomsprofil e ON c.ejendomID = e.ejendomID
-        JOIN Bruger b ON e.brugerID = b.brugerID
-        WHERE b.email = @email
-          AND c.navn = @navn
-      `);
+      .query("SELECT caseID FROM Investeringscase WHERE navn = @navn");
 
     if (eksisterende.recordset.length > 0) {
       return res.status(409).json({ message: "Du har allerede en case med det navn" });
@@ -201,11 +168,6 @@ router.post("/", async (req, res) => {
 
 router.get("/:caseID/trin/:trin", async (req, res) => {
   const { caseID, trin } = req.params;
-  const { email } = req.query;
-
-  if (!email) {
-    return res.status(400).json({ message: "Email mangler" });
-  }
 
   if (!erGyldigtId(caseID) || !erGyldigtTrin(trin)) {
     return res.status(400).json({ message: "Ugyldigt case-ID eller formulartrin" });
@@ -213,10 +175,10 @@ router.get("/:caseID/trin/:trin", async (req, res) => {
 
   try {
     const pool = await getPool();
-    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, email);
+    const findes = await caseFindes(pool, caseID);
 
-    if (!harAdgang) {
-      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    if (!findes) {
+      return res.status(404).json({ message: "Case ikke fundet" });
     }
 
     const result = await pool.request()
@@ -243,11 +205,6 @@ router.get("/:caseID/trin/:trin", async (req, res) => {
 
 router.get("/:caseID/analyse", async (req, res) => {
   const { caseID } = req.params;
-  const { email } = req.query;
-
-  if (!email) {
-    return res.status(400).json({ message: "Email mangler" });
-  }
 
   if (!erGyldigtId(caseID)) {
     return res.status(400).json({ message: "Ugyldigt case-ID" });
@@ -255,10 +212,10 @@ router.get("/:caseID/analyse", async (req, res) => {
 
   try {
     const pool = await getPool();
-    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, email);
+    const findes = await caseFindes(pool, caseID);
 
-    if (!harAdgang) {
-      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    if (!findes) {
+      return res.status(404).json({ message: "Case ikke fundet" });
     }
 
     const result = await pool.request()
@@ -285,11 +242,7 @@ router.get("/:caseID/analyse", async (req, res) => {
 
 router.put("/:caseID/trin/:trin", async (req, res) => {
   const { caseID, trin } = req.params;
-  const { ownerEmail, data } = req.body;
-
-  if (!ownerEmail) {
-    return res.status(400).json({ message: "Email mangler" });
-  }
+  const { data } = req.body;
 
   if (!erGyldigtId(caseID) || !erGyldigtTrin(trin)) {
     return res.status(400).json({ message: "Ugyldigt case-ID eller formulartrin" });
@@ -297,10 +250,10 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
 
   try {
     const pool = await getPool();
-    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, ownerEmail);
+    const findes = await caseFindes(pool, caseID);
 
-    if (!harAdgang) {
-      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    if (!findes) {
+      return res.status(404).json({ message: "Case ikke fundet" });
     }
 
     const eksisterende = await pool.request()
@@ -335,11 +288,6 @@ router.put("/:caseID/trin/:trin", async (req, res) => {
 
 router.delete("/:caseID", async (req, res) => {
   const { caseID } = req.params;
-  const { ownerEmail } = req.body;
-
-  if (!ownerEmail) {
-    return res.status(400).json({ message: "Email mangler" });
-  }
 
   if (!erGyldigtId(caseID)) {
     return res.status(400).json({ message: "Ugyldigt case-ID" });
@@ -347,10 +295,10 @@ router.delete("/:caseID", async (req, res) => {
 
   try {
     const pool = await getPool();
-    const harAdgang = await brugerHarAdgangTilCase(pool, caseID, ownerEmail);
+    const findes = await caseFindes(pool, caseID);
 
-    if (!harAdgang) {
-      return res.status(404).json({ message: "Case ikke fundet eller ingen adgang" });
+    if (!findes) {
+      return res.status(404).json({ message: "Case ikke fundet" });
     }
 
     await pool.request()

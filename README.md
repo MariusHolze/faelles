@@ -65,9 +65,8 @@ Den primære database oprettes med:
 database/01_schema.sql
 ```
 
-Der er tre centrale tabeller:
+Der er to centrale tabeller:
 
-- `Bruger`: login og brugeroplysninger.
 - `Ejendomsprofil`: adresse og BBR-data for en ejendom.
 - `Investeringscase`: en case knyttet til en ejendom.
 
@@ -120,6 +119,7 @@ Projektet er en prototype og prioriterer forklarbarhed:
 
 - Ingen React eller andre frontend-frameworks.
 - Ingen TypeScript.
+- Ingen login/authentication; ejendomsprofiler og cases er fælles i prototypedatabasen.
 - Simple Express-routes.
 - Simple SQL-tabeller.
 - Investeringscase-input gemmes som JSON for fleksibilitet.
@@ -129,6 +129,7 @@ Projektet er en prototype og prioriterer forklarbarhed:
 ## Database-Opdateringer
 
 Hvis databasen oprettes fra bunden, er `database/01_schema.sql` nok.
+
 
 Hvis databasen allerede findes fra en ældre version, kan disse scripts køres én gang:
 

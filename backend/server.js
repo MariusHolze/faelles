@@ -7,7 +7,6 @@ require("dotenv").config({
 // Her henter vi vores route-filer.
 // Hver route-fil håndterer et område i systemet.
 const adresseRoutes = require("./routes/adresseRoutes");
-const brugerRoutes = require("./routes/brugerRoutes");
 const ejendomRoutes = require("./routes/ejendomRoutes");
 const kortRoutes = require("./routes/kortRoutes");
 const investeringscaseRoutes = require("./routes/investeringscaseRoutes");
@@ -32,7 +31,6 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 // Når frontend kalder disse adresser, sendes forespørgslen videre
 // til den rigtige route-fil.
 app.use("/api/adresser", adresseRoutes);
-app.use("/api/brugere", brugerRoutes);
 app.use("/api/ejendomme", ejendomRoutes);
 app.use("/api/kort", kortRoutes);
 app.use("/api/investeringscases", investeringscaseRoutes);

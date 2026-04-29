@@ -247,16 +247,10 @@ function bindOpretEjendomsprofilFraForside() {
   if (!knap) return;
 
   knap.addEventListener("click", async function () {
-    const bruger = hentLoggetIndBruger(); // tjekker om der er en bruger logget ind
     const fejlBesked = document.getElementById("fejlBesked");
 
     if (fejlBesked) {
       fejlBesked.textContent = ""; // rydder gammel fejl
-    }
-
-    if (!bruger) {
-      window.location.href = "login.html"; // sender til login hvis ingen bruger findes
-      return;
     }
 
     if (!valgtAdresse) {
@@ -279,8 +273,7 @@ function bindOpretEjendomsprofilFraForside() {
           husnr: valgtAdresse.husnr,
           postnr: valgtAdresse.postnr,
           bynavn: valgtAdresse.postnrnavn,
-          adgangsadresseID: valgtAdresse.adgangsadresseID,
-          ownerEmail: bruger.email
+          adgangsadresseID: valgtAdresse.adgangsadresseID
         })
       });
 

@@ -183,12 +183,12 @@ function beregnRestgaeldEfterAar(startGaeld, rente, loebetid, afdragsfrihed, aar
   return Math.max(0, restgaeld);
 }
 
-function findEjendomspris(poster, fallback) {
+function findEjendomspris(poster, standardvaerdi) {
   const post = poster.find((item) =>
     item.navn.toLowerCase().replaceAll("æ", "ae").replaceAll("ø", "oe").replaceAll("å", "aa") === "ejendomspris"
   );
 
-  return Math.max(0, tal(post?.beloeb || fallback));
+  return Math.max(0, tal(post?.beloeb || standardvaerdi));
 }
 
 function beregnNoegletalOverTid({

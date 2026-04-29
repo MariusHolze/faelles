@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"> <!-- korrekt tegnsæt -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- responsivt layout -->
-  <title>Min profil</title>
+  <title>Ejendomsprofiler</title>
   <link rel="stylesheet" href="style.css"> <!-- fælles styling -->
 </head>
 
@@ -13,26 +13,24 @@
   <main class="page-content">
     <header class="profil-hero">
       <div>
-        <p class="eyebrow">Logget ind</p>
-        <h1>Min profil</h1>
-        <p class="profil-intro">Her får du overblik over dine oplysninger og dine ejendomsprofiler.</p>
+        <p class="eyebrow">Demo-session</p>
+        <h1>Ejendomsprofiler</h1>
+        <p class="profil-intro">Her får du overblik over de ejendomsprofiler, der er gemt i prototypens database.</p>
       </div>
-      <!-- Går til siden hvor brugeren kan redigere egne oplysninger. -->
-      <a class="knap" href="redigerProfil.html">Konto indstillinger</a>
       <a class="knap" href="index.html">Find ny ejendom</a>
     </header>
 
     <section class="bruger-section profil-bruger">
       <div>
-        <span class="profil-label">Fornavn</span>
+        <span class="profil-label">Session</span>
         <strong id="profilFornavn"></strong> <!-- JS indsætter fornavn -->
       </div>
       <div>
-        <span class="profil-label">Efternavn</span>
+        <span class="profil-label">Type</span>
         <strong id="profilEfternavn"></strong> <!-- JS indsætter efternavn -->
       </div>
       <div>
-        <span class="profil-label">Email</span>
+        <span class="profil-label">Teknisk ejer</span>
         <strong id="profilEmail"></strong> <!-- JS indsætter email -->
       </div>
     </section>
@@ -41,7 +39,7 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">Ejendomme</p>
-          <h2>Mine ejendomsprofiler</h2>
+          <h2>Gemte ejendomsprofiler</h2>
         </div>
         <span id="profilEjendomAntal" class="profil-count">0 ejendomme</span>
       </div>
@@ -49,15 +47,13 @@
     </section>
 
     <section class="bruger-section">
-      <h2>Mine investeringscases</h2>
-      <p>Se og arbejd videre med dine investeringscases.</p>
+      <h2>Investeringscases</h2>
+      <p>Se og arbejd videre med de investeringscases, der er oprettet i prototypen.</p>
       <a class="knap" href="investeringscase.html">Gå til investeringscases</a>
     </section>
   </main>
 
-  <script src="js/storage.js"></script> <!-- henter brugerdata (localStorage) -->
   <script src="js/ui.js"></script> <!-- DOM manipulation -->
-  <script src="js/auth.js"></script> <!-- tjekker om bruger er logget ind -->
   <script src="js/ejendom.js"></script> <!-- henter ejendomme fra backend -->
   <script src="js/profil.js"></script> <!-- indsætter data i spans -->
   <script src="js/adresse.js"></script> <!-- ikke direkte brugt her (overflødig) -->

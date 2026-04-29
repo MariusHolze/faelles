@@ -1286,8 +1286,8 @@ function anvendStandardVaerdierForLaanetype() {
   opdaterFinansieringsBeregning();
 }
 
-async function hentGemtTrinData(caseID, trin, email) {
-  const response = await fetch(`/api/investeringscases/${caseID}/trin/${trin}?email=${encodeURIComponent(email)}`);
+async function hentGemtTrinData(caseID, trin) {
+  const response = await fetch(`/api/investeringscases/${caseID}/trin/${trin}`);
   const result = await response.json();
 
   if (!response.ok) {
@@ -1297,14 +1297,13 @@ async function hentGemtTrinData(caseID, trin, email) {
   return result.data;
 }
 
-async function gemTrinData(caseID, trin, email, data) {
+async function gemTrinData(caseID, trin, data) {
   const response = await fetch(`/api/investeringscases/${caseID}/trin/${trin}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      ownerEmail: email,
       data
     })
   });
@@ -1340,13 +1339,7 @@ async function bindInvesteringscaseTrinForm() {
   }
 
   const trin = form.dataset.trin;
-  const bruger = hentLoggetIndBruger();
   const valgtCase = hentValgtInvesteringscase();
-
-  if (!bruger) {
-    window.location.href = "/login.html";
-    return;
-  }
 
   if (!valgtCase || !valgtCase.caseID) {
     window.location.href = "/investeringscase.html";
@@ -1408,12 +1401,12 @@ async function bindInvesteringscaseTrinForm() {
   });
 
   try {
-    const gemtData = await hentGemtTrinData(valgtCase.caseID, trin, bruger.email);
+    const gemtData = await hentGemtTrinData(valgtCase.caseID, trin);
     udfyldForm(trin, gemtData);
 
     if (trin === "finansiering") {
-      const koebsudgifterData = await hentGemtTrinData(valgtCase.caseID, "koebsudgifter", bruger.email);
-      const renoveringData = await hentGemtTrinData(valgtCase.caseID, "renovering", bruger.email);
+      const koebsudgifterData = await hentGemtTrinData(valgtCase.caseID, "koebsudgifter");
+      const renoveringData = await hentGemtTrinData(valgtCase.caseID, "renovering");
       finansieringKoebsudgifterTotal = hentKoebsudgifterTotal(koebsudgifterData) + hentRenoveringTotal(renoveringData);
       opdaterLaanebeloebFraEgenbetaling();
     }
@@ -1613,7 +1606,7 @@ async function bindInvesteringscaseTrinForm() {
 
       try {
         const data = hentFormData(trin);
-        await gemTrinData(valgtCase.caseID, trin, bruger.email, data);
+        await gemTrinData(valgtCase.caseID, trin, data);
         window.location.href = forrigeLink.href;
       } catch (error) {
         console.error("Fejl ved gem før navigation til forrige trin:", error);
@@ -1638,7 +1631,7 @@ async function bindInvesteringscaseTrinForm() {
     }
 
     try {
-      await gemTrinData(valgtCase.caseID, trin, bruger.email, data);
+      await gemTrinData(valgtCase.caseID, trin, data);
       visFormStatus("Gemt.");
 
       // Efter gem vælger vi retning ud fra den knap brugeren trykkede på.
