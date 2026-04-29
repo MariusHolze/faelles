@@ -1,18 +1,12 @@
 async function hentEjendomme() {
-  const bruger = hentLoggetIndBruger(); // henter bruger fra localStorage
   const liste = document.getElementById("ejendomListe"); // stedet hvor listen vises
 
   if (!liste) return;
 
-  if (!bruger) {
-    liste.innerHTML = "<li>Du skal være logget ind</li>"; // besked hvis ingen bruger er logget ind
-    return;
-  }
-
   liste.innerHTML = "<li>Henter ejendomme...</li>"; // midlertidig tekst mens data hentes
 
   try {
-    const response = await fetch(`/api/ejendomme?email=${encodeURIComponent(bruger.email)}`); // henter brugerens ejendomme
+    const response = await fetch("/api/ejendomme"); // henter gemte ejendomme
     const data = await response.json();
 
     if (!response.ok) {
