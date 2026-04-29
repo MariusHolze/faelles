@@ -1,6 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
+const MATRIKELKORT_WMS_URL = "https://services.datafordeler.dk/MATRIKLEN2/MatGaeldendeOgForeloebigWMS/1.0.0/WMS";
 
 function hentKortToken() {
   const token = process.env.DATAFORSYNINGEN_MAP_TOKEN || "";
@@ -10,6 +11,12 @@ function hentKortToken() {
   }
 
   return token;
+}
+
+function sanitiserWmsTekst(body) {
+  return body
+    .replace(/([?&amp;]username=)[^&<]*/gi, "$1")
+    .replace(/([?&amp;]password=)[^&<]*/gi, "$1");
 }
 
 async function hentJsonFraUrl(url) {
@@ -23,6 +30,46 @@ async function hentJsonFraUrl(url) {
 
   return response.json();
 }
+
+router.get("/matrikel-wms", async (req, res) => {
+  const username = process.env.BBR_USERNAME;
+  const password = process.env.BBR_PASSWORD;
+
+  if (!username || !password) {
+    return res.status(503).send("Matrikelkortet kræver BBR_USERNAME og BBR_PASSWORD i backend/.env");
+  }
+
+  try {
+    const params = new URLSearchParams();
+
+    Object.entries(req.query).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((entry) => params.append(key, entry));
+      } else if (value !== undefined) {
+        params.set(key, value);
+      }
+    });
+
+    params.set("username", username);
+    params.set("password", password);
+
+    const upstream = await fetch(`${MATRIKELKORT_WMS_URL}?${params.toString()}`);
+    const contentType = upstream.headers.get("content-type") || "application/octet-stream";
+
+    res.status(upstream.status);
+    res.set("content-type", contentType);
+
+    if (/xml|text/i.test(contentType)) {
+      res.send(sanitiserWmsTekst(await upstream.text()));
+      return;
+    }
+
+    res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (error) {
+    console.error("Fejl ved hentning af matrikelkort-WMS:", error.message);
+    res.status(502).send("Kunne ikke hente Matrikelkortet");
+  }
+});
 
 router.get("/ejendom", async (req, res) => {
   const { adresseID, adgangsadresseID } = req.query;
@@ -54,15 +101,6 @@ router.get("/ejendom", async (req, res) => {
 
     const adgangspunkt = adgangsadresse.adgangspunkt || {};
     const jordstykke = adgangsadresse.jordstykke || {};
-    let jordstykkeGeojson = null;
-
-    if (jordstykke.href) {
-      try {
-        jordstykkeGeojson = await hentJsonFraUrl(`${jordstykke.href}?format=geojson`);
-      } catch (error) { // Hvis polygonen fejler, viser vi stadig selve adressen på kortet.
-        jordstykkeGeojson = null;
-      }
-    }
 
     res.json({
       adresseID,
@@ -73,8 +111,7 @@ router.get("/ejendom", async (req, res) => {
         ? {
             ejerlavkode: jordstykke.ejerlav?.kode || adgangsadresse.ejerlav?.kode || null,
             ejerlavnavn: jordstykke.ejerlav?.navn || adgangsadresse.ejerlav?.navn || "",
-            matrikelnr: jordstykke.matrikelnr || adgangsadresse.matrikelnr || "",
-            geojson: jordstykkeGeojson
+            matrikelnr: jordstykke.matrikelnr || adgangsadresse.matrikelnr || ""
           }
         : null,
       kort: {

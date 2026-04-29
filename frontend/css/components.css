@@ -259,11 +259,25 @@
 }
 
 .kortdata-map {
+  position: relative;
   height: 480px;
   overflow: hidden;
   border: 1px solid #d9e3ee;
   border-radius: 8px;
   background: #eef3f8;
+}
+
+.matrikelkort-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.matrikelkort-billede {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 body.modal-aaben {

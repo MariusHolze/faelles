@@ -1,5 +1,7 @@
 let kortInstans = null;
-let valgtKortBaggrund = "orto_foraar";
+let matrikelkortOverlay = null;
+let matrikelkortBillede = null;
+let valgtKortVisning = "satellit";
 let okapiErIndlaest = false;
 
 function hentKortdataKnapHtml({
@@ -40,12 +42,12 @@ function opretKortModalHvisMangler() {
       <div class="kortdata-header">
         <div>
           <p class="eyebrow">Kort data</p>
-          <h2 id="kortdataTitel">Satellitkort og matrikelkort</h2>
+          <h2 id="kortdataTitel">Satellitkort og Matrikelkortet</h2>
           <p id="kortdataAdresse" class="kortdata-adresse"></p>
         </div>
         <div class="kortdata-skift">
-          <button type="button" class="kortdata-visning aktiv" data-kort-visning="orto_foraar">Satellitkort</button>
-          <button type="button" class="kortdata-visning" data-kort-visning="dtk_skaermkort_daempet">Matrikelkort</button>
+          <button type="button" class="kortdata-visning aktiv" data-kort-visning="satellit">Satellitkort</button>
+          <button type="button" class="kortdata-visning" data-kort-visning="matrikelkort">Matrikelkortet</button>
         </div>
       </div>
       <div id="kortdataFeedback" class="kortdata-feedback">Henter kortdata...</div>
@@ -119,8 +121,18 @@ function opdaterVisningsKnapper() {
   const knapper = document.querySelectorAll("[data-kort-visning]");
 
   knapper.forEach((knap) => {
-    knap.classList.toggle("aktiv", knap.dataset.kortVisning === valgtKortBaggrund);
+    knap.classList.toggle("aktiv", knap.dataset.kortVisning === valgtKortVisning);
   });
+}
+
+function opdaterMatrikelkortSynlighed() {
+  if (matrikelkortOverlay) {
+    matrikelkortOverlay.classList.toggle("skjult", valgtKortVisning !== "matrikelkort");
+  }
+
+  if (valgtKortVisning === "matrikelkort") {
+    opdaterMatrikelkortBillede();
+  }
 }
 
 async function indlaesOkapiHvisNoedvendigt() {
@@ -214,7 +226,7 @@ function opretKort(token, koordinater) {
       data-center-lat="${koordinater[1]}"
       data-center-lon="${koordinater[0]}"
       data-zoom="18"
-      data-background="${valgtKortBaggrund}"
+      data-background="orto_foraar"
       data-mylocation="false"
       data-fullscreen="false"
       data-zoomslider="true"
@@ -229,71 +241,20 @@ function opretKort(token, koordinater) {
   return maps.maps[0];
 }
 
-function tegnMatrikel(kort, data) {
-  if (!kort || !window.ol) {
+function opretMatrikelkortOverlay(kort) {
+  const mapElement = document.getElementById("kortdataMap");
+
+  if (!mapElement || !kort?.olMap) {
     return;
   }
 
-  const geojson = {
-    type: "FeatureCollection",
-    features: []
-  };
+  matrikelkortOverlay = document.createElement("div");
+  matrikelkortOverlay.className = "matrikelkort-overlay skjult";
+  matrikelkortOverlay.innerHTML = '<img alt="" class="matrikelkort-billede">';
+  matrikelkortBillede = matrikelkortOverlay.querySelector("img");
+  mapElement.appendChild(matrikelkortOverlay);
 
-  if (data.jordstykke?.geojson) {
-    geojson.features.push(data.jordstykke.geojson);
-  }
-
-  if (Array.isArray(data.koordinater)) {
-    geojson.features.push({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: data.koordinater
-      }
-    });
-  }
-
-  const format = new window.ol.format.GeoJSON();
-  const features = format.readFeatures(geojson, {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:25832"
-  });
-
-  const source = new window.ol.source.Vector({
-    features
-  });
-
-  const style = (feature) => {
-    if (feature.getGeometry()?.getType() === "Point") {
-      return new window.ol.style.Style({
-        image: new window.ol.style.Circle({
-          radius: 7,
-          fill: new window.ol.style.Fill({ color: "#1f6b4a" }),
-          stroke: new window.ol.style.Stroke({ color: "#ffffff", width: 2 })
-        })
-      });
-    }
-
-    return new window.ol.style.Style({
-      stroke: new window.ol.style.Stroke({
-        color: "#0f4c81",
-        width: 3
-      }),
-      fill: new window.ol.style.Fill({
-        color: "rgba(47, 111, 168, 0.12)"
-      })
-    });
-  };
-
-  kort.addVectorLayer(source, style, "matrikelafgraensning");
-
-  if (!source.isEmpty()) {
-    kort.olMap.getView().fit(source.getExtent(), {
-      padding: [48, 48, 48, 48],
-      maxZoom: 19,
-      duration: 250
-    });
-  }
+  kort.olMap.on("moveend", opdaterMatrikelkortBillede);
 }
 
 function lukKortdataModal() {
@@ -310,6 +271,38 @@ function lukKortdataModal() {
 
   document.body.classList.remove("modal-aaben");
   kortInstans = null;
+  matrikelkortOverlay = null;
+  matrikelkortBillede = null;
+}
+
+function opdaterMatrikelkortBillede() {
+  if (!kortInstans?.olMap || !matrikelkortBillede || valgtKortVisning !== "matrikelkort") {
+    return;
+  }
+
+  const size = kortInstans.olMap.getSize();
+  const view = kortInstans.olMap.getView();
+  const projectionCode = view.getProjection().getCode();
+
+  if (!Array.isArray(size) || size[0] <= 0 || size[1] <= 0) {
+    return;
+  }
+
+  const params = new URLSearchParams({
+    SERVICE: "WMS",
+    VERSION: "1.3.0",
+    REQUEST: "GetMap",
+    FORMAT: "image/png",
+    TRANSPARENT: "TRUE",
+    LAYERS: "MatrikelSkel_Gaeldende,Centroide_Gaeldende",
+    STYLES: "Roede_skel,Roede_centroider",
+    CRS: projectionCode,
+    BBOX: view.calculateExtent(size).join(","),
+    WIDTH: Math.round(size[0]),
+    HEIGHT: Math.round(size[1])
+  });
+
+  matrikelkortBillede.src = `/api/kort/matrikel-wms?${params.toString()}`;
 }
 
 async function visKortdataModal(adresseID, adgangsadresseID, adresse) {
@@ -320,7 +313,7 @@ async function visKortdataModal(adresseID, adgangsadresseID, adresse) {
     return;
   }
 
-  valgtKortBaggrund = "orto_foraar";
+  valgtKortVisning = "satellit";
   opdaterVisningsKnapper();
   if (adresseElement) {
     adresseElement.textContent = adresse || "";
@@ -352,7 +345,7 @@ async function visKortdataModal(adresseID, adgangsadresseID, adresse) {
     });
 
     kortInstans = opretKort(data.kort.dataforsyningenToken, data.koordinater);
-    tegnMatrikel(kortInstans, data);
+    opretMatrikelkortOverlay(kortInstans);
 
     if (kortInstans?.olMap) {
       kortInstans.olMap.updateSize();
@@ -384,9 +377,9 @@ function bindKortdataKnapper() {
     }
 
     if (visningsKnap && kortInstans) {
-      valgtKortBaggrund = visningsKnap.dataset.kortVisning;
+      valgtKortVisning = visningsKnap.dataset.kortVisning;
       opdaterVisningsKnapper();
-      kortInstans.toggleBackground(valgtKortBaggrund);
+      opdaterMatrikelkortSynlighed();
     }
   });
 
