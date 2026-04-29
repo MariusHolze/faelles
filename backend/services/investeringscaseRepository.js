@@ -135,9 +135,11 @@ async function hentRenovering(pool, caseID) {
       .input("caseID", sql.Int, Number(caseID))
       .query(`
         SELECT navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned
-        FROM InvesteringscaseRenoveringspost
-        WHERE caseID = @caseID
-        ORDER BY renoveringspostID
+        FROM InvesteringscaseRenoveringspost rp
+        INNER JOIN InvesteringscaseRenovering r ON r.renoveringID = rp.renoveringID
+          AND r.caseID = rp.caseID
+        WHERE r.caseID = @caseID
+        ORDER BY rp.renoveringspostID
       `)
   ]);
 
@@ -186,7 +188,7 @@ async function hentUdlejning(pool, caseID) {
     .input("caseID", sql.Int, Number(caseID))
     .query(`
       SELECT aktiv, maanedligLeje, depositum, tomgangDage,
-             maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter, udlejningsNoter
+             maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter
       FROM InvesteringscaseUdlejning
       WHERE caseID = @caseID
     `);
@@ -203,8 +205,7 @@ async function hentUdlejning(pool, caseID) {
     depositum: mapDecimal(row.depositum),
     tomgangDage: row.tomgangDage ?? "",
     maanedligeUdlejningsudgifter: mapDecimal(row.maanedligeUdlejningsudgifter),
-    aarligeUdlejningsudgifter: mapDecimal(row.aarligeUdlejningsudgifter),
-    udlejningsNoter: row.udlejningsNoter || ""
+    aarligeUdlejningsudgifter: mapDecimal(row.aarligeUdlejningsudgifter)
   };
 }
 
@@ -282,10 +283,17 @@ async function gemFinansiering(transaction, caseID, data = {}) {
 }
 
 async function gemRenovering(transaction, caseID, data = {}) {
-  await request(transaction)
+  const renoveringResult = await request(transaction)
     .input("caseID", sql.Int, Number(caseID))
     .input("aktiv", sql.Bit, bool(data.aktiv))
-    .query("INSERT INTO InvesteringscaseRenovering (caseID, aktiv) VALUES (@caseID, @aktiv)");
+    .query(`
+      INSERT INTO InvesteringscaseRenovering (caseID, aktiv)
+      VALUES (@caseID, @aktiv);
+
+      SELECT CONVERT(INT, SCOPE_IDENTITY()) AS renoveringID;
+    `);
+
+  const renoveringID = renoveringResult.recordset[0].renoveringID;
 
   if (!data.aktiv) {
     return;
@@ -295,6 +303,7 @@ async function gemRenovering(transaction, caseID, data = {}) {
 
   for (const post of poster) {
     await request(transaction)
+      .input("renoveringID", sql.Int, renoveringID)
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
@@ -303,9 +312,9 @@ async function gemRenovering(transaction, caseID, data = {}) {
       .input("tidspunktMaaned", sql.Int, post.tidspunktMaaned)
       .query(`
         INSERT INTO InvesteringscaseRenoveringspost
-        (caseID, navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned)
+        (renoveringID, caseID, navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned)
         VALUES
-        (@caseID, @navn, @beloeb, @tidspunktKey, @tidspunktLabel, @tidspunktMaaned)
+        (@renoveringID, @caseID, @navn, @beloeb, @tidspunktKey, @tidspunktLabel, @tidspunktMaaned)
       `);
   }
 }
@@ -335,14 +344,13 @@ async function gemUdlejning(transaction, caseID, data = {}) {
     .input("tomgangDage", sql.Int, int(Number(data.tomgangDage)) || 0)
     .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), decimal(data.maanedligeUdlejningsudgifter) || 0)
     .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), decimal(data.aarligeUdlejningsudgifter) || 0)
-    .input("udlejningsNoter", sql.VarChar(500), tekst(data.udlejningsNoter, 500))
     .query(`
       INSERT INTO InvesteringscaseUdlejning
       (caseID, aktiv, maanedligLeje, depositum, tomgangDage,
-       maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter, udlejningsNoter)
+       maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter)
       VALUES
       (@caseID, @aktiv, @maanedligLeje, @depositum, @tomgangDage,
-       @maanedligeUdlejningsudgifter, @aarligeUdlejningsudgifter, @udlejningsNoter)
+       @maanedligeUdlejningsudgifter, @aarligeUdlejningsudgifter)
     `);
 }
 

@@ -1,25 +1,3 @@
-CREATE TABLE Ejendomsprofil (
-    ejendomID INT IDENTITY(1,1) NOT NULL,
-    adresse VARCHAR(255) NOT NULL,
-    adresseID VARCHAR(50) NULL,
-    vejnavn VARCHAR(100) NULL,
-    husnr VARCHAR(20) NULL,
-    postnr VARCHAR(10) NULL,
-    bynavn VARCHAR(100) NULL,
-    adgangsadresseID VARCHAR(50) NULL,
-    boligtype VARCHAR(100) NULL,
-    byggeaar INT NULL,
-    boligareal INT NULL,
-    grundareal INT NULL,
-    antalVaerelser INT NULL,
-    oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    sidstOpdateret DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    erArkiveret BIT NOT NULL DEFAULT 0,
-
-    CONSTRAINT PK_Ejendomsprofil PRIMARY KEY (ejendomID),
-    CONSTRAINT UQ_Ejendomsprofil_Adresse UNIQUE (adresse)
-);
-
 CREATE TABLE Investeringscase (
     caseID INT IDENTITY(1,1) NOT NULL,
     ejendomID INT NOT NULL,
@@ -72,12 +50,14 @@ CREATE TABLE InvesteringscaseRenovering (
 
     CONSTRAINT PK_InvesteringscaseRenovering PRIMARY KEY (renoveringID),
     CONSTRAINT UQ_InvesteringscaseRenovering_CaseID UNIQUE (caseID),
+    CONSTRAINT UQ_InvesteringscaseRenovering_RenoveringID_CaseID UNIQUE (renoveringID, caseID),
     CONSTRAINT FK_InvesteringscaseRenovering_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE
 );
 
 CREATE TABLE InvesteringscaseRenoveringspost (
     renoveringspostID INT IDENTITY(1,1) NOT NULL,
+    renoveringID INT NOT NULL,
     caseID INT NOT NULL,
     navn VARCHAR(100) NOT NULL,
     beloeb DECIMAL(18,2) NOT NULL,
@@ -86,6 +66,8 @@ CREATE TABLE InvesteringscaseRenoveringspost (
     tidspunktMaaned INT NULL,
 
     CONSTRAINT PK_InvesteringscaseRenoveringspost PRIMARY KEY (renoveringspostID),
+    CONSTRAINT FK_InvesteringscaseRenoveringspost_InvesteringscaseRenovering
+        FOREIGN KEY (renoveringID, caseID) REFERENCES InvesteringscaseRenovering(renoveringID, caseID),
     CONSTRAINT FK_InvesteringscaseRenoveringspost_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
     CONSTRAINT CK_InvesteringscaseRenoveringspost_Beloeb CHECK (beloeb >= 0),
@@ -115,7 +97,6 @@ CREATE TABLE InvesteringscaseUdlejning (
     tomgangDage INT NOT NULL DEFAULT 0,
     maanedligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,
     aarligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,
-    udlejningsNoter VARCHAR(500) NULL,
 
     CONSTRAINT PK_InvesteringscaseUdlejning PRIMARY KEY (udlejningID),
     CONSTRAINT UQ_InvesteringscaseUdlejning_CaseID UNIQUE (caseID),
@@ -127,7 +108,3 @@ CREATE TABLE InvesteringscaseUdlejning (
     CONSTRAINT CK_InvesteringscaseUdlejning_MaanedligeUdgifter CHECK (maanedligeUdlejningsudgifter >= 0),
     CONSTRAINT CK_InvesteringscaseUdlejning_AarligeUdgifter CHECK (aarligeUdlejningsudgifter >= 0)
 );
-
-CREATE INDEX IX_InvesteringscaseKoebspost_CaseID ON InvesteringscaseKoebspost(caseID);
-CREATE INDEX IX_InvesteringscaseRenoveringspost_CaseID ON InvesteringscaseRenoveringspost(caseID);
-CREATE INDEX IX_InvesteringscaseDriftspost_CaseID ON InvesteringscaseDriftspost(caseID);

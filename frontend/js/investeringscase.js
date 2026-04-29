@@ -1,4 +1,5 @@
 let visteInvesteringscases = [];
+let valgteSammenligningscaseIDs = new Set();
 
 function hentCaseVisningFraUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -29,6 +30,17 @@ function formatDato(dato) {
 
 function formatKroner(beloeb) {
   return `${Math.round(Number(beloeb || 0)).toLocaleString("da-DK")} kr.`;
+}
+
+function formatTal(value) {
+  return Number(value || 0).toLocaleString("da-DK");
+}
+
+function parseCaseIDListe(value) {
+  return String(value || "")
+    .split(",")
+    .map((id) => Number(id.trim()))
+    .filter((id) => Number.isInteger(id) && id > 0);
 }
 
 function hentCaseFlowUrl(filnavn) {
@@ -195,11 +207,16 @@ async function opretInvesteringscaseFraProfil(profil) {
 function lavCaseHtml(caseData, index) {
   const udfyldteTrin = Number(caseData.antalUdfyldteTrin || 0);
   const statusTekst = udfyldteTrin >= 5 ? "Udfyldt" : `${udfyldteTrin}/5 trin udfyldt`;
+  const erValgt = valgteSammenligningscaseIDs.has(Number(caseData.caseID));
 
   return `
     <article class="case-card">
       <div class="case-card-top">
         <span class="case-status aktiv">${statusTekst}</span>
+        <label class="case-sammenlign-valg">
+          <input class="case-sammenlign-checkbox" type="checkbox" data-index="${index}" ${erValgt ? "checked" : ""}>
+          <span>Sammenlign</span>
+        </label>
       </div>
 
       <h2>${escapeHtml(caseData.navn || `Investeringscase ${index + 1}`)}</h2>
@@ -239,6 +256,7 @@ function lavCaseHtml(caseData, index) {
       <div class="case-actions">
         <button class="case-hent-knap" type="button" data-index="${index}">Åbn</button>
         <button class="case-rediger-knap" type="button" data-index="${index}">Rediger</button>
+        <button class="case-dupliker-knap" type="button" data-index="${index}">Dupliker</button>
         <button class="case-slet-knap" type="button" data-index="${index}">Slet</button>
       </div>
     </article>
@@ -285,6 +303,8 @@ async function visInvesteringscases() {
   const heroTitel = document.querySelector(".cases-hero-text h1");
   const heroTekst = document.querySelector(".cases-hero-text p");
   const sectionTitel = document.querySelector(".case-section-title");
+  const sammenlignKnap = document.getElementById("sammenlignCasesKnap");
+  const sammenlignStatus = document.getElementById("caseSammenlignStatus");
 
   if (!casesGrid) {
     return;
@@ -294,6 +314,8 @@ async function visInvesteringscases() {
 
   const resultat = await hentInvesteringscasesFraApi();
   visteInvesteringscases = resultat.cases;
+  const visteIds = new Set(visteInvesteringscases.map((caseData) => Number(caseData.caseID)));
+  valgteSammenligningscaseIDs = new Set([...valgteSammenligningscaseIDs].filter((caseID) => visteIds.has(caseID)));
 
   if (resultat.offentlig) {
     if (opretCaseKnap) {
@@ -327,12 +349,34 @@ async function visInvesteringscases() {
     casesGrid.innerHTML = resultat.offentlig
       ? lavTomOffentligCaseBesked(resultat.adresse)
       : lavTomCaseBesked();
+    opdaterSammenlignToolbar();
     return;
   }
 
   casesGrid.innerHTML = visteInvesteringscases
     .map((caseData, index) => lavCaseHtml(caseData, index))
     .join("");
+  opdaterSammenlignToolbar();
+
+  if (sammenlignKnap && sammenlignStatus && resultat.offentlig) {
+    sammenlignStatus.textContent = "Vælg mindst to offentlige cases for at sammenligne dem.";
+  }
+}
+
+function opdaterSammenlignToolbar() {
+  const sammenlignKnap = document.getElementById("sammenlignCasesKnap");
+  const sammenlignStatus = document.getElementById("caseSammenlignStatus");
+  const antal = valgteSammenligningscaseIDs.size;
+
+  if (sammenlignKnap) {
+    sammenlignKnap.disabled = antal < 2;
+  }
+
+  if (sammenlignStatus) {
+    sammenlignStatus.textContent = antal < 2
+      ? "Vælg mindst to cases for at sammenligne scenarier."
+      : `${antal} cases valgt til sammenligning.`;
+  }
 }
 
 async function hentEjendomsprofilerTilDropdown() {
@@ -431,14 +475,15 @@ function bindCaseKnapper() {
   document.addEventListener("click", async (event) => {
     const hentKnap = event.target.closest(".case-hent-knap");
     const redigerKnap = event.target.closest(".case-rediger-knap");
+    const duplikerKnap = event.target.closest(".case-dupliker-knap");
     const sletKnap = event.target.closest(".case-slet-knap");
     const visning = hentCaseVisningFraUrl();
 
-    if ((!hentKnap && !redigerKnap && !sletKnap) || event.target.disabled) {
+    if ((!hentKnap && !redigerKnap && !duplikerKnap && !sletKnap) || event.target.disabled) {
       return;
     }
 
-    const knap = hentKnap || redigerKnap || sletKnap;
+    const knap = hentKnap || redigerKnap || duplikerKnap || sletKnap;
     const valgtCase = visteInvesteringscases[Number(knap.dataset.index)];
 
     if (!valgtCase) {
@@ -446,7 +491,12 @@ function bindCaseKnapper() {
     }
 
     if (visning.visning === "offentlig") {
-      alert("Offentlige cases kan ses som inspiration på oversigten, men kun ejeren kan åbne og redigere formulartrinene.");
+      alert("Offentlige cases kan ses som inspiration og sammenlignes, men kun ejeren kan åbne, duplikere, redigere og slette formulartrinene.");
+      return;
+    }
+
+    if (duplikerKnap) {
+      await duplikerInvesteringscase(valgtCase, duplikerKnap);
       return;
     }
 
@@ -458,6 +508,78 @@ function bindCaseKnapper() {
     localStorage.setItem("valgtInvesteringscase", JSON.stringify(valgtCase));
     window.location.href = redigerKnap ? findRedigerSide(valgtCase) : hentCaseFlowUrl("caseOverblik.html");
   });
+}
+
+function bindSammenlignValg() {
+  document.addEventListener("change", (event) => {
+    const checkbox = event.target.closest(".case-sammenlign-checkbox");
+
+    if (!checkbox) {
+      return;
+    }
+
+    const valgtCase = visteInvesteringscases[Number(checkbox.dataset.index)];
+
+    if (!valgtCase) {
+      return;
+    }
+
+    const caseID = Number(valgtCase.caseID);
+
+    if (checkbox.checked) {
+      valgteSammenligningscaseIDs.add(caseID);
+    } else {
+      valgteSammenligningscaseIDs.delete(caseID);
+    }
+
+    opdaterSammenlignToolbar();
+  });
+
+  const sammenlignKnap = document.getElementById("sammenlignCasesKnap");
+
+  if (sammenlignKnap) {
+    sammenlignKnap.addEventListener("click", () => {
+      const caseIDs = [...valgteSammenligningscaseIDs];
+
+      if (caseIDs.length < 2) {
+        opdaterSammenlignToolbar();
+        return;
+      }
+
+      window.location.href = hentCaseFlowUrl(`sammenlign.html?caseIDs=${encodeURIComponent(caseIDs.join(","))}`);
+    });
+  }
+}
+
+async function duplikerInvesteringscase(caseData, knapElement) {
+  const oprindeligTekst = knapElement.textContent;
+
+  try {
+    knapElement.disabled = true;
+    knapElement.textContent = "Duplikerer...";
+
+    const response = await fetch(`/api/investeringscases/${caseData.caseID}/dupliker`, {
+      method: "POST"
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Kunne ikke duplikere investeringscase.");
+    }
+
+    if (data.case) {
+      localStorage.setItem("valgtInvesteringscase", JSON.stringify(data.case));
+    }
+
+    await visInvesteringscases();
+    alert(data.message || "Investeringscase duplikeret.");
+  } catch (error) {
+    console.error("Fejl ved duplikering af investeringscase:", error);
+    alert(error.message || "Serverfejl ved duplikering af investeringscase.");
+  } finally {
+    knapElement.disabled = false;
+    knapElement.textContent = oprindeligTekst;
+  }
 }
 
 async function sletInvesteringscase(caseData, knapElement) {
@@ -618,6 +740,134 @@ function lavUdviklingsRækker(punkter) {
     .join("");
 }
 
+function hentSammenlignCaseIDsFraUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return parseCaseIDListe(params.get("caseIDs"));
+}
+
+async function hentCasesTilSammenligning(caseIDs) {
+  const response = await fetch("/api/investeringscases");
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Kunne ikke hente investeringscases.");
+  }
+
+  const valgteIDs = new Set(caseIDs.map(Number));
+  const valgteCases = data.filter((caseData) => valgteIDs.has(Number(caseData.caseID)));
+
+  if (valgteCases.length !== valgteIDs.size) {
+    throw new Error("En eller flere valgte cases findes ikke længere.");
+  }
+
+  return valgteCases;
+}
+
+function lavSammenlignKort(cases) {
+  return cases.map((caseData) => {
+    const cashflow = Number(caseData.aarligtCashflowEfterLaaneydelse || 0);
+    const egenkapital = Number(caseData.egenkapitalBehov || 0);
+
+    return `
+      <article class="sammenlign-case-kort">
+        <div class="case-card-top">
+          <span class="case-status aktiv">${caseData.antalUdfyldteTrin || 0}/5 trin</span>
+          <span class="case-status">${escapeHtml(caseData.adresse || "Ingen adresse")}</span>
+        </div>
+        <h2>${escapeHtml(caseData.navn || `CASE-${caseData.caseID}`)}</h2>
+        <div class="sammenlign-kort-tal">
+          <div>
+            <span>Samlet investering</span>
+            <strong>${formatKroner(caseData.samletInvestering)}</strong>
+          </div>
+          <div>
+            <span>Årligt cashflow</span>
+            <strong>${formatKroner(cashflow)}</strong>
+          </div>
+          <div>
+            <span>Egenkapitalbehov</span>
+            <strong>${formatKroner(egenkapital)}</strong>
+          </div>
+          <div>
+            <span>Finansieringsbehov / gæld</span>
+            <strong>${formatKroner(caseData.finansieringsbehov)}</strong>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function lavSammenlignTabel(cases) {
+  const rows = [
+    ["Adresse", (caseData) => escapeHtml(caseData.adresse || "Ikke angivet")],
+    ["Boligareal", (caseData) => caseData.boligareal ? `${formatTal(caseData.boligareal)} m²` : "Ikke angivet"],
+    ["Byggeår", (caseData) => escapeHtml(caseData.byggeaar || "Ikke angivet")],
+    ["Samlet investering", (caseData) => formatKroner(caseData.samletInvestering)],
+    ["Finansieringsbehov / gæld", (caseData) => formatKroner(caseData.finansieringsbehov)],
+    ["Egenkapitalbehov", (caseData) => formatKroner(caseData.egenkapitalBehov)],
+    ["Månedlig ydelse", (caseData) => formatKroner(caseData.maanedligYdelse)],
+    ["Nettoleje årligt", (caseData) => formatKroner(caseData.nettoLejeAarligt)],
+    ["Leje efter skat årligt", (caseData) => formatKroner(caseData.lejeEfterSkatAarligt)],
+    ["Driftsudgifter årligt", (caseData) => formatKroner(caseData.driftsudgifterAarligt)],
+    ["Årligt cashflow", (caseData) => formatKroner(caseData.aarligtCashflowEfterLaaneydelse)]
+  ];
+
+  return `
+    <div class="sammenlign-tabel-wrapper">
+      <table class="sammenlign-tabel">
+        <thead>
+          <tr>
+            <th>Nøgletal</th>
+            ${cases.map((caseData) => `<th>${escapeHtml(caseData.navn || `CASE-${caseData.caseID}`)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(([label, render]) => `
+            <tr>
+              <th>${label}</th>
+              ${cases.map((caseData) => `<td>${render(caseData)}</td>`).join("")}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function initSammenlignSide() {
+  const sammenlignGrid = document.getElementById("sammenlignCasesGrid");
+  const sammenlignTabel = document.getElementById("sammenlignTabel");
+  const meta = document.getElementById("sammenlignMeta");
+
+  if (!sammenlignGrid || !sammenlignTabel) {
+    return;
+  }
+
+  const caseIDs = hentSammenlignCaseIDsFraUrl();
+
+  if (caseIDs.length < 2) {
+    sammenlignGrid.innerHTML = "<p class='case-dropdown-empty'>Vælg mindst to cases fra oversigten for at sammenligne dem.</p>";
+    sammenlignTabel.innerHTML = "";
+    return;
+  }
+
+  try {
+    const cases = await hentCasesTilSammenligning(caseIDs);
+
+    if (meta) {
+      meta.textContent = `${cases.length} cases sammenlignes med de nøgletal, der allerede vises på caseoversigten.`;
+    }
+
+    sammenlignGrid.innerHTML = lavSammenlignKort(cases);
+    sammenlignTabel.innerHTML = lavSammenlignTabel(cases);
+  } catch (error) {
+    console.error("Fejl ved sammenligning:", error);
+    sammenlignGrid.innerHTML = `<p class="case-dropdown-empty">${escapeHtml(error.message)}</p>`;
+    sammenlignTabel.innerHTML = "";
+  }
+}
+
 function lavOverblikNoegletal(analyse, trinData = {}) {
   const udvikling = beregnNoegletalUdvikling(analyse);
   const aar30 = udvikling[29] || {};
@@ -700,7 +950,7 @@ function lavTrinOverblik(trinData, analyse = {}) {
   const stoersteDriftspost = [...driftsposterMedAarligt].sort((a, b) => b.aarligtBeloeb - a.aarligtBeloeb)[0];
   const laanebeloeb = analyse.finansieringsbehov ?? finansiering.laanebeloeb;
   const udlejningLokalt = beregnUdlejningOverblikLokalt(udlejning, analyse);
-  const udlejningAktiv = udlejning.aktiv === false ? false : Boolean(udlejning.aktiv || udlejning.maanedligLeje || udlejning.depositum || udlejning.udlejningsNoter);
+  const udlejningAktiv = udlejning.aktiv === false ? false : Boolean(udlejning.aktiv || udlejning.maanedligLeje || udlejning.depositum);
   const lejeAarligt = analyse.lejeAarligt ?? udlejningLokalt.lejeAarligt;
   const tomgangDage = analyse.tomgangDage ?? udlejningLokalt.tomgangDage;
   const tomgangBeloeb = analyse.tomgangBeloeb ?? udlejningLokalt.tomgangBeloeb;
@@ -854,8 +1104,6 @@ function lavTrinOverblik(trinData, analyse = {}) {
           <small>Efter tomgang og udgifter</small>
         </div>
       </div>
-
-      <p class="overblik-note"><span>Noter:</span> ${escapeHtml(formatTekst(udlejning.udlejningsNoter))}</p>
     </article>
   `;
 }
@@ -920,4 +1168,5 @@ function initInvesteringscaseSide() {
   visInvesteringscases();
   bindOpretCaseDropdown();
   bindCaseKnapper();
+  bindSammenlignValg();
 }

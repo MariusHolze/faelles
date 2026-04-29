@@ -739,8 +739,7 @@ function hentUdlejningDataFraForm() {
       lejeudgifterMaanedligt: 0,
       lejeudgifterAarligt: 0,
       nettoLejeMaanedligt: 0,
-      nettoLejeAarligt: 0,
-      udlejningsNoter: ""
+      nettoLejeAarligt: 0
     };
   }
 
@@ -758,8 +757,7 @@ function hentUdlejningDataFraForm() {
     tomgangDage,
     maanedligeUdlejningsudgifter,
     aarligeUdlejningsudgifter,
-    ...overblik,
-    udlejningsNoter: document.querySelector('[data-case-field="udlejningsNoter"]')?.value.trim() || ""
+    ...overblik
   };
 }
 
@@ -865,8 +863,7 @@ function udfyldUdlejningForm(data) {
     data?.tomgangDage ||
     data?.tomgangProcent ||
     data?.maanedligeUdlejningsudgifter ||
-    data?.aarligeUdlejningsudgifter ||
-    data?.udlejningsNoter
+    data?.aarligeUdlejningsudgifter
   );
 
   if (checkbox) {

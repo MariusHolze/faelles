@@ -62,15 +62,16 @@ Investeringscase-delen er delt sådan:
 Den primære database oprettes med:
 
 ```text
-database/01_schema.sql
+database/01_ejendomsprofil.sql
+database/02_investeringscase.sql
 ```
 
-Der er to centrale tabeller:
+Kør `01_ejendomsprofil.sql` først, fordi investeringscase-tabellerne refererer til `Ejendomsprofil`.
+
+Der er to centrale områder:
 
 - `Ejendomsprofil`: adresse og BBR-data for en ejendom.
-- `Investeringscase`: en case knyttet til en ejendom.
-
-`Investeringscase.dataJson` gemmer formulartrinene samlet som JSON. Det er et bevidst prototypevalg, fordi casens input kan ændre sig under udvikling uden at databasen skal ændres for hvert nyt felt.
+- `Investeringscase` og tilhørende detailtabeller: køb, finansiering, renovering, drift og udlejning.
 
 ## Investeringscase-Beregninger
 
@@ -122,17 +123,9 @@ Projektet er en prototype og prioriterer forklarbarhed:
 - Ingen login/authentication; ejendomsprofiler og cases er fælles i prototypedatabasen.
 - Simple Express-routes.
 - Simple SQL-tabeller.
-- Investeringscase-input gemmes som JSON for fleksibilitet.
 - Skatteberegning er kun et estimat.
 - Ejendomsværdi holdes konservativt uændret.
 
 ## Database-Opdateringer
 
-Hvis databasen oprettes fra bunden, er `database/01_schema.sql` nok.
-
-
-Hvis databasen allerede findes fra en ældre version, kan disse scripts køres én gang:
-
-- `database/02_add_adresseID.sql`
-- `database/03_add_investeringscase_koebspost.sql`
-- `database/04_add_investeringscase_trindata.sql`
+Database-mappen indeholder kun rene `CREATE TABLE`-scripts til en frisk database.

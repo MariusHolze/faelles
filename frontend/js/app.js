@@ -11,6 +11,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     initCaseOverblikSide(); // viser læse-overblik for en valgt investeringscase
   }
 
+  if (typeof initSammenlignSide === "function") {
+    initSammenlignSide(); // viser sammenligning af valgte investeringscases
+  }
+
   if (typeof bindInvesteringscaseTrinForm === "function") {
     bindInvesteringscaseTrinForm(); // sætter formulartrin til investeringscase op
   }
