@@ -1,388 +1,192 @@
-const GYLDIGE_TRIN = [
-  "koebsudgifter",
-  "finansiering",
-  "renovering",
-  "driftsbudget",
-  "udlejning"
-];
-
-function lavTomCaseData() {
-  return {
-    koebsudgifter: {},
-    finansiering: {},
-    renovering: {},
-    driftsbudget: {},
-    udlejning: {}
-  };
-}
-
-function parseJson(value) {
-  if (!value) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
-}
-
-function mergeTrinData(eksisterendeData, trin, data) {
-  return {
-    ...lavTomCaseData(),
-    ...(eksisterendeData || {}),
-    [trin]: data || {}
-  };
-}
-
 function tal(value) {
-  const nummer = Number(value);
-  return Number.isNaN(nummer) ? 0 : nummer;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
-function harData(data) {
-  if (!data || typeof data !== "object") {
-    return false;
-  }
-
-  return Object.values(data).some((value) => {
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
-
-    return value !== "" && value !== null && value !== undefined;
-  });
+function positivtTal(value) {
+  return Math.max(0, tal(value));
 }
 
-function hentKoebsposter(data) {
-  const poster = Array.isArray(data?.poster) ? data.poster : [];
+function sumPoster(poster = []) {
+  return poster.reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
+}
 
+function maanedligTotal(poster = []) {
+  return poster.reduce((sum, post) => {
+    const beloeb = positivtTal(post.beloeb);
+    return sum + (post.periode === "aarligt" ? beloeb / 12 : beloeb);
+  }, 0);
+}
+
+function hentPostTotal(poster = [], navn) {
   return poster
-    .map((post) => ({
-      navn: String(post.navn || "").trim(),
-      beloeb: Number(post.beloeb)
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
+    .filter((post) => String(post.navn || "").toLowerCase() === navn.toLowerCase())
+    .reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
 }
 
-function hentRenoveringsposter(data) {
-  if (!data || data.aktiv === false) {
-    return [];
-  }
+function beregnMaanedligYdelse(laanebeloeb, renteProcent, loebetidAar) {
+  const hovedstol = positivtTal(laanebeloeb);
+  const maaneder = positivtTal(loebetidAar) * 12;
+  const maanedligRente = (positivtTal(renteProcent) / 100) / 12;
 
-  const poster = Array.isArray(data.poster) ? data.poster : [];
-
-  return poster
-    .map((post) => ({
-      navn: String(post.navn || "").trim(),
-      beloeb: Number(post.beloeb),
-      tidspunktMaaned: post.tidspunktMaaned === "" || post.tidspunktMaaned === undefined
-        ? null
-        : Number(post.tidspunktMaaned)
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb >= 0);
-}
-
-function hentDriftsposter(data) {
-  const poster = Array.isArray(data?.poster) ? data.poster : [];
-
-  return poster
-    .map((post) => ({
-      navn: String(post.navn || "").trim(),
-      beloeb: Number(post.beloeb),
-      periode: post.periode === "maanedligt" ? "maanedligt" : "aarligt"
-    }))
-    .filter((post) => post.navn && !Number.isNaN(post.beloeb) && post.beloeb > 0);
-}
-
-function beregnDriftsudgifter(poster) {
-  return poster.reduce((totaler, post) => {
-    if (post.periode === "maanedligt") {
-      totaler.maanedligt += post.beloeb;
-      totaler.aarligt += post.beloeb * 12;
-    } else {
-      totaler.aarligt += post.beloeb;
-      totaler.maanedligt += post.beloeb / 12;
-    }
-
-    return totaler;
-  }, { maanedligt: 0, aarligt: 0 });
-}
-
-function beregnMaanedligYdelse(laanebeloeb, rente, loebetid, afdragsfrihed) {
-  const hovedstol = Math.max(0, tal(laanebeloeb));
-  const maanedligRente = (tal(rente) / 100) / 12;
-  const antalMaaneder = tal(loebetid) * 12;
-
-  if (hovedstol <= 0 || antalMaaneder <= 0) {
+  if (hovedstol === 0 || maaneder === 0) {
     return 0;
-  }
-
-  // Ved afdragsfrihed viser vi første ydelse som rente-only.
-  if (tal(afdragsfrihed) > 0) {
-    return hovedstol * maanedligRente;
   }
 
   if (maanedligRente === 0) {
-    return hovedstol / antalMaaneder;
+    return hovedstol / maaneder;
   }
 
-  return hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -antalMaaneder)));
+  return hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -maaneder)));
 }
 
-function beregnSamletRenteomkostning(laanebeloeb, rente, loebetid, afdragsfrihed) {
-  const hovedstol = Math.max(0, tal(laanebeloeb));
-  const maanedligRente = (tal(rente) / 100) / 12;
-  const antalMaaneder = tal(loebetid) * 12;
-  const afdragsfriMaaneder = Math.min(antalMaaneder, tal(afdragsfrihed) * 12);
-  const afviklingsMaaneder = Math.max(0, antalMaaneder - afdragsfriMaaneder);
+function restgaeldEfterAar(laanebeloeb, renteProcent, loebetidAar, aar) {
+  const hovedstol = positivtTal(laanebeloeb);
+  const maaneder = positivtTal(loebetidAar) * 12;
+  const betalteMaaneder = Math.min(maaneder, positivtTal(aar) * 12);
+  const maanedligRente = (positivtTal(renteProcent) / 100) / 12;
 
-  if (hovedstol <= 0 || antalMaaneder <= 0) {
+  if (hovedstol === 0 || maaneder === 0 || betalteMaaneder >= maaneder) {
     return 0;
   }
-
-  const renteOnlyYdelse = maanedligRente === 0 ? 0 : hovedstol * maanedligRente;
-  const amortiseretYdelse = afviklingsMaaneder <= 0
-    ? 0
-    : maanedligRente === 0
-      ? hovedstol / afviklingsMaaneder
-      : hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -afviklingsMaaneder)));
-
-  return Math.max(0, (renteOnlyYdelse * afdragsfriMaaneder) +
-    (amortiseretYdelse * afviklingsMaaneder) -
-    hovedstol);
-}
-
-function beregnRestgaeldEfterAar(startGaeld, rente, loebetid, afdragsfrihed, aar) {
-  const hovedstol = Math.max(0, tal(startGaeld));
-  const maanedligRente = (tal(rente) / 100) / 12;
-  const totalMaaneder = Math.max(0, tal(loebetid) * 12);
-  const afdragsfriMaaneder = Math.min(totalMaaneder, Math.max(0, tal(afdragsfrihed) * 12));
-  const maaned = Math.min(totalMaaneder, Math.max(0, tal(aar) * 12));
-  const afviklingsMaaneder = Math.max(0, totalMaaneder - afdragsfriMaaneder);
-
-  if (hovedstol <= 0 || totalMaaneder <= 0 || maaned >= totalMaaneder) {
-    return 0;
-  }
-
-  if (maaned <= afdragsfriMaaneder) {
-    return hovedstol;
-  }
-
-  const betalteMaaneder = maaned - afdragsfriMaaneder;
 
   if (maanedligRente === 0) {
-    return Math.max(0, hovedstol - (hovedstol / afviklingsMaaneder) * betalteMaaneder);
+    return Math.max(0, hovedstol - (hovedstol / maaneder) * betalteMaaneder);
   }
 
-  const ydelse = hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -afviklingsMaaneder)));
-  const restgaeld = (hovedstol * Math.pow(1 + maanedligRente, betalteMaaneder)) -
-    (ydelse * ((Math.pow(1 + maanedligRente, betalteMaaneder) - 1) / maanedligRente));
+  const ydelse = beregnMaanedligYdelse(hovedstol, renteProcent, loebetidAar);
+  const restgaeld = hovedstol * Math.pow(1 + maanedligRente, betalteMaaneder)
+    - ydelse * ((Math.pow(1 + maanedligRente, betalteMaaneder) - 1) / maanedligRente);
 
   return Math.max(0, restgaeld);
 }
 
-function findEjendomspris(poster, standardvaerdi) {
-  const post = poster.find((item) =>
-    item.navn.toLowerCase().replaceAll("æ", "ae").replaceAll("ø", "oe").replaceAll("å", "aa") === "ejendomspris"
-  );
+function normaliserInput(input = {}) {
+  const koebsposter = Array.isArray(input.koebsposter)
+    ? input.koebsposter
+    : Array.isArray(input.koebsudgifter?.poster)
+      ? input.koebsudgifter.poster
+      : [];
+  const renoveringer = Array.isArray(input.renoveringer)
+    ? input.renoveringer
+    : Array.isArray(input.renovering?.poster)
+      ? input.renovering.poster
+      : [];
+  const driftsposter = Array.isArray(input.driftsposter)
+    ? input.driftsposter
+    : Array.isArray(input.driftsbudget?.poster)
+      ? input.driftsbudget.poster
+      : [];
+  const udlejningsudgifter = Array.isArray(input.udlejningsudgifter)
+    ? input.udlejningsudgifter
+    : [
+      {
+        navn: "Månedlige udlejningsudgifter",
+        beloeb: input.udlejning?.maanedligeUdlejningsudgifter || 0,
+        periode: "maanedligt"
+      },
+      {
+        navn: "Årlige udlejningsudgifter",
+        beloeb: input.udlejning?.aarligeUdlejningsudgifter || 0,
+        periode: "aarligt"
+      }
+    ];
 
-  return Math.max(0, tal(post?.beloeb || standardvaerdi));
-}
-
-function beregnNoegletalOverTid({
-  antalAar = 30,
-  ejendomspris,
-  finansieringsbehov,
-  rente,
-  loebetid,
-  afdragsfrihed,
-  aarligtCashflowEfterLaaneydelse
-}) {
-  return Array.from({ length: antalAar }, (_, index) => {
-    const aar = index + 1;
-    // Konservativ model: ejendomsværdien sættes til købsprisen og fremskrives ikke.
-    const ejendomsvaerdi = Math.max(0, tal(ejendomspris));
-    const restgaeld = beregnRestgaeldEfterAar(finansieringsbehov, rente, loebetid, afdragsfrihed, aar);
-    const akkumuleretCashflow = tal(aarligtCashflowEfterLaaneydelse) * aar;
-
-    // Egenkapital i ejendom er ejendomsværdi minus restgæld.
-    const egenkapitalIEjendom = ejendomsvaerdi - restgaeld;
-
-    return {
-      aar,
-      ejendomsvaerdi,
-      restgaeld,
-      gaeld: restgaeld,
-      egenkapitalIEjendom,
-      akkumuleretCashflow,
-      samletInvestorVaerdi: egenkapitalIEjendom + akkumuleretCashflow
-    };
-  });
-}
-
-class InvesteringscaseBeregner {
-  constructor(trinData) {
-    this.trinData = {
-      ...lavTomCaseData(),
-      ...(trinData || {})
-    };
-  }
-
-  beregnAnalyse() {
-    return beregnAnalyseForTrinData(this);
-  }
-
-  beregnSamletInvestering(koebsposter, renoveringsposter) {
-    const koebsudgifterIAlt = koebsposter.reduce((sum, post) => sum + post.beloeb, 0);
-    const renoveringIAlt = renoveringsposter.reduce((sum, post) => sum + post.beloeb, 0);
-
-    return {
-      koebsudgifterIAlt,
-      renoveringIAlt,
-      samletInvestering: koebsudgifterIAlt + renoveringIAlt
-    };
-  }
-
-  beregnFinansiering(samletInvestering, egenbetaling) {
-    const finansieringsbehov = Math.max(0, samletInvestering - tal(egenbetaling));
-
-    return {
-      finansieringsbehov,
-      egenkapitalBehov: Math.max(0, samletInvestering - finansieringsbehov)
-    };
-  }
-
-  beregnCashflow(resultatFoerFinansiering, ydelseAarligt) {
-    // Ydelsen kan indeholde afdrag, så dette er cashflow og ikke regnskabsmæssigt resultat.
-    return resultatFoerFinansiering - ydelseAarligt;
-  }
-
-  beregnNoegletalOverTid(input) {
-    return beregnNoegletalOverTid(input);
-  }
-}
-
-function beregnAnalyse(trinData) {
-  const beregner = new InvesteringscaseBeregner(trinData);
-  return beregner.beregnAnalyse();
-}
-
-function beregnAnalyseForTrinData(beregner) {
-  const trinData = beregner.trinData;
-  const koeb = trinData.koebsudgifter || {};
-  const finansiering = trinData.finansiering || {};
-  const renovering = trinData.renovering || {};
-  const drift = trinData.driftsbudget || {};
-  const udlejning = trinData.udlejning || {};
-
-  const koebsposter = hentKoebsposter(koeb);
-  const renoveringsposter = hentRenoveringsposter(renovering);
-  const driftsposter = hentDriftsposter(drift);
-  const investering = beregner.beregnSamletInvestering(koebsposter, renoveringsposter);
-  const koebsudgifterIAlt = investering.koebsudgifterIAlt;
-  const renoveringIAlt = investering.renoveringIAlt;
-  const samletInvestering = investering.samletInvestering;
-  const finansieringstal = beregner.beregnFinansiering(samletInvestering, finansiering.egenbetaling);
-  const finansieringsbehov = finansieringstal.finansieringsbehov;
-  const egenkapitalBehov = finansieringstal.egenkapitalBehov;
-
-  const driftsudgifter = beregnDriftsudgifter(driftsposter);
-  const lejeAarligt = udlejning.aktiv === false ? 0 : tal(udlejning.maanedligLeje) * 12;
-  const tomgangDage = Math.min(365, Math.max(0, tal(udlejning.tomgangDage)));
-  const tomgangBeloeb = lejeAarligt * (tomgangDage / 365);
-  const lejeEfterTomgang = lejeAarligt - tomgangBeloeb;
-  const lejeudgifterAarligt = udlejning.aktiv === false
-    ? 0
-    : (tal(udlejning.maanedligeUdlejningsudgifter) * 12) + tal(udlejning.aarligeUdlejningsudgifter);
-  const nettoLejeAarligt = lejeEfterTomgang - lejeudgifterAarligt;
-
-  // Skat er kun et simpelt estimat til prototypen.
-  const skattefritBeloeb = Math.max(0, nettoLejeAarligt) * 0.4;
-  const skattepligtigtBeloeb = Math.max(0, nettoLejeAarligt - skattefritBeloeb);
-  const skatBeloeb = skattepligtigtBeloeb * 0.42;
-  const lejeEfterSkatAarligt = nettoLejeAarligt - skatBeloeb;
-
-  const maanedligYdelse = beregnMaanedligYdelse(
-    finansieringsbehov,
-    finansiering.rente,
-    finansiering.loebetid,
-    finansiering.afdragsfrihed
-  );
-  const ydelseAarligt = maanedligYdelse * 12;
-  const renteudgiftAarligt = finansieringsbehov * (tal(finansiering.rente) / 100);
-  const samletRenteomkostning = beregnSamletRenteomkostning(
-    finansieringsbehov,
-    finansiering.rente,
-    finansiering.loebetid,
-    finansiering.afdragsfrihed
-  );
-
-  const resultatFoerFinansiering = nettoLejeAarligt - driftsudgifter.aarligt;
-  const aarligtResultatEfterRente = resultatFoerFinansiering - renteudgiftAarligt;
-  const aarligtCashflowEfterLaaneydelse = beregner.beregnCashflow(resultatFoerFinansiering, ydelseAarligt);
-  const ejendomspris = findEjendomspris(koebsposter, koebsudgifterIAlt);
-  const noegletalOverTid = beregner.beregnNoegletalOverTid({
-    ejendomspris,
-    finansieringsbehov,
-    rente: finansiering.rente,
-    loebetid: finansiering.loebetid,
-    afdragsfrihed: finansiering.afdragsfrihed,
-    aarligtCashflowEfterLaaneydelse
-  });
-  const antalUdfyldteTrin = GYLDIGE_TRIN.filter((trin) => harData(trinData[trin])).length;
-  const naesteTrin = GYLDIGE_TRIN.find((trin) => !harData(trinData[trin])) || "koebsudgifter";
+  const koebspris = input.koebspris !== undefined
+    ? positivtTal(input.koebspris)
+    : hentPostTotal(koebsposter, "Ejendomspris");
 
   return {
-    antalKoebsposter: koebsposter.length,
-    antalRenoveringsposter: renoveringsposter.length,
-    antalDriftsposter: driftsposter.length,
-    koebsudgifterIAlt,
+    koebsposter,
+    renoveringer: input.renoveringAktiv === false || input.renovering?.aktiv === false ? [] : renoveringer,
+    driftsposter,
+    udlejningsudgifter: input.udlejningAktiv === false ? [] : udlejningsudgifter,
+    koebspris,
+    laanebeloeb: positivtTal(input.laanebeloeb ?? input.finansiering?.laanebeloeb),
+    egenbetaling: positivtTal(input.egenbetaling ?? input.finansiering?.egenbetaling),
+    rente: positivtTal(input.rente ?? input.finansiering?.rente),
+    loebetid: positivtTal(input.loebetid ?? input.finansiering?.loebetid),
+    udlejningAktiv: input.udlejningAktiv !== false,
+    maanedligLeje: input.udlejningAktiv === false
+      ? 0
+      : positivtTal(input.maanedligLeje ?? input.udlejning?.maanedligLeje),
+    tomgangProcent: Math.min(100, positivtTal(input.tomgangProcent)),
+    vaekstProcent: tal(input.vaekstProcent),
+    periodeAar: input.periodeAar === undefined ? 30 : positivtTal(input.periodeAar || 10)
+  };
+}
+
+function calculateInvestmentCase(input = {}) {
+  const data = normaliserInput(input);
+  const koebsomkostninger = Math.max(0, sumPoster(data.koebsposter) - data.koebspris);
+  const renoveringIAlt = sumPoster(data.renoveringer);
+  const startInvestering = data.koebspris + koebsomkostninger + renoveringIAlt;
+  const laanebeloeb = data.laanebeloeb || Math.max(0, startInvestering - data.egenbetaling);
+  const maanedligYdelse = beregnMaanedligYdelse(laanebeloeb, data.rente, data.loebetid);
+  const totalRenteomkostning = Math.max(0, maanedligYdelse * data.loebetid * 12 - laanebeloeb);
+
+  // Simpel prototype: månedlige indtægter minus månedlige udgifter.
+  const driftMaanedligt = maanedligTotal(data.driftsposter);
+  const lejeUdgifterMaanedligt = maanedligTotal(data.udlejningsudgifter);
+  const maanedligIndtaegt = data.maanedligLeje * (1 - data.tomgangProcent / 100);
+  const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
+  const maanedligtCashflow = maanedligIndtaegt - maanedligeUdgifter;
+  const aarligtCashflow = maanedligtCashflow * 12;
+  const estimeretVaerdiEfterPeriode = data.koebspris * Math.pow(1 + data.vaekstProcent / 100, data.periodeAar);
+  const samletResultat = (estimeretVaerdiEfterPeriode - data.koebspris) + (aarligtCashflow * data.periodeAar) - renoveringIAlt;
+
+  return {
+    koebspris: data.koebspris,
+    koebsomkostninger,
+    koebsudgifterIAlt: data.koebspris + koebsomkostninger,
     renoveringIAlt,
-    samletInvestering,
-    finansieringsbehov,
-    egenkapitalBehov,
-    ejendomspris,
-    ejendomsvaerdiStart: ejendomspris,
-    ejendomsvaerdiNote: "Konservativt estimat: ejendomsværdi fremskrives ikke, og købsprisen bruges som fast værdi.",
-    driftsudgifterMaanedligt: driftsudgifter.maanedligt,
-    driftsudgifterAarligt: driftsudgifter.aarligt,
-    lejeAarligt,
-    tomgangDage,
-    tomgangBeloeb,
-    lejeEfterTomgang,
-    lejeudgifterMaanedligt: lejeudgifterAarligt / 12,
-    lejeudgifterAarligt,
-    nettoLejeMaanedligt: nettoLejeAarligt / 12,
-    nettoLejeAarligt,
-    skattefritBeloeb,
-    skattepligtigtBeloeb,
-    skatBeloeb,
-    lejeEfterSkatMaanedligt: lejeEfterSkatAarligt / 12,
-    lejeEfterSkatAarligt,
-    renteudgiftAarligt,
-    samletRenteomkostning,
+    startInvestering,
+    samletInvestering: startInvestering,
+    laanebeloeb,
+    finansieringsbehov: laanebeloeb,
+    egenkapitalBehov: data.egenbetaling,
     maanedligYdelse,
-    ydelseAarligt,
-    resultatFoerFinansiering,
-    resultatEfterRente: aarligtResultatEfterRente,
-    resultatEfterFinansiering: aarligtCashflowEfterLaaneydelse,
-    aarligtResultatEfterRente,
-    aarligtCashflowEfterLaaneydelse,
-    noegletalOverTid,
-    antalUdfyldteTrin,
-    naesteTrin
+    totalRenteomkostning,
+    driftMaanedligt,
+    driftsudgifterMaanedligt: driftMaanedligt,
+    driftsudgifterAarligt: driftMaanedligt * 12,
+    lejeUdgifterMaanedligt,
+    lejeUdgifterAarligt: lejeUdgifterMaanedligt * 12,
+    maanedligIndtaegt,
+    maanedligeUdgifter,
+    maanedligtCashflow,
+    aarligtCashflow,
+    aarligtCashflowEfterLaaneydelse: aarligtCashflow,
+    simpelROI: data.egenbetaling > 0 ? (aarligtCashflow / data.egenbetaling) * 100 : 0,
+    ejendomspris: data.koebspris,
+    belaaning: data.koebspris > 0 ? (laanebeloeb / data.koebspris) * 100 : 0,
+    estimeretVaerdiEfterPeriode,
+    samletResultat,
+    noegletalOverTid: Array.from({ length: Math.max(1, Math.round(data.periodeAar)) }, (_, index) => {
+      const aar = index + 1;
+      const ejendomsvaerdi = data.koebspris * Math.pow(1 + data.vaekstProcent / 100, aar);
+      const restgaeld = restgaeldEfterAar(laanebeloeb, data.rente, data.loebetid, aar);
+
+      return {
+        aar,
+        ejendomsvaerdi,
+        restgaeld,
+        gaeld: restgaeld,
+        egenkapitalIEjendom: ejendomsvaerdi - restgaeld,
+        akkumuleretCashflow: aarligtCashflow * aar,
+        samletInvestorVaerdi: ejendomsvaerdi - restgaeld + aarligtCashflow * aar
+      };
+    })
   };
 }
 
 module.exports = {
-  GYLDIGE_TRIN,
-  InvesteringscaseBeregner,
-  beregnAnalyse,
-  beregnRestgaeldEfterAar,
-  beregnNoegletalOverTid,
-  lavTomCaseData,
-  mergeTrinData,
-  parseJson
+  calculateInvestmentCase,
+  beregnAnalyse: calculateInvestmentCase,
+  beregnMaanedligYdelse,
+  beregnRestgaeldEfterAar: restgaeldEfterAar,
+  beregnNoegletalOverTid: (input) => calculateInvestmentCase(input).noegletalOverTid,
+  normaliserInput,
+  sumPoster,
+  maanedligTotal
 };

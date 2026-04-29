@@ -1,5 +1,5 @@
 const { sql } = require("../db");
-const { lavTomCaseData } = require("./investeringscaseBeregner");
+const { calculateInvestmentCase } = require("./investeringscaseBeregner");
 
 function request(db) {
   return db.request ? db.request() : new sql.Request(db);
@@ -10,306 +10,203 @@ function tekst(value, maxLength) {
   return trimmed ? trimmed.slice(0, maxLength) : null;
 }
 
-function decimal(value) {
+function tal(value) {
   const number = Number(value);
-  return Number.isNaN(number) ? null : number;
+  return Number.isFinite(number) ? Math.max(0, number) : 0;
 }
 
-function int(value) {
-  const number = Number(value);
-  return Number.isInteger(number) ? number : null;
+function heltal(value) {
+  return Math.round(tal(value));
 }
 
-function bool(value) {
-  return value === true;
+function poster(value) {
+  return Array.isArray(value)
+    ? value
+      .map((post) => ({
+        navn: tekst(post.navn, 100),
+        beloeb: tal(post.beloeb),
+        periode: post.periode === "aarligt" ? "aarligt" : "maanedligt",
+        tidspunkt: tekst(post.tidspunkt, 100)
+      }))
+      .filter((post) => post.navn || post.beloeb > 0)
+    : [];
 }
 
-function gyldigeKoebsposter(data = {}) {
-  const poster = Array.isArray(data.poster) ? data.poster : [];
-
-  return poster
-    .map((post) => ({
-      navn: tekst(post.navn, 100),
-      beloeb: decimal(post.beloeb)
-    }))
-    .filter((post) => post.navn && post.beloeb !== null && post.beloeb >= 0);
+function tomgangDage(tomgangProcent) {
+  return Math.min(365, Math.round((tal(tomgangProcent) / 100) * 365));
 }
 
-function gyldigeRenoveringsposter(data = {}) {
-  const poster = Array.isArray(data.poster) ? data.poster : [];
-
-  return poster
-    .map((post) => ({
-      navn: tekst(post.navn, 100),
-      beloeb: decimal(post.beloeb),
-      tidspunktKey: tekst(post.tidspunktKey, 50),
-      tidspunktLabel: tekst(post.tidspunktLabel, 100),
-      tidspunktMaaned: int(Number(post.tidspunktMaaned))
-    }))
-    .filter((post) => post.navn && post.beloeb !== null && post.beloeb >= 0);
+function tomgangProcent(tomgangDageValue) {
+  return Math.round((tal(tomgangDageValue) / 365) * 1000) / 10;
 }
 
-function gyldigeDriftsposter(data = {}) {
-  const poster = Array.isArray(data.poster) ? data.poster : [];
-
-  return poster
-    .map((post) => ({
-      navn: tekst(post.navn, 100),
-      beloeb: decimal(post.beloeb),
-      periode: post.periode === "maanedligt" ? "maanedligt" : "aarligt"
-    }))
-    .filter((post) => post.navn && post.beloeb !== null && post.beloeb > 0);
-}
-
-function sum(poster) {
-  return poster.reduce((total, post) => total + Number(post.beloeb || 0), 0);
-}
-
-function beregnDriftTotaler(poster) {
-  return poster.reduce((totaler, post) => {
-    if (post.periode === "maanedligt") {
-      totaler.driftsudgifterMaanedligt += post.beloeb;
-      totaler.driftsudgifterAarligt += post.beloeb * 12;
-    } else {
-      totaler.driftsudgifterAarligt += post.beloeb;
-      totaler.driftsudgifterMaanedligt += post.beloeb / 12;
-    }
-
-    return totaler;
-  }, { driftsudgifterMaanedligt: 0, driftsudgifterAarligt: 0 });
-}
-
-function mapDecimal(value) {
-  return value === null || value === undefined ? "" : Number(value);
-}
-
-async function hentKoebsudgifter(pool, caseID) {
-  const result = await pool.request()
-    .input("caseID", sql.Int, Number(caseID))
-    .query(`
-      SELECT navn, beloeb
-      FROM InvesteringscaseKoebspost
-      WHERE caseID = @caseID
-      ORDER BY koebspostID
-    `);
-
-  const poster = result.recordset.map((row) => ({
-    navn: row.navn,
-    beloeb: Number(row.beloeb)
-  }));
-
-  return poster.length ? { poster, total: sum(poster) } : {};
-}
-
-async function hentFinansiering(pool, caseID) {
-  const result = await pool.request()
-    .input("caseID", sql.Int, Number(caseID))
-    .query(`
-      SELECT laanetype, laanebeloeb, egenbetaling, rente, loebetid, afdragsfrihed
-      FROM InvesteringscaseFinansiering
-      WHERE caseID = @caseID
-    `);
-
-  const row = result.recordset[0];
-
-  if (!row) {
-    return {};
-  }
-
-  return {
-    laanetype: row.laanetype || "",
-    laanebeloeb: mapDecimal(row.laanebeloeb),
-    egenbetaling: mapDecimal(row.egenbetaling),
-    rente: mapDecimal(row.rente),
-    loebetid: row.loebetid ?? "",
-    afdragsfrihed: row.afdragsfrihed ?? ""
-  };
-}
-
-async function hentRenovering(pool, caseID) {
-  const [status, posterResult] = await Promise.all([
+async function hentCaseInput(pool, caseID) {
+  const [koeb, renovering, finansiering, drift, udlejning] = await Promise.all([
     pool.request()
-      .input("caseID", sql.Int, Number(caseID))
-      .query("SELECT aktiv FROM InvesteringscaseRenovering WHERE caseID = @caseID"),
+      .input("caseID", sql.Int, caseID)
+      .query("SELECT navn, beloeb FROM InvesteringscaseKoebspost WHERE caseID = @caseID ORDER BY koebspostID"),
     pool.request()
-      .input("caseID", sql.Int, Number(caseID))
+      .input("caseID", sql.Int, caseID)
       .query(`
-        SELECT navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned
-        FROM InvesteringscaseRenoveringspost rp
-        INNER JOIN InvesteringscaseRenovering r ON r.renoveringID = rp.renoveringID
-          AND r.caseID = rp.caseID
-        WHERE r.caseID = @caseID
-        ORDER BY rp.renoveringspostID
+        SELECT navn, beloeb, tidspunktLabel
+        FROM InvesteringscaseRenoveringspost
+        WHERE caseID = @caseID
+        ORDER BY renoveringspostID
+      `),
+    pool.request()
+      .input("caseID", sql.Int, caseID)
+      .query("SELECT laanebeloeb, egenbetaling, rente, loebetid FROM InvesteringscaseFinansiering WHERE caseID = @caseID"),
+    pool.request()
+      .input("caseID", sql.Int, caseID)
+      .query("SELECT navn, beloeb, periode FROM InvesteringscaseDriftspost WHERE caseID = @caseID ORDER BY driftspostID"),
+    pool.request()
+      .input("caseID", sql.Int, caseID)
+      .query(`
+        SELECT aktiv, maanedligLeje, tomgangDage,
+               maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter
+        FROM InvesteringscaseUdlejning
+        WHERE caseID = @caseID
       `)
   ]);
 
-  const poster = posterResult.recordset.map((row) => ({
-    navn: row.navn,
-    beloeb: Number(row.beloeb),
-    tidspunktKey: row.tidspunktKey || "",
-    tidspunktLabel: row.tidspunktLabel || "",
-    tidspunktMaaned: row.tidspunktMaaned
-  }));
+  const finansieringRow = finansiering.recordset[0] || {};
+  const udlejningRow = udlejning.recordset[0] || {};
+  const udlejningsudgifter = [];
 
-  if (!status.recordset[0] && poster.length === 0) {
-    return {};
+  if (tal(udlejningRow.maanedligeUdlejningsudgifter) > 0) {
+    udlejningsudgifter.push({
+      navn: "Udlejningsudgifter",
+      beloeb: tal(udlejningRow.maanedligeUdlejningsudgifter),
+      periode: "maanedligt"
+    });
+  }
+
+  if (tal(udlejningRow.aarligeUdlejningsudgifter) > 0) {
+    udlejningsudgifter.push({
+      navn: "Årlige udlejningsudgifter",
+      beloeb: tal(udlejningRow.aarligeUdlejningsudgifter),
+      periode: "aarligt"
+    });
   }
 
   return {
-    aktiv: Boolean(status.recordset[0]?.aktiv),
-    allePoster: poster,
-    poster,
-    total: sum(poster)
+    koebsposter: koeb.recordset.map((row) => ({
+      navn: row.navn,
+      beloeb: Number(row.beloeb)
+    })),
+    renoveringAktiv: renovering.recordset.length > 0,
+    renoveringer: renovering.recordset.map((row) => ({
+      navn: row.navn,
+      beloeb: Number(row.beloeb),
+      tidspunkt: row.tidspunktLabel || ""
+    })),
+    laanebeloeb: tal(finansieringRow.laanebeloeb),
+    egenbetaling: tal(finansieringRow.egenbetaling),
+    rente: tal(finansieringRow.rente),
+    loebetid: tal(finansieringRow.loebetid),
+    driftsposter: drift.recordset.map((row) => ({
+      navn: row.navn,
+      beloeb: Number(row.beloeb),
+      periode: row.periode
+    })),
+    udlejningAktiv: Boolean(udlejningRow.aktiv),
+    maanedligLeje: tal(udlejningRow.maanedligLeje),
+    tomgangProcent: tomgangProcent(udlejningRow.tomgangDage),
+    udlejningsudgifter,
+    vaekstProcent: 0,
+    periodeAar: 10
   };
 }
 
-async function hentDriftsbudget(pool, caseID) {
-  const result = await pool.request()
-    .input("caseID", sql.Int, Number(caseID))
-    .query(`
-      SELECT navn, beloeb, periode
-      FROM InvesteringscaseDriftspost
-      WHERE caseID = @caseID
-      ORDER BY driftspostID
-    `);
-
-  const poster = result.recordset.map((row) => ({
+function mapCase(row, input) {
+  return {
+    caseID: row.caseID,
+    ejendomID: row.ejendomID,
     navn: row.navn,
-    beloeb: Number(row.beloeb),
-    periode: row.periode
-  }));
-  const totaler = beregnDriftTotaler(poster);
-
-  return poster.length ? { allePoster: poster, poster, ...totaler } : {};
+    beskrivelse: row.beskrivelse,
+    oprettetTidspunkt: row.oprettetTidspunkt,
+    adresse: row.adresse,
+    boligareal: row.boligareal,
+    byggeaar: row.byggeaar,
+    input,
+    resultat: calculateInvestmentCase(input)
+  };
 }
 
-async function hentUdlejning(pool, caseID) {
+async function hentAlleCases(pool, ejendomID) {
+  const dbRequest = pool.request();
+  let where = "";
+
+  if (ejendomID) {
+    dbRequest.input("ejendomID", sql.Int, Number(ejendomID));
+    where = "WHERE c.ejendomID = @ejendomID";
+  }
+
+  const result = await dbRequest.query(`
+    SELECT c.caseID, c.ejendomID, c.navn, c.beskrivelse, c.oprettetTidspunkt,
+           e.adresse, e.boligareal, e.byggeaar
+    FROM Investeringscase c
+    JOIN Ejendomsprofil e ON e.ejendomID = c.ejendomID
+    ${where}
+    ORDER BY c.oprettetTidspunkt DESC
+  `);
+
+  return Promise.all(result.recordset.map(async (row) => {
+    const input = await hentCaseInput(pool, row.caseID);
+    return mapCase(row, input);
+  }));
+}
+
+async function hentCase(pool, caseID) {
   const result = await pool.request()
     .input("caseID", sql.Int, Number(caseID))
     .query(`
-      SELECT aktiv, maanedligLeje, depositum, tomgangDage,
-             maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter
-      FROM InvesteringscaseUdlejning
-      WHERE caseID = @caseID
+      SELECT c.caseID, c.ejendomID, c.navn, c.beskrivelse, c.oprettetTidspunkt,
+             e.adresse, e.boligareal, e.byggeaar
+      FROM Investeringscase c
+      JOIN Ejendomsprofil e ON e.ejendomID = c.ejendomID
+      WHERE c.caseID = @caseID
     `);
 
   const row = result.recordset[0];
-
-  if (!row) {
-    return {};
-  }
-
-  return {
-    aktiv: Boolean(row.aktiv),
-    maanedligLeje: mapDecimal(row.maanedligLeje),
-    depositum: mapDecimal(row.depositum),
-    tomgangDage: row.tomgangDage ?? "",
-    maanedligeUdlejningsudgifter: mapDecimal(row.maanedligeUdlejningsudgifter),
-    aarligeUdlejningsudgifter: mapDecimal(row.aarligeUdlejningsudgifter)
-  };
+  return row ? mapCase(row, await hentCaseInput(pool, row.caseID)) : null;
 }
 
-async function hentAlleTrinData(pool, caseID) {
-  const [koebsudgifter, finansiering, renovering, driftsbudget, udlejning] = await Promise.all([
-    hentKoebsudgifter(pool, caseID),
-    hentFinansiering(pool, caseID),
-    hentRenovering(pool, caseID),
-    hentDriftsbudget(pool, caseID),
-    hentUdlejning(pool, caseID)
-  ]);
-
-  return {
-    ...lavTomCaseData(),
-    koebsudgifter,
-    finansiering,
-    renovering,
-    driftsbudget,
-    udlejning
-  };
-}
-
-async function hentTrinData(pool, caseID, trin) {
-  const trinData = await hentAlleTrinData(pool, caseID);
-  const data = trinData[trin] || {};
-  return Object.keys(data).length ? data : null;
-}
-
-async function sletTrin(transaction, caseID, trin) {
-  const tables = {
-    koebsudgifter: ["InvesteringscaseKoebspost"],
-    finansiering: ["InvesteringscaseFinansiering"],
-    renovering: ["InvesteringscaseRenoveringspost", "InvesteringscaseRenovering"],
-    driftsbudget: ["InvesteringscaseDriftspost"],
-    udlejning: ["InvesteringscaseUdlejning"]
-  };
-
-  for (const table of tables[trin] || []) {
-    await request(transaction)
-      .input("caseID", sql.Int, Number(caseID))
-      .query(`DELETE FROM ${table} WHERE caseID = @caseID`);
-  }
-}
-
-async function gemKoebsudgifter(transaction, caseID, data) {
-  const poster = gyldigeKoebsposter(data);
-
-  for (const post of poster) {
+async function gemKoebsposter(transaction, caseID, input) {
+  for (const post of poster(input.koebsposter)) {
     await request(transaction)
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
-      .query(`
-        INSERT INTO InvesteringscaseKoebspost (caseID, navn, beloeb)
-        VALUES (@caseID, @navn, @beloeb)
-      `);
+      .query("INSERT INTO InvesteringscaseKoebspost (caseID, navn, beloeb) VALUES (@caseID, @navn, @beloeb)");
   }
 }
 
-async function gemFinansiering(transaction, caseID, data = {}) {
-  await request(transaction)
-    .input("caseID", sql.Int, Number(caseID))
-    .input("laanetype", sql.VarChar(50), tekst(data.laanetype, 50))
-    .input("laanebeloeb", sql.Decimal(18, 2), decimal(data.laanebeloeb))
-    .input("egenbetaling", sql.Decimal(18, 2), decimal(data.egenbetaling))
-    .input("rente", sql.Decimal(9, 4), decimal(data.rente))
-    .input("loebetid", sql.Int, int(Number(data.loebetid)))
-    .input("afdragsfrihed", sql.Int, int(Number(data.afdragsfrihed)))
-    .query(`
-      INSERT INTO InvesteringscaseFinansiering
-      (caseID, laanetype, laanebeloeb, egenbetaling, rente, loebetid, afdragsfrihed)
-      VALUES
-      (@caseID, @laanetype, @laanebeloeb, @egenbetaling, @rente, @loebetid, @afdragsfrihed)
-    `);
-}
+async function gemRenoveringer(transaction, caseID, input) {
+  if (!input.renoveringAktiv) {
+    return;
+  }
 
-async function gemRenovering(transaction, caseID, data = {}) {
   const renoveringResult = await request(transaction)
     .input("caseID", sql.Int, Number(caseID))
-    .input("aktiv", sql.Bit, bool(data.aktiv))
+    .input("aktiv", sql.Bit, true)
     .query(`
       INSERT INTO InvesteringscaseRenovering (caseID, aktiv)
       VALUES (@caseID, @aktiv);
 
       SELECT CONVERT(INT, SCOPE_IDENTITY()) AS renoveringID;
     `);
-
   const renoveringID = renoveringResult.recordset[0].renoveringID;
 
-  if (!data.aktiv) {
-    return;
-  }
-
-  const poster = gyldigeRenoveringsposter(data);
-
-  for (const post of poster) {
+  for (const post of poster(input.renoveringer)) {
     await request(transaction)
       .input("renoveringID", sql.Int, renoveringID)
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
-      .input("tidspunktKey", sql.VarChar(50), post.tidspunktKey)
-      .input("tidspunktLabel", sql.VarChar(100), post.tidspunktLabel)
-      .input("tidspunktMaaned", sql.Int, post.tidspunktMaaned)
+      .input("tidspunktKey", sql.VarChar(50), null)
+      .input("tidspunktLabel", sql.VarChar(100), post.tidspunkt)
+      .input("tidspunktMaaned", sql.Int, null)
       .query(`
         INSERT INTO InvesteringscaseRenoveringspost
         (renoveringID, caseID, navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned)
@@ -319,31 +216,52 @@ async function gemRenovering(transaction, caseID, data = {}) {
   }
 }
 
-async function gemDriftsbudget(transaction, caseID, data = {}) {
-  const poster = gyldigeDriftsposter(data);
+async function gemFinansiering(transaction, caseID, input) {
+  await request(transaction)
+    .input("caseID", sql.Int, Number(caseID))
+    .input("laanebeloeb", sql.Decimal(18, 2), tal(input.laanebeloeb))
+    .input("egenbetaling", sql.Decimal(18, 2), tal(input.egenbetaling))
+    .input("rente", sql.Decimal(9, 4), tal(input.rente))
+    .input("loebetid", sql.Int, heltal(input.loebetid) || 1)
+    .query(`
+      INSERT INTO InvesteringscaseFinansiering
+      (caseID, laanebeloeb, egenbetaling, rente, loebetid)
+      VALUES (@caseID, @laanebeloeb, @egenbetaling, @rente, @loebetid)
+    `);
+}
 
-  for (const post of poster) {
+async function gemDriftsposter(transaction, caseID, input) {
+  for (const post of poster(input.driftsposter)) {
+    if (post.beloeb <= 0) {
+      continue;
+    }
+
     await request(transaction)
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
       .input("periode", sql.VarChar(20), post.periode)
-      .query(`
-        INSERT INTO InvesteringscaseDriftspost (caseID, navn, beloeb, periode)
-        VALUES (@caseID, @navn, @beloeb, @periode)
-      `);
+      .query("INSERT INTO InvesteringscaseDriftspost (caseID, navn, beloeb, periode) VALUES (@caseID, @navn, @beloeb, @periode)");
   }
 }
 
-async function gemUdlejning(transaction, caseID, data = {}) {
+async function gemUdlejning(transaction, caseID, input) {
+  const udgifter = poster(input.udlejningsudgifter);
+  const maanedligeUdlejningsudgifter = udgifter
+    .filter((post) => post.periode === "maanedligt")
+    .reduce((sum, post) => sum + post.beloeb, 0);
+  const aarligeUdlejningsudgifter = udgifter
+    .filter((post) => post.periode === "aarligt")
+    .reduce((sum, post) => sum + post.beloeb, 0);
+
   await request(transaction)
     .input("caseID", sql.Int, Number(caseID))
-    .input("aktiv", sql.Bit, bool(data.aktiv))
-    .input("maanedligLeje", sql.Decimal(18, 2), decimal(data.maanedligLeje) || 0)
-    .input("depositum", sql.Decimal(18, 2), decimal(data.depositum) || 0)
-    .input("tomgangDage", sql.Int, int(Number(data.tomgangDage)) || 0)
-    .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), decimal(data.maanedligeUdlejningsudgifter) || 0)
-    .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), decimal(data.aarligeUdlejningsudgifter) || 0)
+    .input("aktiv", sql.Bit, Boolean(input.udlejningAktiv))
+    .input("maanedligLeje", sql.Decimal(18, 2), tal(input.maanedligLeje))
+    .input("depositum", sql.Decimal(18, 2), 0)
+    .input("tomgangDage", sql.Int, tomgangDage(input.tomgangProcent))
+    .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), maanedligeUdlejningsudgifter)
+    .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), aarligeUdlejningsudgifter)
     .query(`
       INSERT INTO InvesteringscaseUdlejning
       (caseID, aktiv, maanedligLeje, depositum, tomgangDage,
@@ -354,35 +272,46 @@ async function gemUdlejning(transaction, caseID, data = {}) {
     `);
 }
 
-async function gemTrinData(pool, caseID, trin, data) {
+async function opretCase(pool, body) {
   const transaction = new sql.Transaction(pool);
   await transaction.begin();
 
   try {
-    await sletTrin(transaction, caseID, trin);
+    const result = await request(transaction)
+      .input("ejendomID", sql.Int, Number(body.ejendomID))
+      .input("navn", sql.VarChar(100), tekst(body.navn, 100))
+      .input("beskrivelse", sql.VarChar(500), tekst(body.beskrivelse, 500))
+      .query(`
+        INSERT INTO Investeringscase (ejendomID, navn, beskrivelse)
+        OUTPUT INSERTED.caseID
+        VALUES (@ejendomID, @navn, @beskrivelse)
+      `);
 
-    if (trin === "koebsudgifter") {
-      await gemKoebsudgifter(transaction, caseID, data);
-    } else if (trin === "finansiering") {
-      await gemFinansiering(transaction, caseID, data);
-    } else if (trin === "renovering") {
-      await gemRenovering(transaction, caseID, data);
-    } else if (trin === "driftsbudget") {
-      await gemDriftsbudget(transaction, caseID, data);
-    } else if (trin === "udlejning") {
-      await gemUdlejning(transaction, caseID, data);
-    }
-
+    const caseID = result.recordset[0].caseID;
+    await gemKoebsposter(transaction, caseID, body);
+    await gemRenoveringer(transaction, caseID, body);
+    await gemFinansiering(transaction, caseID, body);
+    await gemDriftsposter(transaction, caseID, body);
+    await gemUdlejning(transaction, caseID, body);
     await transaction.commit();
+    return caseID;
   } catch (error) {
     await transaction.rollback();
     throw error;
   }
 }
 
+async function sletCase(pool, caseID) {
+  const result = await pool.request()
+    .input("caseID", sql.Int, Number(caseID))
+    .query("DELETE FROM Investeringscase WHERE caseID = @caseID");
+
+  return result.rowsAffected[0] > 0;
+}
+
 module.exports = {
-  hentAlleTrinData,
-  hentTrinData,
-  gemTrinData,
-  gyldigeKoebsposter
+  hentAlleCases,
+  hentCase,
+  opretCase,
+  sletCase
 };

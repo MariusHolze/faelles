@@ -25,22 +25,17 @@ CREATE TABLE InvesteringscaseKoebspost (
 CREATE TABLE InvesteringscaseFinansiering (
     finansieringID INT IDENTITY(1,1) NOT NULL,
     caseID INT NOT NULL,
-    laanetype VARCHAR(50) NULL,
-    laanebeloeb DECIMAL(18,2) NULL,
-    egenbetaling DECIMAL(18,2) NULL,
-    rente DECIMAL(9,4) NULL,
-    loebetid INT NULL,
-    afdragsfrihed INT NULL,
+    laanebeloeb DECIMAL(18,2) NOT NULL DEFAULT 0,
+    egenbetaling DECIMAL(18,2) NOT NULL DEFAULT 0,
+    rente DECIMAL(9,4) NOT NULL DEFAULT 0,
+    loebetid INT NOT NULL DEFAULT 30,
 
     CONSTRAINT PK_InvesteringscaseFinansiering PRIMARY KEY (finansieringID),
     CONSTRAINT UQ_InvesteringscaseFinansiering_CaseID UNIQUE (caseID),
     CONSTRAINT FK_InvesteringscaseFinansiering_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
-    CONSTRAINT CK_InvesteringscaseFinansiering_Laanebeloeb CHECK (laanebeloeb IS NULL OR laanebeloeb >= 0),
-    CONSTRAINT CK_InvesteringscaseFinansiering_Egenbetaling CHECK (egenbetaling IS NULL OR egenbetaling >= 0),
-    CONSTRAINT CK_InvesteringscaseFinansiering_Rente CHECK (rente IS NULL OR rente >= 0),
-    CONSTRAINT CK_InvesteringscaseFinansiering_Loebetid CHECK (loebetid IS NULL OR loebetid > 0),
-    CONSTRAINT CK_InvesteringscaseFinansiering_Afdragsfrihed CHECK (afdragsfrihed IS NULL OR afdragsfrihed >= 0)
+    CONSTRAINT CK_InvesteringscaseFinansiering_Tal CHECK
+        (laanebeloeb >= 0 AND egenbetaling >= 0 AND rente >= 0 AND loebetid > 0)
 );
 
 CREATE TABLE InvesteringscaseRenovering (
@@ -102,9 +97,8 @@ CREATE TABLE InvesteringscaseUdlejning (
     CONSTRAINT UQ_InvesteringscaseUdlejning_CaseID UNIQUE (caseID),
     CONSTRAINT FK_InvesteringscaseUdlejning_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
-    CONSTRAINT CK_InvesteringscaseUdlejning_MaanedligLeje CHECK (maanedligLeje >= 0),
-    CONSTRAINT CK_InvesteringscaseUdlejning_Depositum CHECK (depositum >= 0),
-    CONSTRAINT CK_InvesteringscaseUdlejning_TomgangDage CHECK (tomgangDage BETWEEN 0 AND 365),
-    CONSTRAINT CK_InvesteringscaseUdlejning_MaanedligeUdgifter CHECK (maanedligeUdlejningsudgifter >= 0),
-    CONSTRAINT CK_InvesteringscaseUdlejning_AarligeUdgifter CHECK (aarligeUdlejningsudgifter >= 0)
+    CONSTRAINT CK_InvesteringscaseUdlejning_Tal CHECK
+        (maanedligLeje >= 0 AND tomgangDage BETWEEN 0 AND 365
+         AND depositum >= 0
+         AND maanedligeUdlejningsudgifter >= 0 AND aarligeUdlejningsudgifter >= 0)
 );

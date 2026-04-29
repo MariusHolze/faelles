@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investeringscases</title>
+  <title>Investeringscase</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="css/investeringscase.css">
 </head>
@@ -13,42 +13,152 @@
   <div id="navbar-container"></div>
 
   <main class="cases-page">
-    <section class="cases-hero">
-      <div class="cases-hero-text">
-        <h1>Mine investeringscases</h1>
-        <p>
-          Her kan du oprette, se og redigere dine investeringscases.
-          Du får et hurtigt overblik over dine cases og deres vigtigste oplysninger.
-        </p>
-      </div>
+    <header class="case-form-header">
+      <h1>Investeringscase</h1>
+      <p>En simpel prototype, hvor input samles, simuleres og gemmes i SQL.</p>
+    </header>
 
-      <div class="opret-case-wrapper">
-        <button id="opretCaseKnap" class="opret-case-knap" type="button">
-          + Opret investeringscase
-        </button>
+    <form id="investmentCaseForm" class="case-form">
+      <ol id="stepIndicator" class="step-indicator" aria-label="Formulartrin">
+        <li class="active">1. Køb</li>
+        <li>2. Lån</li>
+        <li>3. Renovering</li>
+        <li>4. Drift</li>
+        <li>5. Udlejning</li>
+        <li>6. Resultat</li>
+      </ol>
 
-        <div id="caseDropdown" class="case-dropdown skjult">
-          <p class="case-dropdown-title">Vælg ejendomsprofil</p>
-          <div id="caseDropdownListe" class="case-dropdown-liste"></div>
+      <section class="form-step" data-step="0">
+        <h2>Side 1: køb og grunddata</h2>
+        <div class="case-field-grid">
+          <label>
+            Ejendomsprofil
+            <select name="ejendomID" id="ejendomSelect" required>
+              <option value="">Vælg ejendom</option>
+            </select>
+          </label>
+          <label>
+            Casenavn
+            <input name="navn" type="text" maxlength="100" required placeholder="Fx Case på Nørrebro">
+          </label>
+          <label class="full-width">
+            Kort beskrivelse
+            <textarea name="beskrivelse" maxlength="500" rows="3" placeholder="Frivillig note til casen"></textarea>
+          </label>
         </div>
-      </div>
-    </section>
 
-    <section>
+        <h3>Købs- og omkostningsposter</h3>
+        <div id="purchaseRows" class="simple-row-list"></div>
+        <button id="addPurchaseRowButton" class="sekundaer-knap" type="button">Tilføj købspost</button>
+      </section>
+
+      <section class="form-step hidden" data-step="1">
+        <h2>Side 2: finansiering/lån</h2>
+        <div class="case-field-grid">
+          <label>
+            Lånebeløb
+            <input name="laanebeloeb" type="number" required min="0" step="1000" value="0">
+          </label>
+          <label>
+            Egenbetaling
+            <input name="egenbetaling" type="number" required min="0" step="1000" value="0">
+          </label>
+          <label>
+            Rente i procent
+            <input name="rente" type="number" required min="0" max="30" step="0.1" value="4">
+          </label>
+          <label>
+            Løbetid i år
+            <input name="loebetid" type="number" required min="1" max="50" step="1" value="30">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-step hidden" data-step="2">
+        <h2>Side 3: renovering</h2>
+        <div class="choice-buttons">
+          <button id="renovationYesButton" class="sekundaer-knap" type="button">Ja</button>
+          <button id="renovationNoButton" class="sekundaer-knap" type="button">Nej</button>
+        </div>
+        <input id="renovationActive" name="renoveringAktiv" type="hidden" value="nej">
+
+        <div id="renovationFields" class="hidden">
+          <div id="renovationRows" class="simple-row-list"></div>
+          <button id="addRenovationRowButton" class="sekundaer-knap" type="button">Tilføj renovering</button>
+        </div>
+      </section>
+
+      <section class="form-step hidden" data-step="3">
+        <h2>Side 4: drift</h2>
+        <div id="operationRows" class="simple-row-list"></div>
+        <button id="addOperationRowButton" class="sekundaer-knap" type="button">Tilføj driftsomkostning</button>
+      </section>
+
+      <section class="form-step hidden" data-step="4">
+        <h2>Side 5: udlejning</h2>
+        <div class="choice-buttons">
+          <button id="rentalYesButton" class="sekundaer-knap" type="button">Ja</button>
+          <button id="rentalNoButton" class="sekundaer-knap" type="button">Nej</button>
+        </div>
+        <input id="rentalActive" name="udlejningAktiv" type="hidden" value="nej">
+
+        <div id="rentalFields" class="hidden">
+          <div class="case-field-grid">
+            <label>
+              Månedlig lejeindtægt
+              <input name="maanedligLeje" type="number" min="0" step="100" value="0">
+            </label>
+            <label>
+              Tomgang i procent
+              <input name="tomgangProcent" type="number" min="0" max="100" step="0.1" value="0">
+            </label>
+          </div>
+
+          <h3>Udgifter ved udlejning</h3>
+          <div id="rentalCostRows" class="simple-row-list"></div>
+          <button id="addRentalCostRowButton" class="sekundaer-knap" type="button">Tilføj udlejningsudgift</button>
+        </div>
+
+        <div class="case-field-grid result-settings">
+          <label>
+            Forventet værdistigning pr. år i procent
+            <input name="vaekstProcent" type="number" required min="-20" max="20" step="0.1" value="0">
+          </label>
+          <label>
+            Simuleringsperiode i år
+            <input name="periodeAar" type="number" required min="1" max="50" step="1" value="10">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-step hidden" data-step="5">
+        <h2>Side 6: overblik og simulering</h2>
+        <div id="inputOverview" class="overview-box"></div>
+        <button id="runSimulationButton" type="button">Kør simulering</button>
+        <div id="resultGrid" class="result-grid"></div>
+      </section>
+
+      <p id="caseFormError" class="case-form-fejl" aria-live="polite"></p>
+      <p id="caseFormStatus" class="case-form-status" aria-live="polite"></p>
+
+      <div class="case-form-actions">
+        <button id="previousStepButton" class="sekundaer-knap" type="button">Forrige</button>
+        <button id="nextStepButton" type="button">Næste</button>
+        <button id="saveCaseButton" type="submit" class="hidden">Gem case</button>
+      </div>
+    </form>
+
+    <section class="saved-cases-section">
       <div class="case-section-toolbar">
-        <div>
-          <h2 class="case-section-title">Dine cases</h2>
-          <p id="caseSammenlignStatus" class="case-section-help">Vælg mindst to cases for at sammenligne scenarier.</p>
-        </div>
-        <button id="sammenlignCasesKnap" class="knap" type="button" disabled>Sammenlign</button>
+        <h2>Gemte cases</h2>
+        <button id="reloadCasesButton" class="sekundaer-knap" type="button">Opdater</button>
       </div>
-      <div class="cases-grid" id="casesGrid"></div>
+      <div id="casesGrid" class="cases-grid"></div>
     </section>
-
   </main>
 
   <script src="js/ui.js"></script>
-  <script src="js/investeringscase.js"></script>
+  <script src="js/investeringscaseForm.js"></script>
   <script src="js/app.js"></script>
 </body>
 

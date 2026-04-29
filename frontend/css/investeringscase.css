@@ -1,502 +1,202 @@
-.cases-hero,
-.case-trin-kort,
 .case-form-header,
-.case-trin-form,
-.case-help,
-.case-card,
-.case-dropdown,
-.finansiering-beregning,
-.case-overblik-section,
-.noegletal-panel,
-.sammenlign-case-kort,
-.sammenlign-tabel-wrapper {
+.case-form,
+.saved-cases-section,
+.case-card {
   border: 1px solid #d9e3ee;
   border-radius: 8px;
   background: #ffffff;
-}
-
-.cases-hero,
-.case-form-header,
-.case-trin-kort-top,
-.case-trin-form,
-.case-help,
-.case-card,
-.case-dropdown,
-.finansiering-beregning,
-.case-overblik-section,
-.noegletal-panel,
-.sammenlign-case-kort {
   padding: 20px;
 }
 
-.cases-hero,
-.case-form-header,
-.case-card-top,
-.case-actions,
-.case-form-actions,
-.case-trin-navigation,
-.case-overblik-actions,
-.case-section-toolbar,
-.overblik-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.cases-hero,
 .case-form-header {
-  margin-bottom: 24px;
+  margin-bottom: 18px;
+  text-align: center;
 }
 
-.cases-hero h1,
-.case-form-header h1,
-.case-trin-kort h1,
-.case-card h2,
-.case-overblik-section h2,
-.sammenlign-case-kort h2 {
-  margin: 0 0 8px;
-  color: #0f172a;
-  text-align: left;
+.case-form-header p {
+  color: #526070;
 }
 
-.cases-label,
-.case-description,
-.case-meta,
-.case-dropdown-empty,
-.case-help p,
-.case-field-grid span,
-.case-field-grid small,
-.case-section-help,
-.overblik-note,
-.overblik-status,
-.noegletal-graf-header p {
-  color: #64748b;
-  line-height: 1.5;
+.case-form,
+.saved-cases-section {
+  margin-top: 18px;
 }
 
-.cases-label {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.cases-grid,
-.case-noegletal,
-.case-field-grid,
-.finansiering-beregning-grid,
-.case-analyse-grid,
-.noegletal-kort-grid,
-.case-overblik-trin,
-.overblik-talrække,
-.sammenlign-cases-grid,
-.sammenlign-kort-tal {
+.step-indicator {
   display: grid;
-  gap: 14px;
-}
-
-.cases-grid,
-.case-overblik-trin {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.case-noegletal,
-.case-field-grid,
-.finansiering-beregning-grid,
-.case-analyse-grid,
-.noegletal-kort-grid,
-.overblik-talrække,
-.sammenlign-cases-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.case-card-bred,
-.case-overblik-grid > .noegletal-panel {
-  grid-column: 1 / -1;
-}
-
-.case-noegletal div,
-.case-analyse-grid div,
-.noegletal-kort-grid div,
-.overblik-talrække div,
-.sammenlign-kort-tal div,
-.overblik-resultat {
-  padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-}
-
-.case-noegletal span,
-.case-analyse-grid span,
-.case-analyse-grid small,
-.noegletal-kort-grid span,
-.noegletal-kort-grid small,
-.overblik-talrække span,
-.sammenlign-kort-tal span {
-  display: block;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.case-noegletal strong,
-.case-analyse-grid strong,
-.noegletal-kort-grid strong,
-.overblik-talrække strong,
-.sammenlign-kort-tal strong {
-  display: block;
-  margin-top: 5px;
-  color: #0f172a;
-  font-size: 19px;
-}
-
-.case-status {
-  display: inline-block;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: #eef2f7;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.case-status.aktiv {
-  background: #edf7f2;
-  color: #1f6b4a;
-}
-
-.case-status.tom {
-  background: #fff7ed;
-  color: #9a3412;
-}
-
-.case-sammenlign-valg,
-.case-toggle {
-  display: inline-flex;
-  align-items: center;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
-  font-weight: 700;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
 }
 
-.case-sammenlign-valg input,
-.case-toggle input {
-  width: auto;
-}
-
-.opret-case-wrapper {
-  position: relative;
-}
-
-.case-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 20;
-  width: min(360px, 90vw);
-}
-
-.case-dropdown-liste {
-  display: grid;
-  gap: 8px;
-}
-
-.case-dropdown-item {
-  width: 100%;
-  padding: 12px;
+.step-indicator li {
+  padding: 10px;
   border: 1px solid #d9e3ee;
   border-radius: 8px;
   background: #f8fafc;
-  color: #182330;
-  text-align: left;
+  color: #526070;
+  font-size: 14px;
+  text-align: center;
 }
 
-.case-dropdown-item h4,
-.case-dropdown-item p {
-  margin: 0;
+.step-indicator li.active,
+.step-indicator li.done {
+  border-color: #508fcd;
+  background: #e8f2ff;
+  color: #174a7c;
+  font-weight: 700;
+}
+
+.form-step.hidden,
+.hidden {
+  display: none !important;
+}
+
+.form-step h2,
+.saved-cases-section h2 {
+  margin-bottom: 16px;
+}
+
+.form-step h3 {
+  margin: 22px 0 10px;
+}
+
+.case-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .case-field-grid label {
   display: grid;
-  gap: 8px;
-  font-weight: 700;
-}
-
-.case-trin-kort {
-  overflow: hidden;
-}
-
-.case-trin-kort .case-trin-form {
-  border: 0;
-  border-top: 1px solid #eef2f7;
-  border-radius: 0;
-}
-
-.trin-indikator,
-.trin-valg-gruppe,
-.koebspost-liste,
-.renoveringspost-liste,
-.driftspost-liste,
-.drift-fordeling-list,
-.overblik-liste {
-  display: grid;
-  gap: 10px;
-}
-
-.trin-indikator {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin-top: 18px;
-}
-
-.trin-punkt {
-  text-align: center;
-}
-
-.trin-cirkel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 2px solid #c9d9eb;
-  border-radius: 50%;
-  background: #fff;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.trin-punkt.aktiv .trin-cirkel,
-.trin-punkt.faerdig .trin-cirkel {
-  border-color: #1f6b4a;
-  background: #1f6b4a;
-  color: #fff;
-}
-
-.trin-label {
-  display: block;
-  margin-top: 5px;
-  color: #64748b;
-  font-size: 12px;
-}
-
-.trin-linje {
-  display: none;
-}
-
-.trin-valg-gruppe {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.trin-valg-kort {
-  padding: 16px;
-  border: 1px solid #d9e3ee;
-  border-radius: 8px;
-  background: #ffffff;
+  gap: 6px;
   color: #243244;
-  text-align: left;
-  cursor: pointer;
+  font-weight: 700;
 }
 
-.trin-valg-kort.valg-kort-aktiv {
-  border-color: #508fcd;
-  background: #eef5fb;
+.case-field-grid .full-width {
+  grid-column: 1 / -1;
 }
 
-.trin-valg-ikon-wrapper {
-  font-size: 22px;
-}
-
-.koebspost-række,
-.renoveringspost-række,
-.driftspost-række {
+.simple-row-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px 150px 44px;
   gap: 10px;
-  align-items: start;
-  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.simple-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.purchase-row {
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.8fr) auto;
+}
+
+.choice-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.overview-box {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+  padding: 16px;
+  margin-bottom: 14px;
 }
 
-.koebspost-række {
-  grid-template-columns: minmax(0, 1fr) 220px 44px;
+.overview-box p {
+  margin-bottom: 8px;
 }
 
-.koebspost-række[data-fast="true"] {
-  grid-template-columns: minmax(0, 1fr) 220px;
+.result-settings {
+  margin-top: 20px;
 }
 
-.koebspost-navn-felt {
-  display: grid;
-  gap: 5px;
+.case-form-actions,
+.case-section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
 }
 
-.koebspost-beskrivelse {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.fjern-koebspost-knap,
-.fjern-renoveringspost-knap,
-.fjern-driftspost-knap,
-.case-slet-knap {
-  background: #c94c4c;
-}
-
-.fjern-koebspost-knap,
-.fjern-renoveringspost-knap,
-.fjern-driftspost-knap {
-  width: 40px;
-  padding: 0;
-  font-size: 22px;
-}
-
-.case-rediger-knap,
-.case-hent-knap {
-  background: #eef2f7;
-  border-color: #d9e3ee;
-  color: #243244;
-}
-
-.case-total,
 .case-form-fejl,
-.case-field-fejl,
 .case-form-status {
+  min-height: 22px;
+  margin: 16px 0 0;
   font-weight: 700;
 }
 
-.case-form-fejl,
-.case-field-fejl {
-  color: #c0392b;
+.case-form-fejl {
+  color: #b42318;
 }
 
 .case-form-status {
   color: #1f6b4a;
 }
 
-.finansiering-highlight,
-.drift-highlight,
-.udlejning-highlight {
-  padding: 14px;
-  border-radius: 8px;
-  background: #2563eb;
-  color: #ffffff;
+.result-grid,
+.cases-grid,
+.case-card-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.finansiering-highlight-sekundaer,
-.drift-highlight-sekundaer,
-.udlejning-highlight-sekundaer {
-  background: #475569;
-}
-
-.finansiering-highlight-tertiaer,
-.drift-highlight-tertiaer,
-.udlejning-highlight-tertiaer {
-  background: #0f766e;
-}
-
-.finansiering-highlight span,
-.finansiering-highlight small {
-  display: block;
-  color: #eef5fb;
-}
-
-.finansiering-highlight strong {
-  display: block;
-  margin: 6px 0;
-  font-size: 22px;
-}
-
-.drift-fordeling-bar {
-  display: flex;
-  height: 14px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e2e8f0;
-}
-
-.drift-fordeling-segment,
-.drift-fordeling-prik {
-  background: #2563eb;
-}
-
-.drift-fordeling-segment-1,
-.drift-fordeling-prik-1 {
-  background: #0f766e;
-}
-
-.drift-fordeling-segment-2,
-.drift-fordeling-prik-2 {
-  background: #9a3412;
-}
-
-.drift-fordeling-prik {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 6px;
-  border-radius: 50%;
-}
-
-.overblik-liste {
-  padding-left: 18px;
-}
-
-.noegletal-graf,
-.noegletal-tabel-wrapper,
-.sammenlign-tabel-wrapper {
-  margin-top: 18px;
-  overflow-x: auto;
-}
-
-.noegletal-graf canvas {
-  width: 100% !important;
+.result-card,
+.case-card-numbers div {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: #ffffff;
-}
-
-.noegletal-tabel,
-.sammenlign-tabel {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-}
-
-.noegletal-tabel th,
-.noegletal-tabel td,
-.sammenlign-tabel th,
-.sammenlign-tabel td {
-  padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-}
-
-.sammenlign-tabel thead th {
   background: #f8fafc;
+  padding: 14px;
 }
 
-@media (max-width: 900px) {
-  .cases-grid,
-  .case-noegletal,
-  .case-field-grid,
-  .finansiering-beregning-grid,
-  .case-analyse-grid,
-  .noegletal-kort-grid,
-  .case-overblik-trin,
-  .overblik-talrække,
-  .sammenlign-cases-grid,
-  .trin-valg-gruppe,
-  .koebspost-række,
-  .koebspost-række[data-fast="true"],
-  .renoveringspost-række,
-  .driftspost-række {
-    grid-template-columns: 1fr;
-  }
+.result-card span,
+.case-card-numbers dt {
+  display: block;
+  margin-bottom: 6px;
+  color: #617184;
+  font-size: 13px;
+}
 
-  .case-dropdown {
-    left: 0;
-    right: auto;
+.result-card strong,
+.case-card-numbers dd {
+  margin: 0;
+  color: #182330;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.case-card h3 {
+  margin-bottom: 6px;
+}
+
+.case-card p {
+  color: #526070;
+}
+
+.case-card button {
+  margin-top: 14px;
+}
+
+@media (max-width: 800px) {
+  .step-indicator,
+  .case-field-grid,
+  .simple-row,
+  .purchase-row,
+  .result-grid,
+  .cases-grid,
+  .case-card-numbers {
+    grid-template-columns: 1fr;
   }
 }

@@ -3,20 +3,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await indsætNavbar(); // henter navbar.html og sætter den ind på siden
   }
 
-  if (typeof initInvesteringscaseSide === "function") {
-    initInvesteringscaseSide(); // viser og binder investeringscasesiden
-  }
-
-  if (typeof initCaseOverblikSide === "function") {
-    initCaseOverblikSide(); // viser læse-overblik for en valgt investeringscase
-  }
-
-  if (typeof initSammenlignSide === "function") {
-    initSammenlignSide(); // viser sammenligning af valgte investeringscases
-  }
-
-  if (typeof bindInvesteringscaseTrinForm === "function") {
-    bindInvesteringscaseTrinForm(); // sætter formulartrin til investeringscase op
+  if (typeof bindInvesteringscaseForm === "function") {
+    bindInvesteringscaseForm(); // sætter den simple 5-trins formular op
   }
 
   if (typeof bindAdresseSoegning === "function") {
