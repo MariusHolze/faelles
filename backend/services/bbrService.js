@@ -56,8 +56,10 @@ async function hentBbrData(adresseID, adgangsadresseID) {
   }
 
   try {
-    const bygninger = adgangsadresseID ? await hentBygninger(adgangsadresseID, config) : [];
     const enheder = adresseID ? await hentEnheder(adresseID, config) : [];
+    const bygningerViaHusnummer = adgangsadresseID ? await hentBygninger(adgangsadresseID, config) : [];
+    const bygningerViaEnhed = await hentBygningerFraEnheder(enheder, config);
+    const bygninger = samlUnikkeBygninger(bygningerViaHusnummer, bygningerViaEnhed);
     const bfeNumre = await hentBfeNumre(adresseID, adgangsadresseID, config);
     const grundareal = await hentGrundarealViaDataforsyningen(bfeNumre, adgangsadresseID);
 
@@ -74,6 +76,42 @@ async function hentBygninger(adgangsadresseID, config) {
 
 async function hentEnheder(adresseID, config) {
   return hentFraDatafordeler("enhed", { AdresseIdentificerer: adresseID }, config);
+}
+
+async function hentBygningerFraEnheder(enheder, config) {
+  const bygningIDs = [
+    ...new Set(
+      enheder
+        .map((enhed) => findFoersteVaerdiIObjekter([enhed], "bygning"))
+        .filter(Boolean)
+    )
+  ];
+  const bygninger = [];
+
+  for (const bygningID of bygningIDs) {
+    const fundneBygninger = await hentFraDatafordeler("bygning", { id: bygningID }, config);
+    bygninger.push(...fundneBygninger);
+  }
+
+  return bygninger;
+}
+
+function samlUnikkeBygninger(...lister) {
+  const bygninger = [];
+  const seteNoegler = new Set();
+
+  for (const liste of lister) {
+    for (const bygning of liste) {
+      const noegle = findFoersteVaerdiIObjekter([bygning], "id_lokalId", "id", "bygning") || JSON.stringify(bygning);
+
+      if (!seteNoegler.has(noegle)) {
+        seteNoegler.add(noegle);
+        bygninger.push(bygning);
+      }
+    }
+  }
+
+  return bygninger;
 }
 
 async function hentBfeNumre(adresseID, adgangsadresseID, config) {
@@ -218,7 +256,10 @@ function vurderEjendomsprofilMulighedFraBbrData(bbrData) {
 
   const bygningAnvendelseKode = findFoersteTal(bbrData.bygningAnvendelseKode, bbrData.byg021BygningensAnvendelse);
   if (!bygningAnvendelseKode) {
-    return { kanOprettes: true, aarsag: null };
+    return {
+      kanOprettes: false,
+      aarsag: "Adressen kan ikke bruges til en ejendomsprofil, fordi BBR ikke returnerer en boligenhed eller boligbygning for adressen."
+    };
   }
 
   const bygningAnvendelseTekst = bbrData.bygningAnvendelseTekst || BYGNING_ANVENDELSE[bygningAnvendelseKode] || `BBR-kode ${bygningAnvendelseKode}`;

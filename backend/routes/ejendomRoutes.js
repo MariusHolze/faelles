@@ -51,12 +51,6 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const pool = await getPool();
-    const ejendomme = await hentEjendomme(pool);
-
-    for (const ejendom of ejendomme) {
-      await opdaterBbrDataForEjendom(pool, ejendom);
-    }
-
     res.json(await hentEjendomme(pool));
   } catch (error) {
     console.error("Fejl ved hentning af ejendomme:", error);
@@ -136,50 +130,6 @@ async function hentEjendomme(pool) {
   `);
 
   return result.recordset;
-}
-
-async function opdaterBbrDataForEjendom(pool, ejendom) {
-  if (!ejendom.adresseID && !ejendom.adgangsadresseID) return;
-  if (!skalOpdatereBbrData(ejendom.sidstOpdateret)) return;
-
-  try {
-    const bbrData = await hentBbrData(ejendom.adresseID, ejendom.adgangsadresseID);
-    if (!harBbrVaerdier(bbrData)) return;
-
-    await pool.request()
-      .input("ejendomID", sql.Int, ejendom.id)
-      .input("boligtype", sql.VarChar(100), bbrData.boligtype || ejendom.boligtype || null)
-      .input("byggeaar", sql.Int, bbrData.byggeaar || ejendom.byggeaar || null)
-      .input("boligareal", sql.Int, bbrData.boligareal || ejendom.boligareal || null)
-      .input("grundareal", sql.Int, bbrData.grundareal || ejendom.grundareal || null)
-      .input("antalVaerelser", sql.Int, bbrData.antalVaerelser || ejendom.antalVaerelser || null)
-      .query(`
-        UPDATE Ejendomsprofil
-        SET boligtype = @boligtype,
-            byggeaar = @byggeaar,
-            boligareal = @boligareal,
-            grundareal = @grundareal,
-            antalVaerelser = @antalVaerelser,
-            sidstOpdateret = SYSDATETIME()
-        WHERE ejendomID = @ejendomID
-      `);
-  } catch (error) {
-    console.error(`Fejl ved opdatering af BBR-data for ejendom ${ejendom.id}:`, error.message);
-  }
-}
-
-function skalOpdatereBbrData(sidstOpdateret) {
-  if (!sidstOpdateret) return true;
-  const sidstOpdateretTid = new Date(sidstOpdateret).getTime();
-  if (Number.isNaN(sidstOpdateretTid)) return true;
-  return Date.now() - sidstOpdateretTid > 24 * 60 * 60 * 1000;
-}
-
-function harBbrVaerdier(bbrData) {
-  return Boolean(
-    bbrData &&
-    (bbrData.boligtype || bbrData.byggeaar || bbrData.boligareal || bbrData.grundareal || bbrData.antalVaerelser)
-  );
 }
 
 router.put("/:id", async (req, res) => {
