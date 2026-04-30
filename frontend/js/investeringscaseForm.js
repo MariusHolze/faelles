@@ -2,6 +2,7 @@ let currentStep = 0;
 let simulationResult = null;
 let currentCaseID = null;
 let investmentChart = null;
+let comparisonCases = [];
 
 const moneyFormatter = new Intl.NumberFormat("da-DK", {
   style: "currency",
@@ -680,11 +681,16 @@ async function loadInvestmentCases() {
 
     if (!response.ok) {
       grid.innerHTML = `<p>${cases.message || "Cases kunne ikke hentes."}</p>`;
+      comparisonCases = [];
+      renderComparisonTable();
       return;
     }
 
+    comparisonCases = cases;
+
     if (cases.length === 0) {
       grid.innerHTML = "<p>Der er endnu ikke gemt nogen investeringscases.</p>";
+      renderComparisonTable();
       return;
     }
 
@@ -696,6 +702,10 @@ async function loadInvestmentCases() {
         <h3>${escapeHtml(caseData.navn)}</h3>
         <p>${escapeHtml(caseData.adresse || "Ingen adresse")}</p>
         <p>${caseData.oprettetTidspunkt ? new Date(caseData.oprettetTidspunkt).toLocaleDateString("da-DK") : ""}</p>
+        <label class="case-compare-choice">
+          <input class="case-compare-checkbox" type="checkbox" value="${caseData.caseID}">
+          Sammenlign
+        </label>
         <dl class="case-card-numbers">
           <div><dt>Månedligt cashflow</dt><dd>${kroner(caseData.resultat.maanedligtCashflow)}</dd></div>
           <div><dt>Startinvestering</dt><dd>${kroner(caseData.resultat.startInvestering)}</dd></div>
@@ -703,8 +713,12 @@ async function loadInvestmentCases() {
         </dl>
         <button class="sekundaer-knap rediger-case-knap" type="button">Rediger</button>
         <button class="sekundaer-knap resultat-case-knap" type="button">Resultat</button>
+        <button class="sekundaer-knap dupliker-case-knap" type="button">Duplikér</button>
         <button class="sekundaer-knap slet-case-knap" type="button">Slet</button>
       `;
+
+      const compareCheckbox = card.querySelector(".case-compare-checkbox");
+      compareCheckbox.addEventListener("change", renderComparisonTable);
 
       card.querySelector(".rediger-case-knap").addEventListener("click", async () => {
         await openExistingCase(caseData.caseID);
@@ -724,15 +738,102 @@ async function loadInvestmentCases() {
         }
       });
 
+      card.querySelector(".dupliker-case-knap").addEventListener("click", () => duplicateInvestmentCase(caseData.caseID));
+
       card.querySelector(".slet-case-knap").addEventListener("click", async () => {
         await deleteInvestmentCase(caseData.caseID);
       });
 
       grid.appendChild(card);
     });
+    renderComparisonTable();
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
     grid.innerHTML = "<p>Serverfejl ved hentning af cases.</p>";
+    comparisonCases = [];
+    renderComparisonTable();
+  }
+}
+
+function renderComparisonTable() {
+  const container = document.querySelector("#comparisonTableContainer");
+
+  if (!container) {
+    return;
+  }
+
+  const selectedIDs = Array.from(document.querySelectorAll(".case-compare-checkbox:checked"))
+    .map((checkbox) => checkbox.value);
+  const selectedCases = comparisonCases.filter((caseData) => selectedIDs.includes(String(caseData.caseID)));
+
+  if (selectedCases.length === 0) {
+    container.innerHTML = "<p>Ingen cases valgt til sammenligning.</p>";
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Case-navn</th>
+          <th>Ejendom/adresse</th>
+          <th>Ejendomspris</th>
+          <th>Månedligt cashflow</th>
+          <th>Årligt cashflow</th>
+          <th>Gæld efter 30 år</th>
+          <th>Egenkapital efter 30 år</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${selectedCases.map(comparisonRow).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function comparisonRow(caseData) {
+  const result = caseData.resultat || {};
+  const lastYear = Array.isArray(result.noegletalOverTid) && result.noegletalOverTid.length > 0
+    ? result.noegletalOverTid[result.noegletalOverTid.length - 1]
+    : {};
+
+  return `
+    <tr>
+      <td>${escapeHtml(caseData.navn || "-")}</td>
+      <td>${escapeHtml(caseData.adresse || "-")}</td>
+      <td>${formatComparisonMoney(result.koebspris ?? result.ejendomspris)}</td>
+      <td>${formatComparisonMoney(result.maanedligtCashflow)}</td>
+      <td>${formatComparisonMoney(result.aarligtCashflow)}</td>
+      <td>${formatComparisonMoney(lastYear.restgaeld ?? lastYear.gaeld)}</td>
+      <td>${formatComparisonMoney(lastYear.egenkapitalIEjendom)}</td>
+    </tr>
+  `;
+}
+
+function formatComparisonMoney(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? kroner(number) : "Ikke beregnet";
+}
+
+async function duplicateInvestmentCase(caseID) {
+  showCasesOverviewMessage("Duplikerer case...");
+
+  try {
+    const response = await fetch(`/api/investeringscases/${caseID}/duplicate`, {
+      method: "POST"
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      showCasesOverviewMessage(data.message || "Casen kunne ikke duplikeres.", true);
+      return;
+    }
+
+    await loadInvestmentCases();
+    showCasesOverviewMessage(data.message || "Casen er duplikeret.");
+  } catch (error) {
+    console.error("Fejl ved duplikering af investeringscase:", error);
+    showCasesOverviewMessage("Serverfejl ved duplikering af case.", true);
   }
 }
 
@@ -777,6 +878,18 @@ function showStatus(message) {
 function clearMessage() {
   document.querySelector("#caseFormError").textContent = "";
   document.querySelector("#caseFormStatus").textContent = "";
+}
+
+function showCasesOverviewMessage(message, isError = false) {
+  const status = document.querySelector("#casesOverviewStatus");
+
+  if (!status) {
+    return;
+  }
+
+  status.textContent = message;
+  status.classList.toggle("case-form-fejl", isError);
+  status.classList.toggle("case-form-status", !isError);
 }
 
 function escapeHtml(value) {

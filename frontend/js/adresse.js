@@ -313,11 +313,6 @@ function bindSeCasesFraForside() {
 
     const url = new URL("investeringscase.html", window.location.href);
     url.searchParams.set("ejendomID", ejendomID);
-    url.searchParams.set("visning", "offentlig");
-
-    if (knap.dataset.ejendomAdresse) {
-      url.searchParams.set("adresse", knap.dataset.ejendomAdresse);
-    }
 
     window.location.href = url.toString();
   });

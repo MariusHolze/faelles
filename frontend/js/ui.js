@@ -13,23 +13,3 @@ async function indsætNavbar() {
     console.error("Fejl ved indlæsning af navbar:", error);
   }
 }
-
-function visBesked(elementId, besked) {
-  const element = document.getElementById(elementId); // finder et element ud fra id
-
-  if (!element) {
-    return;
-  }
-
-  element.textContent = besked; // skriver tekst i elementet
-}
-
-function rydBesked(elementId) {
-  const element = document.getElementById(elementId); // finder et element ud fra id
-
-  if (!element) {
-    return;
-  }
-
-  element.textContent = ""; // rydder teksten
-}

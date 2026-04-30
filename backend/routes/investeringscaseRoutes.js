@@ -204,6 +204,42 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.post("/:id/duplicate", async (req, res) => {
+  if (!gyldigtId(req.params.id)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID" });
+  }
+
+  try {
+    const pool = await getPool();
+    const original = await hentCase(pool, Number(req.params.id));
+
+    if (!original) {
+      return res.status(404).json({ message: "Case ikke fundet" });
+    }
+
+    const kopi = {
+      ...original.input,
+      ejendomID: original.ejendomID,
+      navn: `Kopi af ${original.navn}`,
+      beskrivelse: original.beskrivelse || ""
+    };
+
+    const caseID = await opretCase(pool, kopi);
+
+    res.status(201).json({
+      message: "Investeringscase duplikeret",
+      caseID
+    });
+  } catch (error) {
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Der findes allerede en investeringscase med navnet Kopi af denne case." });
+    }
+
+    console.error("Fejl ved duplikering af investeringscase:", error);
+    res.status(500).json({ message: "Databasefejl ved duplikering af investeringscase" });
+  }
+});
+
 router.put("/:id", async (req, res) => {
   if (!gyldigtId(req.params.id)) {
     return res.status(400).json({ message: "Ugyldigt case-ID" });

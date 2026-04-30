@@ -142,7 +142,7 @@ function bindEjendomKort(kort, ejendom) {
 
 // Sletter en ejendomsprofil fra profilsiden.
 async function sletEjendomFraProfil(ejendom) {
-  const erSikker = confirm("Er du sikker på, at du vil slette denne ejendom?");
+  const erSikker = confirm("Er du sikker på, at du vil slette denne ejendomsprofil? Alle tilknyttede investeringscases bliver også slettet.");
 
   if (!erSikker) {
     return;
@@ -164,7 +164,7 @@ async function sletEjendomFraProfil(ejendom) {
     alert(data.message || "Ejendom slettet.");
   } catch (error) {
     console.error("Fejl ved sletning af ejendom:", error);
-    alert("Server fejl");
+    alert("Serverfejl ved sletning af ejendom.");
   }
 }
 

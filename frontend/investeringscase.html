@@ -25,7 +25,14 @@
         <h2>Eksisterende investeringscases</h2>
         <button id="reloadCasesButton" class="sekundaer-knap" type="button">Opdater</button>
       </div>
+      <p id="casesOverviewStatus" class="case-form-status" aria-live="polite"></p>
       <div id="casesGrid" class="cases-grid"></div>
+
+      <section class="case-comparison-section" aria-labelledby="caseComparisonHeading">
+        <h2 id="caseComparisonHeading">Sammenlign investeringscases</h2>
+        <p id="comparisonHelpText">Vælg cases i listen ovenfor for at sammenligne dem.</p>
+        <div id="comparisonTableContainer" class="comparison-table-container"></div>
+      </section>
     </section>
 
     <section id="createCaseSection" class="case-form hidden">
