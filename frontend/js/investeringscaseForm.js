@@ -61,7 +61,6 @@ function bindInvesteringscaseForm() {
     const ejendomID = params.get("ejendomID");
     if (ejendomID) {
       document.querySelector("#createEjendomSelect").value = ejendomID;
-      showCreateCase();
     }
   });
   showOverview();
@@ -161,6 +160,7 @@ async function openExistingCase(caseID) {
   currentCaseID = caseID;
   fillInvestmentForm(caseData);
   showForm();
+  return caseData;
 }
 
 function fillInvestmentForm(caseData) {
@@ -455,108 +455,54 @@ function loanMatchesPrice() {
   return Math.round(totalFinansiering) === Math.round(samletKoebssum);
 }
 
-function runSimulation() {
+async function runSimulation() {
   const input = collectFormData();
-  simulationResult = calculateInvestmentCase(input);
-  renderChart(input, simulationResult);
-  renderResult(simulationResult);
-  showStatus("Simuleringen er kørt. Du kan nu gemme casen.");
-}
 
-function calculateInvestmentCase(input) {
-  const koebspris = getPostTotal(input.koebsposter, "Ejendomspris");
-  const koebsomkostninger = sumPosts(input.koebsposter) - koebspris;
-  const renoveringIAlt = sumPosts(input.renoveringer);
-  const startInvestering = koebspris + koebsomkostninger + renoveringIAlt;
-  const maanedligRente = (input.rente / 100) / 12;
-  const antalMaaneder = input.loebetid * 12;
-  let maanedligYdelse = 0;
+  try {
+    showStatus("Kører simulering...");
 
-  if (input.laanebeloeb > 0 && antalMaaneder > 0) {
-    maanedligYdelse = maanedligRente === 0
-      ? input.laanebeloeb / antalMaaneder
-      : input.laanebeloeb * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -antalMaaneder)));
-  }
+    const response = await fetch("/api/investeringscases/beregn", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(input)
+    });
+    const contentType = response.headers.get("content-type") || "";
+    const data = contentType.includes("application/json") ? await response.json() : null;
 
-  // Simpel model: alle månedlige beløb samles og påvirker cashflowet.
-  const driftMaanedligt = monthlyTotal(input.driftsposter);
-  const lejeAarligt = input.maanedligLeje * 12;
-  const tomgangBeloeb = lejeAarligt * (input.tomgangDage / 365);
-  const lejeIndtaegtMaanedligt = (lejeAarligt - tomgangBeloeb) / 12;
-  const lejeUdgifterMaanedligt = monthlyTotal(input.udlejningsudgifter);
-  const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
-  const maanedligtCashflow = lejeIndtaegtMaanedligt - maanedligeUdgifter;
-  const aarligtCashflow = maanedligtCashflow * 12;
-  const totalRenteomkostning = Math.max(0, maanedligYdelse * antalMaaneder - input.laanebeloeb);
-  const estimeretVaerdiEfterPeriode = koebspris * Math.pow(1.02, 30);
-  const samletResultat = (estimeretVaerdiEfterPeriode - koebspris) + (aarligtCashflow * input.periodeAar) - renoveringIAlt;
-
-  return {
-    koebspris,
-    koebsomkostninger,
-    renoveringIAlt,
-    startInvestering,
-    maanedligYdelse,
-    totalRenteomkostning,
-    maanedligIndtaegt: lejeIndtaegtMaanedligt,
-    lejeUdgifterMaanedligt,
-    driftMaanedligt,
-    maanedligeUdgifter,
-    maanedligtCashflow,
-    aarligtCashflow,
-    simpelROI: input.egenbetaling > 0 ? (aarligtCashflow / input.egenbetaling) * 100 : 0,
-    estimeretVaerdiEfterPeriode,
-    samletResultat
-  };
-}
-
-// Beregner tre tidsserier år for år fra år 0 til periodeAar (typisk 30).
-// Returnerer arrays klar til Chart.js datasets.
-function buildTimeSeriesData(input, result) {
-  const periodeAar = input.periodeAar || 30;
-  const maanedligRente = (input.rente / 100) / 12;
-  const antalLaanemåneder = input.loebetid * 12;
-  const labels = [];
-  const cashflowData = [];
-  const gaeldData = [];
-  const egenkapitalData = [];
-
-  for (let aar = 0; aar <= periodeAar; aar++) {
-    labels.push(aar);
-
-    // Akkumuleret cashflow: konstant månedligt cashflow ganget op over tid
-    cashflowData.push(Math.round(result.aarligtCashflow * aar));
-
-    // Restgæld: eksakt annuiteringsformel — P * (r^N - r^n) / (r^N - 1)
-    // Falder til 0 når lånet er afdraget (betalteManeder >= antalLaanemåneder)
-    let restgaeld = 0;
-    const betalteManeder = aar * 12;
-    if (input.laanebeloeb > 0 && betalteManeder < antalLaanemåneder) {
-      if (maanedligRente === 0) {
-        // Rentefrit lån: lineær afskrivning
-        restgaeld = Math.max(0, input.laanebeloeb - (input.laanebeloeb / antalLaanemåneder) * betalteManeder);
-      } else {
-        const faktor = Math.pow(1 + maanedligRente, antalLaanemåneder);
-        restgaeld = Math.max(0, Math.round(
-          input.laanebeloeb * (faktor - Math.pow(1 + maanedligRente, betalteManeder)) / (faktor - 1)
-        ));
-      }
+    if (!response.ok) {
+      showError(data?.message || "Simuleringen kunne ikke køres. Genstart backend-serveren og prøv igen.");
+      return;
     }
-    gaeldData.push(restgaeld);
 
-    // Egenkapital: ejendomsværdi med 2% årlig stigning minus restgæld
-    const ejendomsvaerdi = result.koebspris * Math.pow(1.02, aar);
-    egenkapitalData.push(Math.round(ejendomsvaerdi - restgaeld));
+    simulationResult = data.resultat;
+    renderChart(simulationResult);
+    renderResult(simulationResult);
+    showStatus("Simuleringen er kørt. Du kan nu gemme casen.");
+  } catch (error) {
+    console.error("Fejl ved simulering:", error);
+    showError("Serverfejl ved simulering.");
   }
+}
+
+// Gør backendens 30-årsserie klar til Chart.js.
+// Returnerer arrays klar til Chart.js datasets.
+function buildTimeSeriesData(result) {
+  const noegletal = result.noegletalOverTid || [];
+  const labels = noegletal.map((punkt) => punkt.aar);
+  const cashflowData = noegletal.map((punkt) => Math.round(punkt.akkumuleretCashflow));
+  const gaeldData = noegletal.map((punkt) => Math.round(punkt.restgaeld));
+  const egenkapitalData = noegletal.map((punkt) => Math.round(punkt.egenkapitalIEjendom));
 
   return { labels, cashflowData, gaeldData, egenkapitalData };
 }
 
 // Opretter eller genopretter Chart.js-diagrammet på #investmentChart.
 // Destroy kaldes først så canvas ikke akkumulerer flere instanser.
-function renderChart(input, result) {
+function renderChart(result) {
   const canvas = document.querySelector("#investmentChart");
-  const { labels, cashflowData, gaeldData, egenkapitalData } = buildTimeSeriesData(input, result);
+  const { labels, cashflowData, gaeldData, egenkapitalData } = buildTimeSeriesData(result);
 
   if (investmentChart) {
     investmentChart.destroy();
@@ -622,7 +568,7 @@ function renderOverview(input) {
     <p><strong>Køb:</strong> ${kroner(sumPosts(input.koebsposter))}</p>
     <p><strong>Lån:</strong> ${kroner(input.laanebeloeb)} og egenbetaling ${kroner(input.egenbetaling)}</p>
     <p><strong>Renovering:</strong> ${kroner(sumPosts(input.renoveringer))}</p>
-    <p><strong>Drift pr. måned:</strong> ${kroner(monthlyTotal(input.driftsposter))}</p>
+    <p><strong>Driftsposter:</strong> ${input.driftsposter.length}</p>
     <p><strong>Udlejning:</strong> ${input.udlejningAktiv ? `${kroner(input.maanedligLeje)} pr. måned` : "Nej"}</p>
   `;
 }
@@ -765,8 +711,17 @@ async function loadInvestmentCases() {
       });
 
       card.querySelector(".resultat-case-knap").addEventListener("click", async () => {
-        await openExistingCase(caseData.caseID);
+        const hentetCase = await openExistingCase(caseData.caseID);
+        if (!hentetCase) {
+          return;
+        }
+
         showStep(5);
+        if (hentetCase?.resultat) {
+          simulationResult = hentetCase.resultat;
+          renderChart(simulationResult);
+          renderResult(simulationResult);
+        }
       });
 
       card.querySelector(".slet-case-knap").addEventListener("click", async () => {
@@ -802,19 +757,6 @@ async function deleteInvestmentCase(caseID) {
 
 function sumPosts(posts) {
   return posts.reduce((sum, post) => sum + (Number(post.beloeb) || 0), 0);
-}
-
-function monthlyTotal(posts) {
-  return posts.reduce((sum, post) => {
-    const amount = Number(post.beloeb) || 0;
-    return sum + (post.periode === "aarligt" ? amount / 12 : amount);
-  }, 0);
-}
-
-function getPostTotal(posts, name) {
-  return posts
-    .filter((post) => post.navn.toLowerCase() === name.toLowerCase())
-    .reduce((sum, post) => sum + (Number(post.beloeb) || 0), 0);
 }
 
 function aktiverKronerFelt(input) {

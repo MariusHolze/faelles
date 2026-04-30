@@ -8,6 +8,7 @@ const {
   opdaterCase,
   sletCase
 } = require("../services/investeringscaseRepository");
+const { calculateInvestmentCase } = require("../services/investeringscaseBeregner");
 
 function gyldigtId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
@@ -162,6 +163,18 @@ router.get("/:id", async (req, res) => {
     console.error("Fejl ved hentning af investeringscase:", error);
     res.status(500).json({ message: "Databasefejl ved hentning af investeringscase" });
   }
+});
+
+router.post("/beregn", (req, res) => {
+  const fejl = validerCase(req.body);
+
+  if (fejl.length > 0) {
+    return res.status(400).json({ message: fejl[0], fejl });
+  }
+
+  res.json({
+    resultat: calculateInvestmentCase(req.body)
+  });
 });
 
 router.post("/", async (req, res) => {

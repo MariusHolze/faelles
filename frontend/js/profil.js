@@ -128,28 +128,7 @@ function hentEjendomKortHtml(ejendom) {
     </div>
 
     <div class="ejendom-knapper">
-      <button class="knap sekundaer-knap slet-ejendom-fra-profil" type="button">Slet ejendom</button>
-      <button class="knap opret-case-fra-profil" type="button">Opret case</button>
-      <a class="knap sekundaer-knap" href="investeringscase.html">Se cases</a>
-    </div>
-
-    <div class="rediger-ejendom-panel skjult">
-      <label for="redigerEjendomInput-${ejendom.id}">Vælg ny valideret adresse</label>
-      <div class="søgefelt-wrapper">
-        <input
-          type="search"
-          id="redigerEjendomInput-${ejendom.id}"
-          class="rediger-ejendom-input"
-          placeholder="Søg efter dansk adresse..."
-          autocomplete="off"
-        >
-        <div class="adresseListe adresse-dropdown skjult"></div>
-      </div>
-      <p class="rediger-ejendom-status"></p>
-      <div class="ejendom-knapper">
-        <button class="knap gem-redigeret-ejendom" type="button" disabled>Gem ny adresse</button>
-        <button class="knap sekundaer-knap annuller-redigeret-ejendom" type="button">Annuller</button>
-      </div>
+      <button class="knap slet-knap slet-ejendom-fra-profil" type="button">Slet ejendom</button>
     </div>
   `;
 }
@@ -159,150 +138,9 @@ function bindEjendomKort(kort, ejendom) {
   sletEjendomKnap.addEventListener("click", async () => {
     await sletEjendomFraProfil(ejendom);
   });
-
-  const opretCaseKnap = kort.querySelector(".opret-case-fra-profil");
-  opretCaseKnap.addEventListener("click", async () => {
-    await opretInvesteringscaseFraProfil(ejendom);
-  });
 }
 
-function bindRedigerEjendomPanel(kort, ejendom) {
-  const redigerEjendomKnap = kort.querySelector(".rediger-ejendom-fra-profil");
-  const redigerPanel = kort.querySelector(".rediger-ejendom-panel");
-  const redigerInput = kort.querySelector(".rediger-ejendom-input");
-  const forslagListe = kort.querySelector(".adresseListe");
-  const statusElement = kort.querySelector(".rediger-ejendom-status");
-  const gemKnap = kort.querySelector(".gem-redigeret-ejendom");
-  const annullerKnap = kort.querySelector(".annuller-redigeret-ejendom");
-
-  let nyValideretAdresse = null;
-  let soegeTimer = null;
-
-  redigerEjendomKnap.addEventListener("click", () => {
-    redigerPanel.classList.remove("skjult");
-    redigerInput.focus();
-  });
-
-  redigerInput.addEventListener("input", function () {
-    const soeg = redigerInput.value.trim();
-
-    nyValideretAdresse = null;
-    gemKnap.disabled = true;
-    statusElement.textContent = "";
-    forslagListe.innerHTML = "";
-    forslagListe.classList.add("skjult");
-    clearTimeout(soegeTimer);
-
-    if (!soeg) {
-      return;
-    }
-
-    soegeTimer = setTimeout(async function () {
-      await visAdresseForslagTilRedigering(soeg, forslagListe, statusElement, function (adresse) {
-        nyValideretAdresse = adresse;
-        redigerInput.value = adresse.adresse || "";
-        gemKnap.disabled = false;
-        statusElement.textContent = `${adresse.postnr || ""} ${adresse.postnrnavn || ""}`.trim();
-      });
-    }, 250);
-  });
-
-  gemKnap.addEventListener("click", async () => {
-    await redigerEjendomFraProfil(ejendom, nyValideretAdresse, statusElement);
-  });
-
-  annullerKnap.addEventListener("click", () => {
-    nulstilRedigerEjendomPanel(redigerPanel, redigerInput, forslagListe, statusElement, gemKnap);
-    nyValideretAdresse = null;
-  });
-}
-
-function nulstilRedigerEjendomPanel(redigerPanel, redigerInput, forslagListe, statusElement, gemKnap) {
-  redigerPanel.classList.add("skjult");
-  redigerInput.value = "";
-  forslagListe.innerHTML = "";
-  forslagListe.classList.add("skjult");
-  statusElement.textContent = "";
-  gemKnap.disabled = true;
-}
-
-// Søger efter adresser til redigering af en eksisterende ejendomsprofil.
-async function visAdresseForslagTilRedigering(soeg, forslagListe, statusElement, onSelect) {
-  try {
-    const response = await fetch(`/api/adresser?soeg=${encodeURIComponent(soeg)}`);
-    const data = await response.json();
-
-    forslagListe.innerHTML = "";
-
-    if (!response.ok) {
-      statusElement.textContent = data.message || "Kunne ikke hente adresseforslag.";
-      forslagListe.classList.add("skjult");
-      return;
-    }
-
-    data.forEach((adresse) => {
-      const knap = document.createElement("button");
-      knap.type = "button";
-      knap.className = "adresse-forslag";
-      knap.textContent = adresse.adresse || "";
-
-      knap.addEventListener("click", function () {
-        forslagListe.innerHTML = "";
-        forslagListe.classList.add("skjult");
-        onSelect(adresse);
-      });
-
-      forslagListe.appendChild(knap);
-    });
-
-    forslagListe.classList.remove("skjult");
-  } catch (error) {
-    console.error("Fejl ved hentning af adresseforslag til redigering:", error);
-    statusElement.textContent = "Server fejl";
-    forslagListe.classList.add("skjult");
-  }
-}
-
-// Opdaterer en ejendomsprofil med en ny valideret adresse.
-async function redigerEjendomFraProfil(ejendom, nyAdresse, statusElement) {
-  if (!nyAdresse) {
-    statusElement.textContent = "Du skal vælge en gyldig adresse fra listen.";
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/ejendomme/${ejendom.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        adresse: nyAdresse.adresse,
-        adresseID: nyAdresse.adresseID,
-        vejnavn: nyAdresse.vejnavn,
-        husnr: nyAdresse.husnr,
-        postnr: nyAdresse.postnr,
-        bynavn: nyAdresse.postnrnavn,
-        adgangsadresseID: nyAdresse.adgangsadresseID
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      statusElement.textContent = data.message || "Kunne ikke opdatere ejendom.";
-      return;
-    }
-
-    statusElement.textContent = "Ejendommen er opdateret.";
-    await hentProfilEjendomme();
-  } catch (error) {
-    console.error("Fejl ved opdatering af ejendom:", error);
-    statusElement.textContent = "Server fejl";
-  }
-}
-
-// Arkiverer en ejendom fra profilsiden.
+// Sletter en ejendomsprofil fra profilsiden.
 async function sletEjendomFraProfil(ejendom) {
   const erSikker = confirm("Er du sikker på, at du vil slette denne ejendom?");
 
@@ -328,11 +166,6 @@ async function sletEjendomFraProfil(ejendom) {
     console.error("Fejl ved sletning af ejendom:", error);
     alert("Server fejl");
   }
-}
-
-// Sender brugeren til den simple 5-trins formular med ejendommen valgt.
-function opretInvesteringscaseFraProfil(ejendom) {
-  window.location.href = `investeringscase.html?ejendomID=${encodeURIComponent(ejendom.id)}`;
 }
 
 function formatVaerdi(value) {

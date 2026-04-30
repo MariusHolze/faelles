@@ -136,104 +136,19 @@ async function hentEjendomme(pool) {
   return result.recordset;
 }
 
-router.put("/:id", async (req, res) => {
-  const ejendomID = Number(req.params.id);
-  const { adresse, adresseID, vejnavn, husnr, postnr, bynavn, adgangsadresseID } = req.body;
-
-  if (!adresse || !vejnavn || !husnr || !postnr || !bynavn || !adgangsadresseID) {
-    return res.status(400).json({ message: "Ejendommen skal opdateres med en valideret adresse" });
-  }
-
-  try {
-    const pool = await getPool();
-    const findes = await pool.request()
-      .input("ejendomID", sql.Int, ejendomID)
-      .query("SELECT ejendomID FROM Ejendomsprofil WHERE ejendomID = @ejendomID");
-
-    if (findes.recordset.length === 0) {
-      return res.status(404).json({ message: "Ejendom ikke fundet" });
-    }
-
-    const bbrData = await hentBbrData(adresseID, adgangsadresseID);
-    const bbrVurdering = vurderEjendomsprofilMulighedFraBbrData(bbrData);
-
-    if (!bbrVurdering.kanOprettes) {
-      return res.status(400).json({
-        message: bbrVurdering.aarsag || "Adressen kan ikke bruges til en ejendomsprofil"
-      });
-    }
-
-    await pool.request()
-      .input("ejendomID", sql.Int, ejendomID)
-      .input("adresse", sql.VarChar(255), adresse)
-      .input("adresseID", sql.VarChar(50), adresseID || null)
-      .input("vejnavn", sql.VarChar(100), vejnavn || null)
-      .input("husnr", sql.VarChar(20), husnr || null)
-      .input("postnr", sql.VarChar(10), postnr || null)
-      .input("bynavn", sql.VarChar(100), bynavn || null)
-      .input("adgangsadresseID", sql.VarChar(50), adgangsadresseID)
-      .input("boligtype", sql.VarChar(100), bbrData.boligtype || null)
-      .input("byggeaar", sql.Int, bbrData.byggeaar || null)
-      .input("boligareal", sql.Int, bbrData.boligareal || null)
-      .input("grundareal", sql.Int, bbrData.grundareal || null)
-      .input("antalVaerelser", sql.Int, bbrData.antalVaerelser || null)
-      .query(`
-        UPDATE Ejendomsprofil
-        SET adresse = @adresse,
-            adresseID = @adresseID,
-            vejnavn = @vejnavn,
-            husnr = @husnr,
-            postnr = @postnr,
-            bynavn = @bynavn,
-            adgangsadresseID = @adgangsadresseID,
-            boligtype = @boligtype,
-            byggeaar = @byggeaar,
-            boligareal = @boligareal,
-            grundareal = @grundareal,
-            antalVaerelser = @antalVaerelser,
-            sidstOpdateret = SYSDATETIME()
-        WHERE ejendomID = @ejendomID
-      `);
-
-    res.json({ message: "Ejendom opdateret" });
-  } catch (error) {
-    if (error.number === 2627 || error.number === 2601) {
-      return res.status(409).json({ message: "Der findes allerede en ejendomsprofil med den adresse." });
-    }
-
-    console.error("Fejl ved opdatering:", error);
-    res.status(500).json({ message: "Server fejl" });
-  }
-});
-
 router.delete("/:id", async (req, res) => {
   const ejendomID = Number(req.params.id);
 
   try {
     const pool = await getPool();
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin();
+    const sletResultat = await pool.request()
+      .input("ejendomID", sql.Int, ejendomID)
+      .query(`
+        DELETE FROM Investeringscase WHERE ejendomID = @ejendomID;
+        DELETE FROM Ejendomsprofil WHERE ejendomID = @ejendomID;
+      `);
 
-    try {
-      await new sql.Request(transaction)
-        .input("ejendomID", sql.Int, ejendomID)
-        .query("DELETE FROM Investeringscase WHERE ejendomID = @ejendomID");
-
-      const sletResultat = await new sql.Request(transaction)
-        .input("ejendomID", sql.Int, ejendomID)
-        .query("DELETE FROM Ejendomsprofil WHERE ejendomID = @ejendomID");
-
-      if (sletResultat.rowsAffected[0] === 0) {
-        await transaction.rollback();
-        return res.status(404).json({ message: "Ejendom ikke fundet" });
-      }
-
-      await transaction.commit();
-      res.json({ message: "Ejendom og tilknyttede investeringscases slettet" });
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
+    res.json({ message: "Ejendom og tilknyttede investeringscases slettet" });
   } catch (error) {
     console.error("Fejl ved sletning af ejendom:", error);
     res.status(500).json({ message: "Server fejl" });

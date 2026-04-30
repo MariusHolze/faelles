@@ -27,8 +27,7 @@
   width: 100%;
 }
 
-#index-søge-input,
-.rediger-ejendom-input {
+#index-søge-input {
   border: 2px solid #508fcd;
 }
 
@@ -50,16 +49,6 @@
   border: 1px solid #d9e3ee;
   border-radius: 8px;
   background: #ffffff;
-}
-
-.rediger-ejendom-panel {
-  margin-top: 16px;
-}
-
-.rediger-ejendom-status {
-  min-height: 20px;
-  margin: 10px 0 0;
-  color: #526070;
 }
 
 #søge-output {
