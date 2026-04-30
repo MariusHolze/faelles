@@ -1,6 +1,7 @@
 let currentStep = 0;
 let simulationResult = null;
 let currentCaseID = null;
+let investmentChart = null;
 
 const moneyFormatter = new Intl.NumberFormat("da-DK", {
   style: "currency",
@@ -55,7 +56,14 @@ function bindInvesteringscaseForm() {
   addPurchaseRow("Køberrådgivning", 0, true);
   addOperationRow("Ejendomsskat/fællesudgifter", 0, "maanedligt");
 
-  loadProperties();
+  loadProperties().then(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ejendomID = params.get("ejendomID");
+    if (ejendomID) {
+      document.querySelector("#createEjendomSelect").value = ejendomID;
+      showCreateCase();
+    }
+  });
   showOverview();
   showStep(0);
 }
@@ -72,7 +80,6 @@ function showCreateCase() {
   document.querySelector("#createCaseSection").classList.remove("hidden");
   document.querySelector("#formSection").classList.add("hidden");
   document.querySelector("#createCaseError").textContent = "";
-  document.querySelector("#createEjendomSelect").value = "";
 }
 
 function showForm() {
@@ -83,21 +90,23 @@ function showForm() {
 }
 
 function startNewCase() {
-  const ejendomID = document.querySelector("#createEjendomSelect").value;
   const navn = document.querySelector("#createCaseName").value.trim();
   const beskrivelse = document.querySelector("#createCaseDescription").value.trim();
+  const ejendomID = document.querySelector("#createEjendomSelect").value;
 
-  if (!ejendomID || !navn) {
-    document.querySelector("#createCaseError").textContent = "Vælg ejendom og skriv casenavn.";
+  if (!navn) {
+    document.querySelector("#createCaseError").textContent = "Skriv casenavn.";
     return;
   }
 
   currentCaseID = null;
   resetInvestmentForm();
   const form = document.querySelector("#investmentCaseForm");
-  form.ejendomID.value = ejendomID;
   form.navn.value = navn;
   form.beskrivelse.value = beskrivelse;
+  if (ejendomID) {
+    form.ejendomID.value = ejendomID;
+  }
   showForm();
 }
 
@@ -309,6 +318,11 @@ function showStep(step) {
   if (currentStep === steps.length - 1) {
     renderOverview(collectFormData());
     document.querySelector("#resultGrid").innerHTML = "";
+    if (investmentChart) {
+      investmentChart.destroy();
+      investmentChart = null;
+      document.querySelector("#investmentChart").style.display = "none";
+    }
   }
 
   if (currentStep === 1) {
@@ -367,6 +381,11 @@ function collectRows(selector, includeTime = false, includePeriod = false) {
 function validateCurrentStep() {
   const section = document.querySelector(`.form-step[data-step="${currentStep}"]`);
   const fields = section.querySelectorAll("input:not([type='hidden']), select, textarea");
+
+  if (currentStep === 0 && !document.querySelector("#ejendomSelect").value) {
+    showError("Vælg en ejendom");
+    return false;
+  }
 
   for (const field of fields) {
     if (field.classList.contains("kroner-input") && field.value.includes(",")) {
@@ -449,6 +468,7 @@ function loanMatchesPrice() {
 function runSimulation() {
   const input = collectFormData();
   simulationResult = calculateInvestmentCase(input);
+  renderChart(input, simulationResult);
   renderResult(simulationResult);
   showStatus("Simuleringen er kørt. Du kan nu gemme casen.");
 }
@@ -498,6 +518,110 @@ function calculateInvestmentCase(input) {
     estimeretVaerdiEfterPeriode,
     samletResultat
   };
+}
+
+// Beregner tre tidsserier år for år fra år 0 til periodeAar (typisk 30).
+// Returnerer arrays klar til Chart.js datasets.
+function buildTimeSeriesData(input, result) {
+  const periodeAar = input.periodeAar || 30;
+  const maanedligRente = (input.rente / 100) / 12;
+  const antalLaanemåneder = input.loebetid * 12;
+  const labels = [];
+  const cashflowData = [];
+  const gaeldData = [];
+  const egenkapitalData = [];
+
+  for (let aar = 0; aar <= periodeAar; aar++) {
+    labels.push(aar);
+
+    // Akkumuleret cashflow: konstant månedligt cashflow ganget op over tid
+    cashflowData.push(Math.round(result.aarligtCashflow * aar));
+
+    // Restgæld: eksakt annuiteringsformel — P * (r^N - r^n) / (r^N - 1)
+    // Falder til 0 når lånet er afdraget (betalteManeder >= antalLaanemåneder)
+    let restgaeld = 0;
+    const betalteManeder = aar * 12;
+    if (input.laanebeloeb > 0 && betalteManeder < antalLaanemåneder) {
+      if (maanedligRente === 0) {
+        // Rentefrit lån: lineær afskrivning
+        restgaeld = Math.max(0, input.laanebeloeb - (input.laanebeloeb / antalLaanemåneder) * betalteManeder);
+      } else {
+        const faktor = Math.pow(1 + maanedligRente, antalLaanemåneder);
+        restgaeld = Math.max(0, Math.round(
+          input.laanebeloeb * (faktor - Math.pow(1 + maanedligRente, betalteManeder)) / (faktor - 1)
+        ));
+      }
+    }
+    gaeldData.push(restgaeld);
+
+    // Egenkapital: ejendomsværdi med 2% årlig stigning minus restgæld
+    const ejendomsvaerdi = result.koebspris * Math.pow(1.02, aar);
+    egenkapitalData.push(Math.round(ejendomsvaerdi - restgaeld));
+  }
+
+  return { labels, cashflowData, gaeldData, egenkapitalData };
+}
+
+// Opretter eller genopretter Chart.js-diagrammet på #investmentChart.
+// Destroy kaldes først så canvas ikke akkumulerer flere instanser.
+function renderChart(input, result) {
+  const canvas = document.querySelector("#investmentChart");
+  const { labels, cashflowData, gaeldData, egenkapitalData } = buildTimeSeriesData(input, result);
+
+  if (investmentChart) {
+    investmentChart.destroy();
+  }
+
+  canvas.style.display = "block";
+
+  investmentChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Akkumuleret cashflow",
+          data: cashflowData,
+          borderColor: "#2ecc71",
+          backgroundColor: "transparent",
+          tension: 0.1
+        },
+        {
+          label: "Restgæld",
+          data: gaeldData,
+          borderColor: "#e74c3c",
+          backgroundColor: "transparent",
+          tension: 0.1
+        },
+        {
+          label: "Egenkapital",
+          data: egenkapitalData,
+          borderColor: "#3498db",
+          backgroundColor: "transparent",
+          tension: 0.1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" },
+        tooltip: {
+          // Formatér tooltip-værdier som kr. via den eksisterende moneyFormatter
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${moneyFormatter.format(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: "År" } },
+        y: {
+          title: { display: true, text: "kr." },
+          ticks: { callback: (v) => moneyFormatter.format(v) }
+        }
+      }
+    }
+  });
 }
 
 function renderOverview(input) {
@@ -550,11 +674,6 @@ async function saveInvestmentCase(event) {
     return;
   }
 
-  if (!simulationResult) {
-    showError("Klik på Kør simulering, før du gemmer casen.");
-    return;
-  }
-
   try {
     showStatus("Gemmer case...");
 
@@ -573,9 +692,8 @@ async function saveInvestmentCase(event) {
       return;
     }
 
-    showStatus("Casen er gemt.");
     currentCaseID = data.caseID || currentCaseID;
-    await loadInvestmentCases();
+    showOverview();
   } catch (error) {
     console.error("Fejl ved gem af investeringscase:", error);
     showError("Serverfejl ved gem af case.");
@@ -583,8 +701,10 @@ async function saveInvestmentCase(event) {
 }
 
 async function loadProperties() {
-  const select = document.querySelector("#ejendomSelect");
-  const createSelect = document.querySelector("#createEjendomSelect");
+  const selects = [
+    document.querySelector("#createEjendomSelect"),
+    document.querySelector("#ejendomSelect")
+  ].filter(Boolean);
 
   try {
     const response = await fetch("/api/ejendomme");
@@ -595,16 +715,13 @@ async function loadProperties() {
       return;
     }
 
-    properties.forEach((property) => {
-      const option = document.createElement("option");
-      option.value = property.id;
-      option.textContent = property.adresse;
-      select.appendChild(option);
-
-      const createOption = document.createElement("option");
-      createOption.value = property.id;
-      createOption.textContent = property.adresse;
-      createSelect.appendChild(createOption);
+    selects.forEach((select) => {
+      properties.forEach((property) => {
+        const option = document.createElement("option");
+        option.value = property.id;
+        option.textContent = property.adresse;
+        select.appendChild(option);
+      });
     });
   } catch (error) {
     console.error("Fejl ved hentning af ejendomsprofiler:", error);
@@ -649,14 +766,20 @@ async function loadInvestmentCases() {
           <div><dt>Værdi efter 30 år</dt><dd>${kroner(caseData.resultat.estimeretVaerdiEfterPeriode)}</dd></div>
         </dl>
         <button class="sekundaer-knap rediger-case-knap" type="button">Rediger</button>
-        <button class="sekundaer-knap" type="button">Slet</button>
+        <button class="sekundaer-knap resultat-case-knap" type="button">Resultat</button>
+        <button class="sekundaer-knap slet-case-knap" type="button">Slet</button>
       `;
 
       card.querySelector(".rediger-case-knap").addEventListener("click", async () => {
         await openExistingCase(caseData.caseID);
       });
 
-      card.querySelector("button:last-of-type").addEventListener("click", async () => {
+      card.querySelector(".resultat-case-knap").addEventListener("click", async () => {
+        await openExistingCase(caseData.caseID);
+        showStep(5);
+      });
+
+      card.querySelector(".slet-case-knap").addEventListener("click", async () => {
         await deleteInvestmentCase(caseData.caseID);
       });
 

@@ -33,7 +33,7 @@
       <div class="case-field-grid">
         <label>
           Ejendomsprofil
-          <select id="createEjendomSelect" required>
+          <select id="createEjendomSelect">
             <option value="">Vælg ejendom</option>
           </select>
         </label>
@@ -167,6 +167,7 @@
           <p>Simuleringen bruger en fast årlig værdistigning på 2% på ejendommens værdi. Cashflow og gæld påvirkes ikke af værdistigningen.</p>
           <p><strong>Simuleringsperiode:</strong> 30 år</p>
         </div>
+        <canvas id="investmentChart" style="display:none; margin-bottom:2rem;"></canvas>
         <button id="runSimulationButton" type="button">Kør simulering</button>
         <div id="resultGrid" class="result-grid"></div>
       </section>
@@ -183,6 +184,7 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/investeringscaseForm.js"></script>
   <script src="js/app.js"></script>
