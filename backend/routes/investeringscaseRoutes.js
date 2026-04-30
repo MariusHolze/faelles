@@ -5,6 +5,7 @@ const {
   hentAlleCases,
   hentCase,
   opretCase,
+  opdaterCase,
   sletCase
 } = require("../services/investeringscaseRepository");
 
@@ -47,9 +48,7 @@ function validerCase(body) {
     "rente",
     "loebetid",
     "maanedligLeje",
-    "tomgangProcent",
-    "vaekstProcent",
-    "periodeAar"
+    "tomgangDage"
   ]) {
     if (!gyldigtTal(body[felt])) {
       fejl.push(`${felt} skal være et tal.`);
@@ -66,12 +65,37 @@ function validerCase(body) {
     fejl.push("Ejendomspris skal være større end 0.");
   }
 
-  if (Math.abs((Number(body.laanebeloeb) + Number(body.egenbetaling)) - ejendomspris) >= 1) {
-    fejl.push("Lånebeløb + egenbetaling skal være lig med ejendomsprisen.");
+  const samletKoebssum = sumPoster(body.koebsposter);
+  const totalFinansiering = Number(body.laanebeloeb) + Number(body.egenbetaling);
+
+  if (Math.round(totalFinansiering) !== Math.round(samletKoebssum)) {
+    fejl.push("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
   }
 
-  if (body.renoveringAktiv && sumPoster(body.renoveringer) < 0) {
-    fejl.push("Renovering skal være et positivt beløb.");
+  if (body.renoveringAktiv) {
+    for (const post of body.renoveringer || []) {
+      if (!String(post.navn || "").trim() || Number(post.beloeb) <= 0) {
+        fejl.push("Alle renoveringsfelter skal udfyldes");
+      }
+    }
+  }
+
+  for (const post of body.driftsposter || []) {
+    if (!String(post.navn || "").trim() || Number(post.beloeb) <= 0) {
+      fejl.push("Alle driftsfelter skal udfyldes");
+    }
+  }
+
+  if (body.udlejningAktiv) {
+    if (Number(body.maanedligLeje) <= 0) {
+      fejl.push("Udlejningsfelter skal udfyldes");
+    }
+
+    for (const post of body.udlejningsudgifter || []) {
+      if (!String(post.navn || "").trim() || Number(post.beloeb) <= 0) {
+        fejl.push("Udlejningsfelter skal udfyldes");
+      }
+    }
   }
 
   return fejl;
@@ -134,6 +158,39 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("Fejl ved oprettelse af investeringscase:", error);
     res.status(500).json({ message: "Databasefejl ved oprettelse af investeringscase" });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  if (!gyldigtId(req.params.id)) {
+    return res.status(400).json({ message: "Ugyldigt case-ID" });
+  }
+
+  const fejl = validerCase(req.body);
+
+  if (fejl.length > 0) {
+    return res.status(400).json({ message: fejl[0], fejl });
+  }
+
+  try {
+    const pool = await getPool();
+    const eksisterende = await hentCase(pool, Number(req.params.id));
+
+    if (!eksisterende) {
+      return res.status(404).json({ message: "Case ikke fundet" });
+    }
+
+    await opdaterCase(pool, Number(req.params.id), req.body);
+    const investeringscase = await hentCase(pool, Number(req.params.id));
+
+    res.json({
+      message: "Investeringscase gemt",
+      caseID: Number(req.params.id),
+      case: investeringscase
+    });
+  } catch (error) {
+    console.error("Fejl ved opdatering af investeringscase:", error);
+    res.status(500).json({ message: "Databasefejl ved opdatering af investeringscase" });
   }
 });
 

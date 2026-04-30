@@ -32,12 +32,8 @@ function poster(value) {
     : [];
 }
 
-function tomgangDage(tomgangProcent) {
-  return Math.min(365, Math.round((tal(tomgangProcent) / 100) * 365));
-}
-
-function tomgangProcent(tomgangDageValue) {
-  return Math.round((tal(tomgangDageValue) / 365) * 1000) / 10;
+function gyldigeTomgangDage(value) {
+  return Math.min(365, Math.round(tal(value)));
 }
 
 async function hentCaseInput(pool, caseID) {
@@ -111,10 +107,10 @@ async function hentCaseInput(pool, caseID) {
     })),
     udlejningAktiv: Boolean(udlejningRow.aktiv),
     maanedligLeje: tal(udlejningRow.maanedligLeje),
-    tomgangProcent: tomgangProcent(udlejningRow.tomgangDage),
+    tomgangDage: gyldigeTomgangDage(udlejningRow.tomgangDage),
     udlejningsudgifter,
-    vaekstProcent: 0,
-    periodeAar: 10
+    vaekstProcent: 2,
+    periodeAar: 30
   };
 }
 
@@ -259,7 +255,7 @@ async function gemUdlejning(transaction, caseID, input) {
     .input("aktiv", sql.Bit, Boolean(input.udlejningAktiv))
     .input("maanedligLeje", sql.Decimal(18, 2), tal(input.maanedligLeje))
     .input("depositum", sql.Decimal(18, 2), 0)
-    .input("tomgangDage", sql.Int, tomgangDage(input.tomgangProcent))
+    .input("tomgangDage", sql.Int, gyldigeTomgangDage(input.tomgangDage))
     .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), maanedligeUdlejningsudgifter)
     .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), aarligeUdlejningsudgifter)
     .query(`
@@ -301,6 +297,52 @@ async function opretCase(pool, body) {
   }
 }
 
+async function sletDetaljer(transaction, caseID) {
+  for (const table of [
+    "InvesteringscaseUdlejning",
+    "InvesteringscaseDriftspost",
+    "InvesteringscaseRenoveringspost",
+    "InvesteringscaseRenovering",
+    "InvesteringscaseFinansiering",
+    "InvesteringscaseKoebspost"
+  ]) {
+    await request(transaction)
+      .input("caseID", sql.Int, Number(caseID))
+      .query(`DELETE FROM ${table} WHERE caseID = @caseID`);
+  }
+}
+
+async function opdaterCase(pool, caseID, body) {
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+
+  try {
+    await request(transaction)
+      .input("caseID", sql.Int, Number(caseID))
+      .input("ejendomID", sql.Int, Number(body.ejendomID))
+      .input("navn", sql.VarChar(100), tekst(body.navn, 100))
+      .input("beskrivelse", sql.VarChar(500), tekst(body.beskrivelse, 500))
+      .query(`
+        UPDATE Investeringscase
+        SET ejendomID = @ejendomID,
+            navn = @navn,
+            beskrivelse = @beskrivelse
+        WHERE caseID = @caseID
+      `);
+
+    await sletDetaljer(transaction, caseID);
+    await gemKoebsposter(transaction, caseID, body);
+    await gemRenoveringer(transaction, caseID, body);
+    await gemFinansiering(transaction, caseID, body);
+    await gemDriftsposter(transaction, caseID, body);
+    await gemUdlejning(transaction, caseID, body);
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
 async function sletCase(pool, caseID) {
   const result = await pool.request()
     .input("caseID", sql.Int, Number(caseID))
@@ -313,5 +355,6 @@ module.exports = {
   hentAlleCases,
   hentCase,
   opretCase,
+  opdaterCase,
   sletCase
 };

@@ -110,9 +110,9 @@ function normaliserInput(input = {}) {
     maanedligLeje: input.udlejningAktiv === false
       ? 0
       : positivtTal(input.maanedligLeje ?? input.udlejning?.maanedligLeje),
-    tomgangProcent: Math.min(100, positivtTal(input.tomgangProcent)),
-    vaekstProcent: tal(input.vaekstProcent),
-    periodeAar: input.periodeAar === undefined ? 30 : positivtTal(input.periodeAar || 10)
+    tomgangDage: Math.min(365, positivtTal(input.tomgangDage ?? input.udlejning?.tomgangDage)),
+    vaekstProcent: 2,
+    periodeAar: 30
   };
 }
 
@@ -128,11 +128,13 @@ function calculateInvestmentCase(input = {}) {
   // Simpel prototype: månedlige indtægter minus månedlige udgifter.
   const driftMaanedligt = maanedligTotal(data.driftsposter);
   const lejeUdgifterMaanedligt = maanedligTotal(data.udlejningsudgifter);
-  const maanedligIndtaegt = data.maanedligLeje * (1 - data.tomgangProcent / 100);
+  const lejeAarligt = data.maanedligLeje * 12;
+  const tomgangBeloeb = lejeAarligt * (data.tomgangDage / 365);
+  const maanedligIndtaegt = (lejeAarligt - tomgangBeloeb) / 12;
   const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
   const maanedligtCashflow = maanedligIndtaegt - maanedligeUdgifter;
   const aarligtCashflow = maanedligtCashflow * 12;
-  const estimeretVaerdiEfterPeriode = data.koebspris * Math.pow(1 + data.vaekstProcent / 100, data.periodeAar);
+  const estimeretVaerdiEfterPeriode = data.koebspris * Math.pow(1.02, data.periodeAar);
   const samletResultat = (estimeretVaerdiEfterPeriode - data.koebspris) + (aarligtCashflow * data.periodeAar) - renoveringIAlt;
 
   return {
@@ -164,7 +166,7 @@ function calculateInvestmentCase(input = {}) {
     samletResultat,
     noegletalOverTid: Array.from({ length: Math.max(1, Math.round(data.periodeAar)) }, (_, index) => {
       const aar = index + 1;
-      const ejendomsvaerdi = data.koebspris * Math.pow(1 + data.vaekstProcent / 100, aar);
+      const ejendomsvaerdi = data.koebspris * Math.pow(1.02, aar);
       const restgaeld = restgaeldEfterAar(laanebeloeb, data.rente, data.loebetid, aar);
 
       return {

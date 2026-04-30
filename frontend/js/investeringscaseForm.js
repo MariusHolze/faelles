@@ -1,5 +1,6 @@
 let currentStep = 0;
 let simulationResult = null;
+let currentCaseID = null;
 
 const moneyFormatter = new Intl.NumberFormat("da-DK", {
   style: "currency",
@@ -9,6 +10,16 @@ const moneyFormatter = new Intl.NumberFormat("da-DK", {
 
 function kroner(value) {
   return moneyFormatter.format(Number(value) || 0);
+}
+
+function talFraKroner(value) {
+  return Number(
+    String(value)
+      .replaceAll(".", "")
+      .replace("kr.", "")
+      .replace("kr", "")
+      .trim()
+  ) || 0;
 }
 
 function bindInvesteringscaseForm() {
@@ -22,9 +33,12 @@ function bindInvesteringscaseForm() {
   document.querySelector("#nextStepButton").addEventListener("click", nextStep);
   document.querySelector("#reloadCasesButton").addEventListener("click", loadInvestmentCases);
   document.querySelector("#runSimulationButton").addEventListener("click", runSimulation);
+  document.querySelector("#showCreateCaseButton").addEventListener("click", showCreateCase);
+  document.querySelector("#cancelCreateCaseButton").addEventListener("click", showOverview);
+  document.querySelector("#startCaseButton").addEventListener("click", startNewCase);
   form.addEventListener("submit", saveInvestmentCase);
 
-  document.querySelector("#addPurchaseRowButton").addEventListener("click", () => addPurchaseRow("", 0, true));
+  document.querySelector("#addPurchaseRowButton").addEventListener("click", () => addPurchaseRow("", 0, false));
   document.querySelector("#addRenovationRowButton").addEventListener("click", () => addRenovationRow("", 0, ""));
   document.querySelector("#addOperationRowButton").addEventListener("click", () => addOperationRow("", 0, "maanedligt"));
   document.querySelector("#addRentalCostRowButton").addEventListener("click", () => addRentalCostRow("", 0, "maanedligt"));
@@ -32,22 +46,161 @@ function bindInvesteringscaseForm() {
   document.querySelector("#renovationNoButton").addEventListener("click", () => setRenovationActive(false));
   document.querySelector("#rentalYesButton").addEventListener("click", () => setRentalActive(true));
   document.querySelector("#rentalNoButton").addEventListener("click", () => setRentalActive(false));
+  document.querySelectorAll(".kroner-input").forEach(aktiverKronerFelt);
 
-  addPurchaseRow("Ejendomspris", 0, false);
-  addPurchaseRow("Omkostninger ved køb", 0, false);
-  addPurchaseRow("Udgifter til advokat", 0, false);
-  addPurchaseRow("Tinglysning", 0, false);
-  addPurchaseRow("Køberrådgivning", 0, false);
+  addPurchaseRow("Ejendomspris", 0, true);
+  addPurchaseRow("Omkostninger ved køb", 0, true);
+  addPurchaseRow("Udgifter til advokat", 0, true);
+  addPurchaseRow("Tinglysning", 0, true);
+  addPurchaseRow("Køberrådgivning", 0, true);
   addOperationRow("Ejendomsskat/fællesudgifter", 0, "maanedligt");
 
   loadProperties();
-  loadInvestmentCases();
+  showOverview();
   showStep(0);
 }
 
-function addPurchaseRow(name, amount, canRemove) {
-  const row = createMoneyRow("purchase-row", name, amount, canRemove);
+function showOverview() {
+  document.querySelector("#overviewSection").classList.remove("hidden");
+  document.querySelector("#createCaseSection").classList.add("hidden");
+  document.querySelector("#formSection").classList.add("hidden");
+  loadInvestmentCases();
+}
+
+function showCreateCase() {
+  document.querySelector("#overviewSection").classList.add("hidden");
+  document.querySelector("#createCaseSection").classList.remove("hidden");
+  document.querySelector("#formSection").classList.add("hidden");
+  document.querySelector("#createCaseError").textContent = "";
+  document.querySelector("#createEjendomSelect").value = "";
+}
+
+function showForm() {
+  document.querySelector("#overviewSection").classList.add("hidden");
+  document.querySelector("#createCaseSection").classList.add("hidden");
+  document.querySelector("#formSection").classList.remove("hidden");
+  showStep(0);
+}
+
+function startNewCase() {
+  const ejendomID = document.querySelector("#createEjendomSelect").value;
+  const navn = document.querySelector("#createCaseName").value.trim();
+  const beskrivelse = document.querySelector("#createCaseDescription").value.trim();
+
+  if (!ejendomID || !navn) {
+    document.querySelector("#createCaseError").textContent = "Vælg ejendom og skriv casenavn.";
+    return;
+  }
+
+  currentCaseID = null;
+  resetInvestmentForm();
+  const form = document.querySelector("#investmentCaseForm");
+  form.ejendomID.value = ejendomID;
+  form.navn.value = navn;
+  form.beskrivelse.value = beskrivelse;
+  showForm();
+}
+
+function addPurchaseRow(name, amount, fast) {
+  const row = createMoneyRow("purchase-row", name, amount, !fast);
+
+  if (fast) {
+    row.querySelector(".row-name").readOnly = true;
+    row.querySelector("button").classList.add("hidden");
+  }
+
   document.querySelector("#purchaseRows").appendChild(row);
+}
+
+function resetInvestmentForm() {
+  const form = document.querySelector("#investmentCaseForm");
+  form.reset();
+  currentStep = 0;
+  simulationResult = null;
+
+  document.querySelector("#purchaseRows").innerHTML = "";
+  document.querySelector("#renovationRows").innerHTML = "";
+  document.querySelector("#operationRows").innerHTML = "";
+  document.querySelector("#rentalCostRows").innerHTML = "";
+  document.querySelector("#renovationActive").value = "nej";
+  document.querySelector("#rentalActive").value = "nej";
+  document.querySelector("#renovationFields").classList.add("hidden");
+  document.querySelector("#rentalFields").classList.add("hidden");
+
+  addPurchaseRow("Ejendomspris", 0, true);
+  addPurchaseRow("Omkostninger ved køb", 0, true);
+  addPurchaseRow("Udgifter til advokat", 0, true);
+  addPurchaseRow("Tinglysning", 0, true);
+  addPurchaseRow("Køberrådgivning", 0, true);
+  addOperationRow("Ejendomsskat/fællesudgifter", 0, "maanedligt");
+  clearMessage();
+}
+
+async function openExistingCase(caseID) {
+  const response = await fetch(`/api/investeringscases/${caseID}`);
+  const caseData = await response.json();
+
+  if (!response.ok) {
+    showError(caseData.message || "Casen kunne ikke hentes.");
+    return;
+  }
+
+  currentCaseID = caseID;
+  fillInvestmentForm(caseData);
+  showForm();
+}
+
+function fillInvestmentForm(caseData) {
+  resetInvestmentForm();
+  const form = document.querySelector("#investmentCaseForm");
+  const input = caseData.input || {};
+
+  form.ejendomID.value = caseData.ejendomID || "";
+  form.navn.value = caseData.navn || "";
+  form.beskrivelse.value = caseData.beskrivelse || "";
+  fillPurchaseRows(input.koebsposter || []);
+
+  form.laanebeloeb.value = kroner(input.laanebeloeb || 0);
+  form.egenbetaling.value = kroner(input.egenbetaling || 0);
+  form.rente.value = input.rente || 0;
+  form.loebetid.value = input.loebetid || 30;
+
+  if (input.renoveringAktiv) {
+    setRenovationActive(true);
+    document.querySelector("#renovationRows").innerHTML = "";
+    (input.renoveringer || []).forEach((post) => addRenovationRow(post.navn, post.beloeb, post.tidspunkt || ""));
+  }
+
+  document.querySelector("#operationRows").innerHTML = "";
+  (input.driftsposter || []).forEach((post) => addOperationRow(post.navn, post.beloeb, post.periode || "maanedligt"));
+
+  if (input.udlejningAktiv) {
+    setRentalActive(true);
+    form.maanedligLeje.value = kroner(input.maanedligLeje || 0);
+    form.tomgangDage.value = input.tomgangDage || 0;
+    document.querySelector("#rentalCostRows").innerHTML = "";
+    (input.udlejningsudgifter || []).forEach((post) => addRentalCostRow(post.navn, post.beloeb, post.periode || "maanedligt"));
+  }
+}
+
+function fillPurchaseRows(posts) {
+  const fastePoster = [
+    "Ejendomspris",
+    "Omkostninger ved køb",
+    "Udgifter til advokat",
+    "Tinglysning",
+    "Køberrådgivning"
+  ];
+
+  document.querySelector("#purchaseRows").innerHTML = "";
+  fastePoster.forEach((navn) => {
+    const post = posts.find((item) => item.navn === navn);
+    addPurchaseRow(navn, post ? post.beloeb : 0, true);
+  });
+
+  posts
+    .filter((post) => !fastePoster.includes(post.navn))
+    .forEach((post) => addPurchaseRow(post.navn, post.beloeb, false));
 }
 
 function addRenovationRow(name, amount, time) {
@@ -85,11 +238,10 @@ function createMoneyRow(className, name, amount, canRemove) {
   nameInput.value = name;
 
   const amountInput = document.createElement("input");
-  amountInput.className = "row-amount";
-  amountInput.type = "number";
-  amountInput.min = "0";
-  amountInput.step = "100";
+  amountInput.className = "row-amount kroner-input";
+  amountInput.type = "text";
   amountInput.value = amount;
+  aktiverKronerFelt(amountInput);
 
   const removeButton = document.createElement("button");
   removeButton.className = "sekundaer-knap";
@@ -158,6 +310,10 @@ function showStep(step) {
     renderOverview(collectFormData());
     document.querySelector("#resultGrid").innerHTML = "";
   }
+
+  if (currentStep === 1) {
+    updatePurchaseTotalText();
+  }
 }
 
 function nextStep() {
@@ -181,17 +337,17 @@ function collectFormData() {
     koebsposter: collectRows(".purchase-row"),
     renoveringAktiv: form.renoveringAktiv.value === "ja",
     renoveringer: form.renoveringAktiv.value === "ja" ? collectRows(".renovation-row", true) : [],
-    laanebeloeb: Number(form.laanebeloeb.value),
-    egenbetaling: Number(form.egenbetaling.value),
+    laanebeloeb: talFraKroner(form.laanebeloeb.value),
+    egenbetaling: talFraKroner(form.egenbetaling.value),
     rente: Number(form.rente.value),
     loebetid: Number(form.loebetid.value),
     driftsposter: collectRows(".operation-row", false, true),
     udlejningAktiv: form.udlejningAktiv.value === "ja",
-    maanedligLeje: form.udlejningAktiv.value === "ja" ? Number(form.maanedligLeje.value) : 0,
-    tomgangProcent: form.udlejningAktiv.value === "ja" ? Number(form.tomgangProcent.value) : 0,
+    maanedligLeje: form.udlejningAktiv.value === "ja" ? talFraKroner(form.maanedligLeje.value) : 0,
+    tomgangDage: form.udlejningAktiv.value === "ja" ? Number(form.tomgangDage.value) : 0,
     udlejningsudgifter: form.udlejningAktiv.value === "ja" ? collectRows(".rental-cost-row", false, true) : [],
-    vaekstProcent: Number(form.vaekstProcent.value),
-    periodeAar: Number(form.periodeAar.value)
+    vaekstProcent: 2,
+    periodeAar: 30
   };
 
   return data;
@@ -201,7 +357,7 @@ function collectRows(selector, includeTime = false, includePeriod = false) {
   return Array.from(document.querySelectorAll(selector))
     .map((row) => ({
       navn: row.querySelector(".row-name").value.trim(),
-      beloeb: Number(row.querySelector(".row-amount").value) || 0,
+      beloeb: talFraKroner(row.querySelector(".row-amount").value),
       tidspunkt: includeTime ? row.querySelector(".row-time").value.trim() : "",
       periode: includePeriod ? row.querySelector(".row-period").value : "engang"
     }))
@@ -213,6 +369,11 @@ function validateCurrentStep() {
   const fields = section.querySelectorAll("input:not([type='hidden']), select, textarea");
 
   for (const field of fields) {
+    if (field.classList.contains("kroner-input") && field.value.includes(",")) {
+      showError("Brug hele tal uden komma.");
+      return false;
+    }
+
     if (!field.checkValidity()) {
       field.reportValidity();
       showError("Udfyld de markerede felter, før du går videre.");
@@ -220,9 +381,58 @@ function validateCurrentStep() {
     }
   }
 
-  if (currentStep === 1 && !loanMatchesPrice()) {
-    showError("Lånebeløb + egenbetaling skal være lig med ejendomsprisen.");
+  const input = collectFormData();
+  const ejendomspris = getPostTotal(input.koebsposter, "Ejendomspris");
+
+  if (currentStep === 0 && ejendomspris <= 0) {
+    showError("Ejendomspris skal udfyldes og være større end 0");
     return false;
+  }
+
+  if (currentStep === 1 && !loanMatchesPrice()) {
+    showError("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
+    return false;
+  }
+
+  if (currentStep === 2 && input.renoveringAktiv) {
+    for (const row of document.querySelectorAll(".renovation-row")) {
+      const navn = row.querySelector(".row-name").value.trim();
+      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
+
+      if (!navn || beloeb <= 0) {
+        showError("Alle renoveringsfelter skal udfyldes");
+        return false;
+      }
+    }
+  }
+
+  if (currentStep === 3) {
+    for (const row of document.querySelectorAll(".operation-row")) {
+      const navn = row.querySelector(".row-name").value.trim();
+      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
+
+      if (!navn || beloeb <= 0) {
+        showError("Alle driftsfelter skal udfyldes");
+        return false;
+      }
+    }
+  }
+
+  if (currentStep === 4 && input.udlejningAktiv) {
+    if (input.maanedligLeje <= 0) {
+      showError("Udlejningsfelter skal udfyldes");
+      return false;
+    }
+
+    for (const row of document.querySelectorAll(".rental-cost-row")) {
+      const navn = row.querySelector(".row-name").value.trim();
+      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
+
+      if (!navn || beloeb <= 0) {
+        showError("Udlejningsfelter skal udfyldes");
+        return false;
+      }
+    }
   }
 
   clearMessage();
@@ -231,8 +441,9 @@ function validateCurrentStep() {
 
 function loanMatchesPrice() {
   const input = collectFormData();
-  const price = getPostTotal(input.koebsposter, "Ejendomspris");
-  return Math.abs((input.laanebeloeb + input.egenbetaling) - price) < 1;
+  const samletKoebssum = sumPosts(input.koebsposter);
+  const totalFinansiering = input.laanebeloeb + input.egenbetaling;
+  return Math.round(totalFinansiering) === Math.round(samletKoebssum);
 }
 
 function runSimulation() {
@@ -259,13 +470,15 @@ function calculateInvestmentCase(input) {
 
   // Simpel model: alle månedlige beløb samles og påvirker cashflowet.
   const driftMaanedligt = monthlyTotal(input.driftsposter);
-  const lejeIndtaegtMaanedligt = input.maanedligLeje * (1 - input.tomgangProcent / 100);
+  const lejeAarligt = input.maanedligLeje * 12;
+  const tomgangBeloeb = lejeAarligt * (input.tomgangDage / 365);
+  const lejeIndtaegtMaanedligt = (lejeAarligt - tomgangBeloeb) / 12;
   const lejeUdgifterMaanedligt = monthlyTotal(input.udlejningsudgifter);
   const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
   const maanedligtCashflow = lejeIndtaegtMaanedligt - maanedligeUdgifter;
   const aarligtCashflow = maanedligtCashflow * 12;
   const totalRenteomkostning = Math.max(0, maanedligYdelse * antalMaaneder - input.laanebeloeb);
-  const estimeretVaerdiEfterPeriode = koebspris * Math.pow(1 + input.vaekstProcent / 100, input.periodeAar);
+  const estimeretVaerdiEfterPeriode = koebspris * Math.pow(1.02, 30);
   const samletResultat = (estimeretVaerdiEfterPeriode - koebspris) + (aarligtCashflow * input.periodeAar) - renoveringIAlt;
 
   return {
@@ -282,7 +495,6 @@ function calculateInvestmentCase(input) {
     maanedligtCashflow,
     aarligtCashflow,
     simpelROI: input.egenbetaling > 0 ? (aarligtCashflow / input.egenbetaling) * 100 : 0,
-    belaaning: koebspris > 0 ? (input.laanebeloeb / koebspris) * 100 : 0,
     estimeretVaerdiEfterPeriode,
     samletResultat
   };
@@ -301,6 +513,10 @@ function renderOverview(input) {
   `;
 }
 
+function updatePurchaseTotalText() {
+  document.querySelector("#purchaseTotalText").textContent = kroner(sumPosts(collectFormData().koebsposter));
+}
+
 function renderResult(result) {
   const grid = document.querySelector("#resultGrid");
 
@@ -313,7 +529,6 @@ function renderResult(result) {
     ${resultCard("Årligt cashflow", kroner(result.aarligtCashflow))}
     ${resultCard("Startinvestering", kroner(result.startInvestering))}
     ${resultCard("Simpel ROI", `${result.simpelROI.toFixed(1)} %`)}
-    ${resultCard("Belåning", `${result.belaaning.toFixed(1)} %`)}
     ${resultCard("Værdi efter periode", kroner(result.estimeretVaerdiEfterPeriode))}
     ${resultCard("Samlet resultat", kroner(result.samletResultat))}
   `;
@@ -343,8 +558,9 @@ async function saveInvestmentCase(event) {
   try {
     showStatus("Gemmer case...");
 
-    const response = await fetch("/api/investeringscases", {
-      method: "POST",
+    const url = currentCaseID ? `/api/investeringscases/${currentCaseID}` : "/api/investeringscases";
+    const response = await fetch(url, {
+      method: currentCaseID ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json"
       },
@@ -358,6 +574,7 @@ async function saveInvestmentCase(event) {
     }
 
     showStatus("Casen er gemt.");
+    currentCaseID = data.caseID || currentCaseID;
     await loadInvestmentCases();
   } catch (error) {
     console.error("Fejl ved gem af investeringscase:", error);
@@ -367,8 +584,7 @@ async function saveInvestmentCase(event) {
 
 async function loadProperties() {
   const select = document.querySelector("#ejendomSelect");
-  const url = new URL(window.location.href);
-  const selectedId = url.searchParams.get("ejendomID");
+  const createSelect = document.querySelector("#createEjendomSelect");
 
   try {
     const response = await fetch("/api/ejendomme");
@@ -384,11 +600,12 @@ async function loadProperties() {
       option.value = property.id;
       option.textContent = property.adresse;
       select.appendChild(option);
-    });
 
-    if (selectedId) {
-      select.value = selectedId;
-    }
+      const createOption = document.createElement("option");
+      createOption.value = property.id;
+      createOption.textContent = property.adresse;
+      createSelect.appendChild(createOption);
+    });
   } catch (error) {
     console.error("Fejl ved hentning af ejendomsprofiler:", error);
     showError("Serverfejl ved hentning af ejendomsprofiler.");
@@ -425,15 +642,21 @@ async function loadInvestmentCases() {
       card.innerHTML = `
         <h3>${escapeHtml(caseData.navn)}</h3>
         <p>${escapeHtml(caseData.adresse || "Ingen adresse")}</p>
+        <p>${caseData.oprettetTidspunkt ? new Date(caseData.oprettetTidspunkt).toLocaleDateString("da-DK") : ""}</p>
         <dl class="case-card-numbers">
           <div><dt>Månedligt cashflow</dt><dd>${kroner(caseData.resultat.maanedligtCashflow)}</dd></div>
           <div><dt>Startinvestering</dt><dd>${kroner(caseData.resultat.startInvestering)}</dd></div>
-          <div><dt>Belåning</dt><dd>${caseData.resultat.belaaning.toFixed(1)} %</dd></div>
+          <div><dt>Værdi efter 30 år</dt><dd>${kroner(caseData.resultat.estimeretVaerdiEfterPeriode)}</dd></div>
         </dl>
+        <button class="sekundaer-knap rediger-case-knap" type="button">Rediger</button>
         <button class="sekundaer-knap" type="button">Slet</button>
       `;
 
-      card.querySelector("button").addEventListener("click", async () => {
+      card.querySelector(".rediger-case-knap").addEventListener("click", async () => {
+        await openExistingCase(caseData.caseID);
+      });
+
+      card.querySelector("button:last-of-type").addEventListener("click", async () => {
         await deleteInvestmentCase(caseData.caseID);
       });
 
@@ -479,6 +702,18 @@ function getPostTotal(posts, name) {
   return posts
     .filter((post) => post.navn.toLowerCase() === name.toLowerCase())
     .reduce((sum, post) => sum + (Number(post.beloeb) || 0), 0);
+}
+
+function aktiverKronerFelt(input) {
+  input.addEventListener("focus", () => {
+    input.value = talFraKroner(input.value) || "";
+  });
+
+  input.addEventListener("blur", () => {
+    if (input.value.trim() !== "") {
+      input.value = kroner(talFraKroner(input.value));
+    }
+  });
 }
 
 function showError(message) {
