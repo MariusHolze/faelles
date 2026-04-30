@@ -17,5 +17,10 @@ CREATE TABLE Ejendomsprofil (
     erArkiveret BIT NOT NULL DEFAULT 0,
 
     CONSTRAINT PK_Ejendomsprofil PRIMARY KEY (ejendomID),
-    CONSTRAINT UQ_Ejendomsprofil_Adresse UNIQUE (adresse)
+    CONSTRAINT UQ_Ejendomsprofil_Adresse UNIQUE (adresse),
+    CONSTRAINT CK_Ejendomsprofil_Tal CHECK
+        ((byggeaar IS NULL OR byggeaar > 0)
+         AND (boligareal IS NULL OR boligareal >= 0)
+         AND (grundareal IS NULL OR grundareal >= 0)
+         AND (antalVaerelser IS NULL OR antalVaerelser >= 0))
 );

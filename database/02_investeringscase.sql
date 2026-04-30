@@ -6,6 +6,7 @@ CREATE TABLE Investeringscase (
     oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     CONSTRAINT PK_Investeringscase PRIMARY KEY (caseID),
+    CONSTRAINT UQ_Investeringscase_Navn UNIQUE (navn),
     CONSTRAINT FK_Investeringscase_Ejendomsprofil
         FOREIGN KEY (ejendomID) REFERENCES Ejendomsprofil(ejendomID)
 );
@@ -56,9 +57,7 @@ CREATE TABLE InvesteringscaseRenoveringspost (
     caseID INT NOT NULL,
     navn VARCHAR(100) NOT NULL,
     beloeb DECIMAL(18,2) NOT NULL,
-    tidspunktKey VARCHAR(50) NULL,
-    tidspunktLabel VARCHAR(100) NULL,
-    tidspunktMaaned INT NULL,
+    tidspunktAar INT NULL,
 
     CONSTRAINT PK_InvesteringscaseRenoveringspost PRIMARY KEY (renoveringspostID),
     CONSTRAINT FK_InvesteringscaseRenoveringspost_InvesteringscaseRenovering
@@ -66,7 +65,7 @@ CREATE TABLE InvesteringscaseRenoveringspost (
     CONSTRAINT FK_InvesteringscaseRenoveringspost_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
     CONSTRAINT CK_InvesteringscaseRenoveringspost_Beloeb CHECK (beloeb >= 0),
-    CONSTRAINT CK_InvesteringscaseRenoveringspost_TidspunktMaaned CHECK (tidspunktMaaned IS NULL OR tidspunktMaaned >= 0)
+    CONSTRAINT CK_InvesteringscaseRenoveringspost_TidspunktAar CHECK (tidspunktAar IS NULL OR tidspunktAar >= 0)
 );
 
 CREATE TABLE InvesteringscaseDriftspost (

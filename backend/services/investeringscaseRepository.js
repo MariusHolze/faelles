@@ -26,7 +26,9 @@ function poster(value) {
         navn: tekst(post.navn, 100),
         beloeb: tal(post.beloeb),
         periode: post.periode === "aarligt" ? "aarligt" : "maanedligt",
-        tidspunkt: tekst(post.tidspunkt, 100)
+        tidspunktAar: post.tidspunktAar === undefined || post.tidspunktAar === "" || post.tidspunktAar === null
+          ? null
+          : heltal(post.tidspunktAar)
       }))
       .filter((post) => post.navn || post.beloeb > 0)
     : [];
@@ -44,7 +46,7 @@ async function hentCaseInput(pool, caseID) {
     pool.request()
       .input("caseID", sql.Int, caseID)
       .query(`
-        SELECT navn, beloeb, tidspunktLabel
+        SELECT navn, beloeb, tidspunktAar
         FROM InvesteringscaseRenoveringspost
         WHERE caseID = @caseID
         ORDER BY renoveringspostID
@@ -94,7 +96,7 @@ async function hentCaseInput(pool, caseID) {
     renoveringer: renovering.recordset.map((row) => ({
       navn: row.navn,
       beloeb: Number(row.beloeb),
-      tidspunkt: row.tidspunktLabel || ""
+      tidspunktAar: row.tidspunktAar
     })),
     laanebeloeb: tal(finansieringRow.laanebeloeb),
     egenbetaling: tal(finansieringRow.egenbetaling),
@@ -200,14 +202,12 @@ async function gemRenoveringer(transaction, caseID, input) {
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
-      .input("tidspunktKey", sql.VarChar(50), null)
-      .input("tidspunktLabel", sql.VarChar(100), post.tidspunkt)
-      .input("tidspunktMaaned", sql.Int, null)
+      .input("tidspunktAar", sql.Int, post.tidspunktAar)
       .query(`
         INSERT INTO InvesteringscaseRenoveringspost
-        (renoveringID, caseID, navn, beloeb, tidspunktKey, tidspunktLabel, tidspunktMaaned)
+        (renoveringID, caseID, navn, beloeb, tidspunktAar)
         VALUES
-        (@renoveringID, @caseID, @navn, @beloeb, @tidspunktKey, @tidspunktLabel, @tidspunktMaaned)
+        (@renoveringID, @caseID, @navn, @beloeb, @tidspunktAar)
       `);
   }
 }

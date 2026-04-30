@@ -48,7 +48,7 @@ function testMedRenovering() {
     renovering: {
       aktiv: true,
       poster: [
-        { navn: "Køkken", beloeb: 150000, tidspunktMaaned: 1 }
+        { navn: "Køkken", beloeb: 150000, tidspunktAar: 1 }
       ]
     }
   }));

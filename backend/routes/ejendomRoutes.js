@@ -43,6 +43,10 @@ router.post("/", async (req, res) => {
 
     res.status(201).json({ message: "Ejendom oprettet" });
   } catch (error) {
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Der findes allerede en ejendomsprofil med den adresse." });
+    }
+
     console.error("Fejl ved oprettelse af ejendom:", error);
     res.status(500).json({ message: "Server fejl" });
   }
@@ -193,6 +197,10 @@ router.put("/:id", async (req, res) => {
 
     res.json({ message: "Ejendom opdateret" });
   } catch (error) {
+    if (error.number === 2627 || error.number === 2601) {
+      return res.status(409).json({ message: "Der findes allerede en ejendomsprofil med den adresse." });
+    }
+
     console.error("Fejl ved opdatering:", error);
     res.status(500).json({ message: "Server fejl" });
   }

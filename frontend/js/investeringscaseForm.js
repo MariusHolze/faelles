@@ -90,14 +90,18 @@ function showForm() {
 }
 
 function startNewCase() {
+  const fields = document.querySelector("#createCaseSection").querySelectorAll("input, select, textarea");
+
+  for (const field of fields) {
+    if (!field.checkValidity()) {
+      field.reportValidity();
+      return;
+    }
+  }
+
   const navn = document.querySelector("#createCaseName").value.trim();
   const beskrivelse = document.querySelector("#createCaseDescription").value.trim();
   const ejendomID = document.querySelector("#createEjendomSelect").value;
-
-  if (!navn) {
-    document.querySelector("#createCaseError").textContent = "Skriv casenavn.";
-    return;
-  }
 
   currentCaseID = null;
   resetInvestmentForm();
@@ -111,7 +115,7 @@ function startNewCase() {
 }
 
 function addPurchaseRow(name, amount, fast) {
-  const row = createMoneyRow("purchase-row", name, amount, !fast);
+  const row = createMoneyRow("purchase-row", name, amount, !fast, name === "Ejendomspris" ? 1 : 0);
 
   if (fast) {
     row.querySelector(".row-name").readOnly = true;
@@ -169,15 +173,15 @@ function fillInvestmentForm(caseData) {
   form.beskrivelse.value = caseData.beskrivelse || "";
   fillPurchaseRows(input.koebsposter || []);
 
-  form.laanebeloeb.value = kroner(input.laanebeloeb || 0);
-  form.egenbetaling.value = kroner(input.egenbetaling || 0);
+  form.laanebeloeb.value = input.laanebeloeb || 0;
+  form.egenbetaling.value = input.egenbetaling || 0;
   form.rente.value = input.rente || 0;
   form.loebetid.value = input.loebetid || 30;
 
   if (input.renoveringAktiv) {
     setRenovationActive(true);
     document.querySelector("#renovationRows").innerHTML = "";
-    (input.renoveringer || []).forEach((post) => addRenovationRow(post.navn, post.beloeb, post.tidspunkt || ""));
+    (input.renoveringer || []).forEach((post) => addRenovationRow(post.navn, post.beloeb, post.tidspunktAar ?? ""));
   }
 
   document.querySelector("#operationRows").innerHTML = "";
@@ -185,7 +189,7 @@ function fillInvestmentForm(caseData) {
 
   if (input.udlejningAktiv) {
     setRentalActive(true);
-    form.maanedligLeje.value = kroner(input.maanedligLeje || 0);
+    form.maanedligLeje.value = input.maanedligLeje || 0;
     form.tomgangDage.value = input.tomgangDage || 0;
     document.querySelector("#rentalCostRows").innerHTML = "";
     (input.udlejningsudgifter || []).forEach((post) => addRentalCostRow(post.navn, post.beloeb, post.periode || "maanedligt"));
@@ -212,30 +216,32 @@ function fillPurchaseRows(posts) {
     .forEach((post) => addPurchaseRow(post.navn, post.beloeb, false));
 }
 
-function addRenovationRow(name, amount, time) {
-  const row = createMoneyRow("renovation-row", name, amount, true);
+function addRenovationRow(name, amount, year) {
+  const row = createMoneyRow("renovation-row", name, amount, true, 1);
   const timeInput = document.createElement("input");
   timeInput.className = "row-time";
-  timeInput.type = "text";
-  timeInput.placeholder = "Tidspunkt, fx måned 6";
-  timeInput.value = time;
+  timeInput.type = "number";
+  timeInput.min = "0";
+  timeInput.step = "1";
+  timeInput.placeholder = "År, fx 1";
+  timeInput.value = year;
   row.insertBefore(timeInput, row.querySelector("button"));
   document.querySelector("#renovationRows").appendChild(row);
 }
 
 function addOperationRow(name, amount, period) {
-  const row = createMoneyRow("operation-row", name, amount, true);
+  const row = createMoneyRow("operation-row", name, amount, true, 1);
   row.insertBefore(createPeriodSelect(period), row.querySelector("button"));
   document.querySelector("#operationRows").appendChild(row);
 }
 
 function addRentalCostRow(name, amount, period) {
-  const row = createMoneyRow("rental-cost-row", name, amount, true);
+  const row = createMoneyRow("rental-cost-row", name, amount, true, 1);
   row.insertBefore(createPeriodSelect(period), row.querySelector("button"));
   document.querySelector("#rentalCostRows").appendChild(row);
 }
 
-function createMoneyRow(className, name, amount, canRemove) {
+function createMoneyRow(className, name, amount, canRemove, minAmount = 0) {
   const row = document.createElement("div");
   row.className = `simple-row ${className}`;
 
@@ -248,7 +254,10 @@ function createMoneyRow(className, name, amount, canRemove) {
 
   const amountInput = document.createElement("input");
   amountInput.className = "row-amount kroner-input";
-  amountInput.type = "text";
+  amountInput.type = "number";
+  amountInput.required = true;
+  amountInput.min = String(minAmount);
+  amountInput.step = "0.01";
   amountInput.value = amount;
   aktiverKronerFelt(amountInput);
 
@@ -279,6 +288,10 @@ function createPeriodSelect(period) {
 function setRenovationActive(isActive) {
   document.querySelector("#renovationActive").value = isActive ? "ja" : "nej";
   document.querySelector("#renovationFields").classList.toggle("hidden", !isActive);
+  document.querySelectorAll("#renovationFields input, #renovationFields select, #renovationFields textarea")
+    .forEach((field) => {
+      field.disabled = !isActive;
+    });
 
   if (isActive && document.querySelectorAll(".renovation-row").length === 0) {
     addRenovationRow("Renovering", 0, "");
@@ -288,6 +301,10 @@ function setRenovationActive(isActive) {
 function setRentalActive(isActive) {
   document.querySelector("#rentalActive").value = isActive ? "ja" : "nej";
   document.querySelector("#rentalFields").classList.toggle("hidden", !isActive);
+  document.querySelectorAll("#rentalFields input, #rentalFields select, #rentalFields textarea")
+    .forEach((field) => {
+      field.disabled = !isActive;
+    });
 
   if (isActive && document.querySelectorAll(".rental-cost-row").length === 0) {
     addRentalCostRow("Administration", 0, "maanedligt");
@@ -303,6 +320,15 @@ function showStep(step) {
 
   steps.forEach((section, index) => {
     section.classList.toggle("hidden", index !== currentStep);
+    section.querySelectorAll("input:not([type='hidden']), select, textarea").forEach((field) => {
+      const inRenovationFields = field.closest("#renovationFields");
+      const inRentalFields = field.closest("#rentalFields");
+      const disabledByChoice =
+        (inRenovationFields && document.querySelector("#renovationActive").value !== "ja") ||
+        (inRentalFields && document.querySelector("#rentalActive").value !== "ja");
+
+      field.disabled = index !== currentStep || disabledByChoice;
+    });
   });
 
   indicators.forEach((item, index) => {
@@ -372,7 +398,7 @@ function collectRows(selector, includeTime = false, includePeriod = false) {
     .map((row) => ({
       navn: row.querySelector(".row-name").value.trim(),
       beloeb: talFraKroner(row.querySelector(".row-amount").value),
-      tidspunkt: includeTime ? row.querySelector(".row-time").value.trim() : "",
+      tidspunktAar: includeTime && row.querySelector(".row-time").value !== "" ? Number(row.querySelector(".row-time").value) : null,
       periode: includePeriod ? row.querySelector(".row-period").value : "engang"
     }))
     .filter((post) => post.navn || post.beloeb > 0);
@@ -381,80 +407,44 @@ function collectRows(selector, includeTime = false, includePeriod = false) {
 function validateCurrentStep() {
   const section = document.querySelector(`.form-step[data-step="${currentStep}"]`);
   const fields = section.querySelectorAll("input:not([type='hidden']), select, textarea");
+  const egenbetaling = document.querySelector("[name='egenbetaling']");
 
-  if (currentStep === 0 && !document.querySelector("#ejendomSelect").value) {
-    showError("Vælg en ejendom");
-    return false;
+  if (egenbetaling) {
+    egenbetaling.setCustomValidity("");
+  }
+
+  if (currentStep === 1 && !loanMatchesPrice()) {
+    egenbetaling.setCustomValidity("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
   }
 
   for (const field of fields) {
-    if (field.classList.contains("kroner-input") && field.value.includes(",")) {
-      showError("Brug hele tal uden komma.");
-      return false;
+    if (field.closest(".hidden") || field.disabled) {
+      continue;
     }
 
     if (!field.checkValidity()) {
       field.reportValidity();
-      showError("Udfyld de markerede felter, før du går videre.");
       return false;
-    }
-  }
-
-  const input = collectFormData();
-  const ejendomspris = getPostTotal(input.koebsposter, "Ejendomspris");
-
-  if (currentStep === 0 && ejendomspris <= 0) {
-    showError("Ejendomspris skal udfyldes og være større end 0");
-    return false;
-  }
-
-  if (currentStep === 1 && !loanMatchesPrice()) {
-    showError("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
-    return false;
-  }
-
-  if (currentStep === 2 && input.renoveringAktiv) {
-    for (const row of document.querySelectorAll(".renovation-row")) {
-      const navn = row.querySelector(".row-name").value.trim();
-      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
-
-      if (!navn || beloeb <= 0) {
-        showError("Alle renoveringsfelter skal udfyldes");
-        return false;
-      }
-    }
-  }
-
-  if (currentStep === 3) {
-    for (const row of document.querySelectorAll(".operation-row")) {
-      const navn = row.querySelector(".row-name").value.trim();
-      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
-
-      if (!navn || beloeb <= 0) {
-        showError("Alle driftsfelter skal udfyldes");
-        return false;
-      }
-    }
-  }
-
-  if (currentStep === 4 && input.udlejningAktiv) {
-    if (input.maanedligLeje <= 0) {
-      showError("Udlejningsfelter skal udfyldes");
-      return false;
-    }
-
-    for (const row of document.querySelectorAll(".rental-cost-row")) {
-      const navn = row.querySelector(".row-name").value.trim();
-      const beloeb = talFraKroner(row.querySelector(".row-amount").value);
-
-      if (!navn || beloeb <= 0) {
-        showError("Udlejningsfelter skal udfyldes");
-        return false;
-      }
     }
   }
 
   clearMessage();
+  return true;
+}
+
+function validateAllSteps() {
+  const originalStep = currentStep;
+  const steps = document.querySelectorAll(".form-step");
+
+  for (let step = 0; step < steps.length; step += 1) {
+    showStep(step);
+
+    if (!validateCurrentStep()) {
+      return false;
+    }
+  }
+
+  showStep(originalStep);
   return true;
 }
 
@@ -670,7 +660,7 @@ function resultCard(label, value) {
 async function saveInvestmentCase(event) {
   event.preventDefault();
 
-  if (!validateCurrentStep()) {
+  if (!validateAllSteps()) {
     return;
   }
 
@@ -828,15 +818,8 @@ function getPostTotal(posts, name) {
 }
 
 function aktiverKronerFelt(input) {
-  input.addEventListener("focus", () => {
-    input.value = talFraKroner(input.value) || "";
-  });
-
-  input.addEventListener("blur", () => {
-    if (input.value.trim() !== "") {
-      input.value = kroner(talFraKroner(input.value));
-    }
-  });
+  input.min = input.min || "0";
+  input.step = input.step || "0.01";
 }
 
 function showError(message) {
