@@ -54,6 +54,9 @@ async function hentBbrData(adresseID, adgangsadresseID) {
     const bygninger = adgangsadresseID
       ? await hentFraBbrRest(config, "bygning", { Husnummer: adgangsadresseID })
       : [];
+    const kanOprettes = harBoligEnhed(enheder) || harBoligBygning(bygninger);
+    const valgtEnhed = vaelgRelevantEnhed(enheder);
+    const valgtBygning = vaelgRelevantBygning(bygninger);
     const adgangsadresse = adgangsadresseID ? await hentAdgangsadresse(adgangsadresseID) : null;
     let grundareal = null;
 
@@ -63,7 +66,7 @@ async function hentBbrData(adresseID, adgangsadresseID) {
       console.warn("Kunne ikke hente grundareal:", error.message);
     }
 
-    return lavBbrOverblik(enheder[0] || {}, bygninger[0] || {}, adgangsadresse, grundareal);
+    return lavBbrOverblik(valgtEnhed, valgtBygning, adgangsadresse, grundareal, kanOprettes);
   } catch (error) {
     console.error("Fejl ved hentning af BBR-data:", error.message);
     return {};
@@ -115,14 +118,10 @@ async function hentDataforsyningenObjekt(url) {
   return response.json();
 }
 
-function lavBbrOverblik(enhed, bygning, adgangsadresse, grundareal) {
-  const enhedTypeKode = tal(enhed.enh023Boligtype ?? enhed.enh020EnhedensAnvendelse);
+function lavBbrOverblik(enhed, bygning, adgangsadresse, grundareal, kanOprettes) {
+  const enhedTypeKode = tal(enhed.enh023Boligtype);
   const bygningTypeKode = tal(bygning.byg021BygningensAnvendelse);
   const bygningAnvendelseTekst = BYGNING_ANVENDELSE[bygningTypeKode] || null;
-  const bbrVurdering = vurderEjendomsprofilMulighedFraBbrData({
-    bygningAnvendelseKode: bygningTypeKode,
-    bygningAnvendelseTekst
-  });
 
   return {
     adresse: tekst(adgangsadresse?.adressebetegnelse || adgangsadresse?.betegnelse),
@@ -137,8 +136,8 @@ function lavBbrOverblik(enhed, bygning, adgangsadresse, grundareal) {
     ),
     bygningAnvendelseKode: bygningTypeKode,
     bygningAnvendelseTekst,
-    kanOprettesSomEjendomsprofil: bbrVurdering.kanOprettes,
-    afvisningsaarsag: bbrVurdering.aarsag,
+    kanOprettesSomEjendomsprofil: kanOprettes,
+    afvisningsaarsag: kanOprettes ? null : "Adressen kan ikke bruges til en ejendomsprofil, fordi BBR ikke viser boligdata for adressen.",
     byggeaar: tal(bygning.byg026Opfoerelsesaar ?? bygning.byg026Opførelsesår),
     boligareal: tal(
       enhed.enh027ArealTilBeboelse ??
@@ -152,29 +151,56 @@ function lavBbrOverblik(enhed, bygning, adgangsadresse, grundareal) {
   };
 }
 
+function harBoligEnhed(enheder) {
+  return Array.isArray(enheder) && enheder.some((enhed) =>
+    tal(enhed.enh023Boligtype) !== null
+  );
+}
+
+function harBoligBygning(bygninger) {
+  return Array.isArray(bygninger) && bygninger.some((bygning) =>
+    TILLADTE_BYGNINGSKODER.has(tal(bygning.byg021BygningensAnvendelse))
+  );
+}
+
+function vaelgRelevantEnhed(enheder) {
+  if (!Array.isArray(enheder) || enheder.length === 0) {
+    return {};
+  }
+
+  return enheder.find((enhed) =>
+    tal(enhed.enh023Boligtype) !== null
+  ) || enheder[0] || {};
+}
+
+function vaelgRelevantBygning(bygninger) {
+  if (!Array.isArray(bygninger) || bygninger.length === 0) {
+    return {};
+  }
+
+  const boligbygninger = bygninger.filter((bygning) =>
+    TILLADTE_BYGNINGSKODER.has(tal(bygning.byg021BygningensAnvendelse))
+  );
+
+  const kandidater = boligbygninger.length > 0 ? boligbygninger : bygninger;
+
+  return kandidater.reduce((stoerste, bygning) =>
+    bygningAreal(bygning) > bygningAreal(stoerste) ? bygning : stoerste
+  );
+}
+
+function bygningAreal(bygning) {
+  return tal(
+    bygning.byg038SamletBygningsareal ??
+    bygning.byg039BygningensSamledeBoligAreal ??
+    bygning.byg039BygningensSamledeBoligareal
+  ) || 0;
+}
+
 function vurderEjendomsprofilMulighedFraBbrData(bbrData) {
-  if (typeof bbrData?.kanOprettesSomEjendomsprofil === "boolean") {
-    return {
-      kanOprettes: bbrData.kanOprettesSomEjendomsprofil,
-      aarsag: bbrData.afvisningsaarsag || null
-    };
-  }
-
-  const bygningAnvendelseKode = tal(bbrData?.bygningAnvendelseKode);
-
-  if (!bygningAnvendelseKode) {
-    return {
-      kanOprettes: false,
-      aarsag: "Adressen kan ikke bruges til en ejendomsprofil, fordi BBR ikke returnerer en boligbygning for adressen."
-    };
-  }
-
-  const kanOprettes = TILLADTE_BYGNINGSKODER.has(bygningAnvendelseKode);
-  const tekst = bbrData.bygningAnvendelseTekst || BYGNING_ANVENDELSE[bygningAnvendelseKode] || `BBR-kode ${bygningAnvendelseKode}`;
-
   return {
-    kanOprettes,
-    aarsag: kanOprettes ? null : `Adressen kan ikke bruges til en ejendomsprofil, fordi BBR registrerer den som ${tekst}.`
+    kanOprettes: bbrData?.kanOprettesSomEjendomsprofil === true,
+    aarsag: bbrData?.afvisningsaarsag || null
   };
 }
 
