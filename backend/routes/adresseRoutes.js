@@ -6,14 +6,6 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const soeg = req.query.soeg;
 
-  // Hvis der ikke er sendt en søgetekst,
-  // giver vi en fejl tilbage med det samme.
-  if (!soeg || soeg.trim() === "") {
-    return res.status(400).json({
-      message: "Søgetekst mangler"
-    });
-  }
-
   try {
     // Her sender vi en forespørgsel videre til Dataforsyningens API.
     // encodeURIComponent sørger for, at teksten er sikker at sende i en URL.
