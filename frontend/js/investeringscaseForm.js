@@ -40,22 +40,22 @@ function bindInvesteringscaseForm() {
   document.querySelector("#startCaseButton").addEventListener("click", startNewCase);
   form.addEventListener("submit", saveInvestmentCase);
 
-  document.querySelector("#addPurchaseRowButton").addEventListener("click", () => addPurchaseRow("", 0, false));
-  document.querySelector("#addRenovationRowButton").addEventListener("click", () => addRenovationRow("", 0, ""));
-  document.querySelector("#addOperationRowButton").addEventListener("click", () => addOperationRow("", 0, "maanedligt"));
-  document.querySelector("#addRentalCostRowButton").addEventListener("click", () => addRentalCostRow("", 0, "maanedligt"));
+  document.querySelector("#addPurchaseRowButton").addEventListener("click", () => addPurchaseRow("", "", false));
+  document.querySelector("#addRenovationRowButton").addEventListener("click", () => addRenovationRow("", "", ""));
+  document.querySelector("#addOperationRowButton").addEventListener("click", () => addOperationRow("", "", "maanedligt"));
+  document.querySelector("#addRentalCostRowButton").addEventListener("click", () => addRentalCostRow("", "", "maanedligt"));
   document.querySelector("#renovationYesButton").addEventListener("click", () => setRenovationActive(true));
   document.querySelector("#renovationNoButton").addEventListener("click", () => setRenovationActive(false));
   document.querySelector("#rentalYesButton").addEventListener("click", () => setRentalActive(true));
   document.querySelector("#rentalNoButton").addEventListener("click", () => setRentalActive(false));
   document.querySelectorAll(".kroner-input").forEach(aktiverKronerFelt);
 
-  addPurchaseRow("Ejendomspris", 0, true);
-  addPurchaseRow("Omkostninger ved køb", 0, true);
-  addPurchaseRow("Udgifter til advokat", 0, true);
-  addPurchaseRow("Tinglysning", 0, true);
-  addPurchaseRow("Køberrådgivning", 0, true);
-  addOperationRow("Ejendomsskat/fællesudgifter", 0, "maanedligt");
+  addPurchaseRow("Ejendomspris", "", true);
+  addPurchaseRow("Omkostninger ved køb", "", true);
+  addPurchaseRow("Udgifter til advokat", "", true);
+  addPurchaseRow("Tinglysning", "", true);
+  addPurchaseRow("Køberrådgivning", "", true);
+  addOperationRow("Ejendomsskat/fællesudgifter", "", "maanedligt");
 
   loadProperties().then(() => {
     const params = new URLSearchParams(window.location.search);
@@ -115,7 +115,7 @@ function startNewCase() {
 }
 
 function addPurchaseRow(name, amount, fast) {
-  const row = createMoneyRow("purchase-row", name, amount, !fast, name === "Ejendomspris" ? 1 : 0);
+  const row = createMoneyRow("purchase-row", name, amount, !fast, 0);
 
   if (fast) {
     row.querySelector(".row-name").readOnly = true;
@@ -140,12 +140,12 @@ function resetInvestmentForm() {
   document.querySelector("#renovationFields").classList.add("hidden");
   document.querySelector("#rentalFields").classList.add("hidden");
 
-  addPurchaseRow("Ejendomspris", 0, true);
-  addPurchaseRow("Omkostninger ved køb", 0, true);
-  addPurchaseRow("Udgifter til advokat", 0, true);
-  addPurchaseRow("Tinglysning", 0, true);
-  addPurchaseRow("Køberrådgivning", 0, true);
-  addOperationRow("Ejendomsskat/fællesudgifter", 0, "maanedligt");
+  addPurchaseRow("Ejendomspris", "", true);
+  addPurchaseRow("Omkostninger ved køb", "", true);
+  addPurchaseRow("Udgifter til advokat", "", true);
+  addPurchaseRow("Tinglysning", "", true);
+  addPurchaseRow("Køberrådgivning", "", true);
+  addOperationRow("Ejendomsskat/fællesudgifter", "", "maanedligt");
   clearMessage();
 }
 
@@ -259,6 +259,7 @@ function createMoneyRow(className, name, amount, canRemove, minAmount = 0) {
   amountInput.required = true;
   amountInput.min = String(minAmount);
   amountInput.step = "0.01";
+  amountInput.placeholder = "Beløb i kr.";
   amountInput.value = amount;
   aktiverKronerFelt(amountInput);
 
@@ -682,7 +683,6 @@ async function loadInvestmentCases() {
     if (!response.ok) {
       grid.innerHTML = `<p>${cases.message || "Cases kunne ikke hentes."}</p>`;
       comparisonCases = [];
-      renderComparisonTable();
       return;
     }
 
@@ -690,7 +690,6 @@ async function loadInvestmentCases() {
 
     if (cases.length === 0) {
       grid.innerHTML = "<p>Der er endnu ikke gemt nogen investeringscases.</p>";
-      renderComparisonTable();
       return;
     }
 
@@ -718,7 +717,7 @@ async function loadInvestmentCases() {
       `;
 
       const compareCheckbox = card.querySelector(".case-compare-checkbox");
-      compareCheckbox.addEventListener("change", renderComparisonTable);
+      compareCheckbox.addEventListener("change", opdaterSammenlignKnap);
 
       card.querySelector(".rediger-case-knap").addEventListener("click", async () => {
         await openExistingCase(caseData.caseID);
@@ -746,30 +745,28 @@ async function loadInvestmentCases() {
 
       grid.appendChild(card);
     });
-    renderComparisonTable();
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
     grid.innerHTML = "<p>Serverfejl ved hentning af cases.</p>";
     comparisonCases = [];
-    renderComparisonTable();
+  }
+}
+
+function opdaterSammenlignKnap() {
+  const antalValgt = document.querySelectorAll(".case-compare-checkbox:checked").length;
+  const knap = document.querySelector("#sammenlignButton");
+  if (knap) {
+    knap.disabled = antalValgt < 2;
   }
 }
 
 function renderComparisonTable() {
   const container = document.querySelector("#comparisonTableContainer");
-
-  if (!container) {
-    return;
-  }
+  if (!container) return;
 
   const selectedIDs = Array.from(document.querySelectorAll(".case-compare-checkbox:checked"))
     .map((checkbox) => checkbox.value);
   const selectedCases = comparisonCases.filter((caseData) => selectedIDs.includes(String(caseData.caseID)));
-
-  if (selectedCases.length === 0) {
-    container.innerHTML = "<p>Ingen cases valgt til sammenligning.</p>";
-    return;
-  }
 
   container.innerHTML = `
     <table class="comparison-table">
@@ -789,7 +786,21 @@ function renderComparisonTable() {
       </tbody>
     </table>
   `;
+
+  document.querySelector("#sammenlignModal").classList.remove("hidden");
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelector("#sammenlignButton")?.addEventListener("click", renderComparisonTable);
+  document.querySelector("#lukModalButton")?.addEventListener("click", () => {
+    document.querySelector("#sammenlignModal").classList.add("hidden");
+  });
+  document.querySelector("#sammenlignModal")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) {
+      e.currentTarget.classList.add("hidden");
+    }
+  });
+});
 
 function comparisonRow(caseData) {
   const result = caseData.resultat || {};
