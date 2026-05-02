@@ -1,5 +1,5 @@
 const { sql } = require("../db");
-const { calculateInvestmentCase } = require("./investeringscaseBeregner");
+const { calculateInvestmentCase } = require("./beregnCase");
 
 function request(db) {
   return db.request ? db.request() : new sql.Request(db);

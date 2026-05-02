@@ -8,7 +8,7 @@ const {
   opdaterCase,
   sletCase
 } = require("../services/investeringscaseRepository");
-const { calculateInvestmentCase } = require("../services/investeringscaseBeregner");
+const { calculateInvestmentCase } = require("../services/beregnCase");
 
 function gyldigtId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;

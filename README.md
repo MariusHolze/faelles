@@ -90,7 +90,7 @@ database/02_investeringscase.sql
 
 Beregninger ligger i:
 text
-backend/services/investeringscaseBeregner.js
+backend/services/beregnCase.js
 
 Frontend laver ikke den økonomiske hovedberegning. Frontend samler input, kalder backend og viser resultatet. Backend returnerer blandt andet:
 
@@ -113,7 +113,7 @@ Frontend laver ikke den økonomiske hovedberegning. Frontend samler input, kalde
 - `backend/routes/ejendomRoutes.js` - API for ejendomsprofiler.
 - `backend/routes/investeringscaseRoutes.js` - API for investeringscases.
 - `backend/services/bbrService.js` - BBR-opslag.
-- `backend/services/investeringscaseBeregner.js` - beregninger.
+- `backend/services/beregnCase.js` - beregninger.
 - `backend/services/investeringscaseRepository.js` - databaseadgang for investeringscases.
 
 ## Test

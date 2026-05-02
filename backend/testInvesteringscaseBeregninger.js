@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { beregnAnalyse } = require("./services/investeringscaseBeregner");
+const { beregnAnalyse } = require("./services/beregnCase");
 
 function lavBasisCase(overrides = {}) {
   return {

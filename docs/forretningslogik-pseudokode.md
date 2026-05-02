@@ -49,7 +49,7 @@ totalRenteomkostning = maanedligYdelse * antalMaaneder - lånebeløb
 Beregningen ligger i:
 
 ```text
-backend/services/investeringscaseBeregner.js
+backend/services/beregnCase.js
 ```
 
 Den centrale funktion hedder:
