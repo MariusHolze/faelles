@@ -3,34 +3,31 @@ const { beregnAnalyse } = require("./services/investeringscaseBeregner");
 
 function lavBasisCase(overrides = {}) {
   return {
-    koebsudgifter: {
-      poster: [
-        { navn: "Ejendomspris", beloeb: 1000000 },
-        { navn: "Omkostninger ved køb", beloeb: 50000 }
-      ]
-    },
-    finansiering: {
-      egenbetaling: 200000,
-      rente: 4,
-      loebetid: 30,
-      afdragsfrihed: 0
-    },
-    renovering: {
-      aktiv: false,
-      poster: []
-    },
-    driftsbudget: {
-      poster: [
-        { navn: "Drift", beloeb: 24000, periode: "aarligt" }
-      ]
-    },
-    udlejning: {
-      aktiv: true,
-      maanedligLeje: 10000,
-      tomgangDage: 0,
-      maanedligeUdlejningsudgifter: 0,
-      aarligeUdlejningsudgifter: 0
-    },
+    koebsposter: [
+      { navn: "Ejendomspris", beloeb: 1000000 },
+      { navn: "Omkostninger ved køb", beloeb: 50000 }
+    ],
+
+    laanebeloeb: 850000,
+    egenbetaling: 200000,
+    rente: 4,
+    loebetid: 30,
+
+    renoveringAktiv: false,
+    renoveringer: [],
+
+    driftsposter: [
+      { navn: "Drift", beloeb: 24000, periode: "aarligt" }
+    ],
+
+    udlejningAktiv: true,
+    maanedligLeje: 10000,
+    tomgangDage: 0,
+    udlejningsudgifter: [],
+
+    vaekstProcent: 2,
+    periodeAar: 30,
+
     ...overrides
   };
 }
@@ -38,6 +35,8 @@ function lavBasisCase(overrides = {}) {
 function testUdenRenovering() {
   const analyse = beregnAnalyse(lavBasisCase());
 
+  assert.strictEqual(analyse.koebspris, 1000000);
+  assert.strictEqual(analyse.koebsomkostninger, 50000);
   assert.strictEqual(analyse.samletInvestering, 1050000);
   assert.strictEqual(analyse.finansieringsbehov, 850000);
   assert.strictEqual(analyse.egenkapitalBehov, 200000);
@@ -45,26 +44,21 @@ function testUdenRenovering() {
 
 function testMedRenovering() {
   const analyse = beregnAnalyse(lavBasisCase({
-    renovering: {
-      aktiv: true,
-      poster: [
-        { navn: "Køkken", beloeb: 150000, tidspunktAar: 1 }
-      ]
-    }
+    renoveringAktiv: true,
+    renoveringer: [
+      { navn: "Køkken", beloeb: 150000, tidspunktAar: 1 }
+    ]
   }));
 
+  assert.strictEqual(analyse.renoveringIAlt, 150000);
   assert.strictEqual(analyse.samletInvestering, 1200000);
-  assert.strictEqual(analyse.finansieringsbehov, 1000000);
+  assert.strictEqual(analyse.finansieringsbehov, 850000);
 }
 
 function testEgenbetalingDaekkerInvestering() {
   const analyse = beregnAnalyse(lavBasisCase({
-    finansiering: {
-      egenbetaling: 1200000,
-      rente: 4,
-      loebetid: 30,
-      afdragsfrihed: 0
-    }
+    laanebeloeb: 0,
+    egenbetaling: 1050000
   }));
 
   assert.strictEqual(analyse.finansieringsbehov, 0);
@@ -73,17 +67,24 @@ function testEgenbetalingDaekkerInvestering() {
 
 function testNegativtCashflow() {
   const analyse = beregnAnalyse(lavBasisCase({
-    udlejning: {
-      aktiv: true,
-      maanedligLeje: 1000,
-      tomgangDage: 0,
-      maanedligeUdlejningsudgifter: 0,
-      aarligeUdlejningsudgifter: 0
-    }
+    maanedligLeje: 1000
   }));
 
   assert.ok(analyse.aarligtCashflowEfterLaaneydelse < 0);
   assert.ok(analyse.noegletalOverTid[29].akkumuleretCashflow < 0);
+}
+
+function testUdlejningKanSlaasFra() {
+  const analyse = beregnAnalyse(lavBasisCase({
+    udlejningAktiv: false,
+    maanedligLeje: 10000,
+    udlejningsudgifter: [
+      { navn: "Administration", beloeb: 500, periode: "maanedligt" }
+    ]
+  }));
+
+  assert.strictEqual(analyse.maanedligIndtaegt, 0);
+  assert.strictEqual(analyse.lejeUdgifterMaanedligt, 0);
 }
 
 function testLaanAfdragesOver30Aar() {
@@ -99,6 +100,7 @@ function koerTests() {
   testMedRenovering();
   testEgenbetalingDaekkerInvestering();
   testNegativtCashflow();
+  testUdlejningKanSlaasFra();
   testLaanAfdragesOver30Aar();
   console.log("Alle investeringscase-beregningstests er OK.");
 }

@@ -185,29 +185,17 @@ async function gemRenoveringer(transaction, caseID, input) {
     return;
   }
 
-  const renoveringResult = await request(transaction)
-    .input("caseID", sql.Int, Number(caseID))
-    .input("aktiv", sql.Bit, true)
-    .query(`
-      INSERT INTO InvesteringscaseRenovering (caseID, aktiv)
-      VALUES (@caseID, @aktiv);
-
-      SELECT CONVERT(INT, SCOPE_IDENTITY()) AS renoveringID;
-    `);
-  const renoveringID = renoveringResult.recordset[0].renoveringID;
-
   for (const post of poster(input.renoveringer)) {
     await request(transaction)
-      .input("renoveringID", sql.Int, renoveringID)
       .input("caseID", sql.Int, Number(caseID))
       .input("navn", sql.VarChar(100), post.navn)
       .input("beloeb", sql.Decimal(18, 2), post.beloeb)
       .input("tidspunktAar", sql.Int, post.tidspunktAar)
       .query(`
         INSERT INTO InvesteringscaseRenoveringspost
-        (renoveringID, caseID, navn, beloeb, tidspunktAar)
+        (caseID, navn, beloeb, tidspunktAar)
         VALUES
-        (@renoveringID, @caseID, @navn, @beloeb, @tidspunktAar)
+        (@caseID, @navn, @beloeb, @tidspunktAar)
       `);
   }
 }
@@ -254,16 +242,15 @@ async function gemUdlejning(transaction, caseID, input) {
     .input("caseID", sql.Int, Number(caseID))
     .input("aktiv", sql.Bit, Boolean(input.udlejningAktiv))
     .input("maanedligLeje", sql.Decimal(18, 2), tal(input.maanedligLeje))
-    .input("depositum", sql.Decimal(18, 2), 0)
     .input("tomgangDage", sql.Int, gyldigeTomgangDage(input.tomgangDage))
     .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), maanedligeUdlejningsudgifter)
     .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), aarligeUdlejningsudgifter)
     .query(`
       INSERT INTO InvesteringscaseUdlejning
-      (caseID, aktiv, maanedligLeje, depositum, tomgangDage,
+      (caseID, aktiv, maanedligLeje, tomgangDage,
        maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter)
       VALUES
-      (@caseID, @aktiv, @maanedligLeje, @depositum, @tomgangDage,
+      (@caseID, @aktiv, @maanedligLeje, @tomgangDage,
        @maanedligeUdlejningsudgifter, @aarligeUdlejningsudgifter)
     `);
 }
@@ -302,7 +289,6 @@ async function sletDetaljer(transaction, caseID) {
     "InvesteringscaseUdlejning",
     "InvesteringscaseDriftspost",
     "InvesteringscaseRenoveringspost",
-    "InvesteringscaseRenovering",
     "InvesteringscaseFinansiering",
     "InvesteringscaseKoebspost"
   ]) {

@@ -1,3 +1,11 @@
+DROP TABLE IF EXISTS InvesteringscaseUdlejning;
+DROP TABLE IF EXISTS InvesteringscaseDriftspost;
+DROP TABLE IF EXISTS InvesteringscaseRenoveringspost;
+DROP TABLE IF EXISTS InvesteringscaseRenovering;
+DROP TABLE IF EXISTS InvesteringscaseFinansiering;
+DROP TABLE IF EXISTS InvesteringscaseKoebspost;
+DROP TABLE IF EXISTS Investeringscase;
+
 CREATE TABLE Investeringscase (
     caseID INT IDENTITY(1,1) NOT NULL,
     ejendomID INT NOT NULL,
@@ -6,7 +14,7 @@ CREATE TABLE Investeringscase (
     oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     CONSTRAINT PK_Investeringscase PRIMARY KEY (caseID),
-    CONSTRAINT UQ_Investeringscase_Navn UNIQUE (navn),
+    CONSTRAINT UQ_Investeringscase_Ejendom_Navn UNIQUE (ejendomID, navn),
     CONSTRAINT FK_Investeringscase_Ejendomsprofil
         FOREIGN KEY (ejendomID) REFERENCES Ejendomsprofil(ejendomID)
 );
@@ -39,29 +47,14 @@ CREATE TABLE InvesteringscaseFinansiering (
         (laanebeloeb >= 0 AND egenbetaling >= 0 AND rente >= 0 AND loebetid > 0)
 );
 
-CREATE TABLE InvesteringscaseRenovering (
-    renoveringID INT IDENTITY(1,1) NOT NULL,
-    caseID INT NOT NULL,
-    aktiv BIT NOT NULL DEFAULT 0,
-
-    CONSTRAINT PK_InvesteringscaseRenovering PRIMARY KEY (renoveringID),
-    CONSTRAINT UQ_InvesteringscaseRenovering_CaseID UNIQUE (caseID),
-    CONSTRAINT UQ_InvesteringscaseRenovering_RenoveringID_CaseID UNIQUE (renoveringID, caseID),
-    CONSTRAINT FK_InvesteringscaseRenovering_Investeringscase
-        FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE
-);
-
 CREATE TABLE InvesteringscaseRenoveringspost (
     renoveringspostID INT IDENTITY(1,1) NOT NULL,
-    renoveringID INT NOT NULL,
     caseID INT NOT NULL,
     navn VARCHAR(100) NOT NULL,
     beloeb DECIMAL(18,2) NOT NULL,
     tidspunktAar INT NULL,
 
     CONSTRAINT PK_InvesteringscaseRenoveringspost PRIMARY KEY (renoveringspostID),
-    CONSTRAINT FK_InvesteringscaseRenoveringspost_InvesteringscaseRenovering
-        FOREIGN KEY (renoveringID, caseID) REFERENCES InvesteringscaseRenovering(renoveringID, caseID),
     CONSTRAINT FK_InvesteringscaseRenoveringspost_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
     CONSTRAINT CK_InvesteringscaseRenoveringspost_Beloeb CHECK (beloeb >= 0),
@@ -97,6 +90,5 @@ CREATE TABLE InvesteringscaseUdlejning (
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
     CONSTRAINT CK_InvesteringscaseUdlejning_Tal CHECK
         (maanedligLeje >= 0 AND tomgangDage BETWEEN 0 AND 365
-         AND depositum >= 0
          AND maanedligeUdlejningsudgifter >= 0 AND aarligeUdlejningsudgifter >= 0)
 );
