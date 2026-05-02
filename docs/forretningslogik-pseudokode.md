@@ -55,5 +55,5 @@ backend/services/beregnCase.js
 Den centrale funktion hedder:
 
 ```text
-calculateInvestmentCase(input)
+beregnInvesteringscase(input)
 ```
