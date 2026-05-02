@@ -1,5 +1,7 @@
+// gemmer og henter fra databasen.
+
 const { sql } = require("../db");
-const { calculateInvestmentCase } = require("./investeringscaseBeregner");
+const { beregnInvesteringscase } = require("./beregnCase");
 
 function request(db) {
   return db.request ? db.request() : new sql.Request(db);
@@ -127,7 +129,7 @@ function mapCase(row, input) {
     boligareal: row.boligareal,
     byggeaar: row.byggeaar,
     input,
-    resultat: calculateInvestmentCase(input)
+    resultat: beregnInvesteringscase(input)
   };
 }
 

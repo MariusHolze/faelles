@@ -4,11 +4,15 @@
   "description": "Backend til ejendomsapp",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "jest"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mssql": "^12.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }

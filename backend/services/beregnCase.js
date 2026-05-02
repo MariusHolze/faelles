@@ -1,3 +1,5 @@
+// beregner økonomien.
+
 function tal(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
@@ -103,7 +105,7 @@ function normaliserInput(input = {}) {
   };
 }
 
-function calculateInvestmentCase(input = {}) {
+function beregnInvesteringscase(input = {}) {
   const data = normaliserInput(input);
 
   const koebsudgifterIAlt = sumPoster(data.koebsposter);
@@ -183,11 +185,11 @@ function calculateInvestmentCase(input = {}) {
 }
 
 module.exports = {
-  calculateInvestmentCase,
-  beregnAnalyse: calculateInvestmentCase,
+  beregnInvesteringscase,
+  beregnAnalyse: beregnInvesteringscase,
   beregnMaanedligYdelse,
   beregnRestgaeldEfterAar: restgaeldEfterAar,
-  beregnNoegletalOverTid: (input) => calculateInvestmentCase(input).noegletalOverTid,
+  beregnNoegletalOverTid: (input) => beregnInvesteringscase(input).noegletalOverTid,
   normaliserInput,
   sumPoster,
   maanedligTotal
