@@ -14,7 +14,6 @@ CREATE TABLE Ejendomsprofil (
     antalVaerelser INT NULL,
     oprettetTidspunkt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     sidstOpdateret DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    erArkiveret BIT NOT NULL DEFAULT 0,
 
     CONSTRAINT PK_Ejendomsprofil PRIMARY KEY (ejendomID),
     CONSTRAINT UQ_Ejendomsprofil_Adresse UNIQUE (adresse),

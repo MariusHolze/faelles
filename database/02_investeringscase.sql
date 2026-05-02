@@ -87,7 +87,6 @@ CREATE TABLE InvesteringscaseUdlejning (
     caseID INT NOT NULL,
     aktiv BIT NOT NULL DEFAULT 0,
     maanedligLeje DECIMAL(18,2) NOT NULL DEFAULT 0,
-    depositum DECIMAL(18,2) NOT NULL DEFAULT 0,
     tomgangDage INT NOT NULL DEFAULT 0,
     maanedligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,
     aarligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,

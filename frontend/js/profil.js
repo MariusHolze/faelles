@@ -86,7 +86,7 @@ function hentEjendomKortHtml(ejendom) {
       </div>
       <span class="case-badge">${ejendom.antalCases || 0} ${Number(ejendom.antalCases) === 1 ? "case" : "cases"}</span>
     </div>
-
+ 
     <dl class="ejendom-data-grid">
       <div>
         <dt>Boligtype</dt>
