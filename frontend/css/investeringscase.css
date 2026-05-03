@@ -110,6 +110,12 @@
   margin-bottom: 14px;
 }
 
+.choice-buttons button.active {
+  background: #508fcd;
+  color: #ffffff;
+  border-color: #508fcd;
+}
+
 .overview-box {
   border: 1px solid #e2e8f0;
   border-radius: 8px;

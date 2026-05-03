@@ -142,6 +142,10 @@ function resetInvestmentForm() {
   document.querySelector("#rentalActive").value = "";
   document.querySelector("#renovationFields").classList.add("hidden");
   document.querySelector("#rentalFields").classList.add("hidden");
+  document.querySelector("#renovationYesButton").classList.remove("active");
+  document.querySelector("#renovationNoButton").classList.remove("active");
+  document.querySelector("#rentalYesButton").classList.remove("active");
+  document.querySelector("#rentalNoButton").classList.remove("active");
 
   addPurchaseRow("Ejendomspris", "", true);
   addPurchaseRow("Omkostninger ved køb", "", true);
@@ -293,6 +297,8 @@ function createPeriodSelect(period) {
 
 function setRenovationActive(isActive) {
   document.querySelector("#renovationActive").value = isActive ? "ja" : "nej";
+  document.querySelector("#renovationYesButton").classList.toggle("active", isActive);
+  document.querySelector("#renovationNoButton").classList.toggle("active", !isActive);
   document.querySelector("#renovationFields").classList.toggle("hidden", !isActive);
   document.querySelectorAll("#renovationFields input, #renovationFields select, #renovationFields textarea")
     .forEach((field) => {
@@ -306,6 +312,8 @@ function setRenovationActive(isActive) {
 
 function setRentalActive(isActive) {
   document.querySelector("#rentalActive").value = isActive ? "ja" : "nej";
+  document.querySelector("#rentalYesButton").classList.toggle("active", isActive);
+  document.querySelector("#rentalNoButton").classList.toggle("active", !isActive);
   document.querySelector("#rentalFields").classList.toggle("hidden", !isActive);
   document.querySelectorAll("#rentalFields input, #rentalFields select, #rentalFields textarea")
     .forEach((field) => {
@@ -371,6 +379,9 @@ function nextStep() {
 }
 
 function previousStep() {
+  if (!validateCurrentStep()) {
+    return;
+  }
   showStep(Math.max(currentStep - 1, 0));
 }
 
@@ -425,6 +436,11 @@ function validateCurrentStep() {
 
   if (currentStep === 2 && document.querySelector("#renovationActive").value === "") {
     showError("Vælg om der er renovering (Ja eller Nej).");
+    return false;
+  }
+
+  if (currentStep === 2 && document.querySelector("#renovationActive").value === "ja" && document.querySelectorAll(".renovation-row").length === 0) {
+    showError("Tilføj mindst én renovering.");
     return false;
   }
 
@@ -604,7 +620,6 @@ function renderResult(result) {
     ${resultCard("Månedligt cashflow", kroner(result.maanedligtCashflow))}
     ${resultCard("Årligt cashflow", kroner(result.aarligtCashflow))}
     ${resultCard("Startinvestering", kroner(result.startInvestering))}
-    ${resultCard("Simpel ROI", `${result.simpelROI.toFixed(1)} %`)}
     ${resultCard("Værdi efter periode", kroner(result.estimeretVaerdiEfterPeriode))}
     ${resultCard("Samlet resultat", kroner(result.samletResultat))}
   `;
