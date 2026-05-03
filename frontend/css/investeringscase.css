@@ -232,6 +232,12 @@
   color: #243244;
 }
 
+#createCaseDescription,
+textarea[name="beskrivelse"] {
+  resize: none;
+  overflow-y: auto;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
