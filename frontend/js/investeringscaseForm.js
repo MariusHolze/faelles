@@ -72,6 +72,7 @@ function showOverview() {
   document.querySelector("#overviewSection").classList.remove("hidden");
   document.querySelector("#createCaseSection").classList.add("hidden");
   document.querySelector("#formSection").classList.add("hidden");
+  document.querySelector("#showCreateCaseButton").classList.remove("hidden");
   loadInvestmentCases();
 }
 
@@ -79,6 +80,7 @@ function showCreateCase() {
   document.querySelector("#overviewSection").classList.add("hidden");
   document.querySelector("#createCaseSection").classList.remove("hidden");
   document.querySelector("#formSection").classList.add("hidden");
+  document.querySelector("#showCreateCaseButton").classList.add("hidden");
   document.querySelector("#createCaseError").textContent = "";
 }
 
@@ -86,6 +88,7 @@ function showForm() {
   document.querySelector("#overviewSection").classList.add("hidden");
   document.querySelector("#createCaseSection").classList.add("hidden");
   document.querySelector("#formSection").classList.remove("hidden");
+  document.querySelector("#showCreateCaseButton").classList.add("hidden");
   showStep(0);
 }
 
@@ -135,8 +138,8 @@ function resetInvestmentForm() {
   document.querySelector("#renovationRows").innerHTML = "";
   document.querySelector("#operationRows").innerHTML = "";
   document.querySelector("#rentalCostRows").innerHTML = "";
-  document.querySelector("#renovationActive").value = "nej";
-  document.querySelector("#rentalActive").value = "nej";
+  document.querySelector("#renovationActive").value = "";
+  document.querySelector("#rentalActive").value = "";
   document.querySelector("#renovationFields").classList.add("hidden");
   document.querySelector("#rentalFields").classList.add("hidden");
 
@@ -191,7 +194,6 @@ function fillInvestmentForm(caseData) {
   if (input.udlejningAktiv) {
     setRentalActive(true);
     form.maanedligLeje.value = input.maanedligLeje || 0;
-    form.tomgangDage.value = input.tomgangDage || 0;
     document.querySelector("#rentalCostRows").innerHTML = "";
     (input.udlejningsudgifter || []).forEach((post) => addRentalCostRow(post.navn, post.beloeb, post.periode || "maanedligt"));
   }
@@ -224,7 +226,9 @@ function addRenovationRow(name, amount, year) {
   timeInput.type = "number";
   timeInput.min = "0";
   timeInput.step = "1";
+  timeInput.required = true;
   timeInput.placeholder = "År, fx 1";
+  timeInput.addEventListener("input", () => { timeInput.value = timeInput.value.replace(/[^0-9]/g, ""); });
   timeInput.value = year;
   row.insertBefore(timeInput, row.querySelector("button"));
   document.querySelector("#renovationRows").appendChild(row);
@@ -296,7 +300,7 @@ function setRenovationActive(isActive) {
     });
 
   if (isActive && document.querySelectorAll(".renovation-row").length === 0) {
-    addRenovationRow("Renovering", 0, "");
+    addRenovationRow("Renovering", "", "");
   }
 }
 
@@ -309,7 +313,7 @@ function setRentalActive(isActive) {
     });
 
   if (isActive && document.querySelectorAll(".rental-cost-row").length === 0) {
-    addRentalCostRow("Administration", 0, "maanedligt");
+    addRentalCostRow("Administration", "", "maanedligt");
   }
 }
 
@@ -386,7 +390,7 @@ function collectFormData() {
     driftsposter: collectRows(".operation-row", false, true),
     udlejningAktiv: form.udlejningAktiv.value === "ja",
     maanedligLeje: form.udlejningAktiv.value === "ja" ? talFraKroner(form.maanedligLeje.value) : 0,
-    tomgangDage: form.udlejningAktiv.value === "ja" ? Number(form.tomgangDage.value) : 0,
+    tomgangDage: 0,
     udlejningsudgifter: form.udlejningAktiv.value === "ja" ? collectRows(".rental-cost-row", false, true) : [],
     vaekstProcent: 2,
     periodeAar: 30
@@ -417,6 +421,16 @@ function validateCurrentStep() {
 
   if (currentStep === 1 && !loanMatchesPrice()) {
     egenbetaling.setCustomValidity("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
+  }
+
+  if (currentStep === 2 && document.querySelector("#renovationActive").value === "") {
+    showError("Vælg om der er renovering (Ja eller Nej).");
+    return false;
+  }
+
+  if (currentStep === 4 && document.querySelector("#rentalActive").value === "") {
+    showError("Vælg om der er udlejning (Ja eller Nej).");
+    return false;
   }
 
   for (const field of fields) {
@@ -481,7 +495,7 @@ async function runSimulation() {
     simulationResult = data.resultat;
     renderChart(simulationResult);
     renderResult(simulationResult);
-    showStatus("Simuleringen er kørt. Du kan nu gemme casen.");
+    showStatus("Simuleringen er kørt.");
   } catch (error) {
     console.error("Fejl ved simulering:", error);
     showError("Serverfejl ved simulering.");
@@ -872,8 +886,23 @@ function sumPosts(posts) {
 }
 
 function aktiverKronerFelt(input) {
-  input.min = input.min || "0";
-  input.step = input.step || "0.01";
+  input.type = "text";
+  input.inputMode = "numeric";
+
+  input.addEventListener("input", () => {
+    input.value = input.value.replace(/[^0-9]/g, "");
+  });
+
+  input.addEventListener("blur", () => {
+    const raw = input.value.replace(/\./g, "");
+    if (raw !== "") {
+      input.value = Number(raw).toLocaleString("da-DK");
+    }
+  });
+
+  input.addEventListener("focus", () => {
+    input.value = input.value.replace(/\./g, "");
+  });
 }
 
 function showError(message) {

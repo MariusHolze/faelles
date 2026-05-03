@@ -133,7 +133,7 @@
           <button id="renovationYesButton" class="sekundaer-knap" type="button">Ja</button>
           <button id="renovationNoButton" class="sekundaer-knap" type="button">Nej</button>
         </div>
-        <input id="renovationActive" name="renoveringAktiv" type="hidden" value="nej">
+        <input id="renovationActive" name="renoveringAktiv" type="hidden" value="">
 
         <div id="renovationFields" class="hidden">
           <div id="renovationRows" class="simple-row-list"></div>
@@ -153,17 +153,13 @@
           <button id="rentalYesButton" class="sekundaer-knap" type="button">Ja</button>
           <button id="rentalNoButton" class="sekundaer-knap" type="button">Nej</button>
         </div>
-        <input id="rentalActive" name="udlejningAktiv" type="hidden" value="nej">
+        <input id="rentalActive" name="udlejningAktiv" type="hidden" value="">
 
         <div id="rentalFields" class="hidden">
           <div class="case-field-grid">
             <label>
               Månedlig lejeindtægt
               <input class="kroner-input" name="maanedligLeje" type="number" required min="1" step="0.01" placeholder="Beløb i kr.">
-            </label>
-            <label>
-              Tomgang i dage på et år
-              <input name="tomgangDage" type="number" min="0" max="365" step="1" value="0">
             </label>
           </div>
 
