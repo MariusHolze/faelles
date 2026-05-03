@@ -22,32 +22,34 @@ describe("bbrMapper", () => {
                 }
             ]
         };
-        
+
         const resultat = mapBbrTilEjendomsdata(bbrData);
-        
-        expect(resultat.adresse).toBe("Testvej 1, 1234 Testbyen");
-        expect(resultat.boligtype).toBe("Egentlig beboelseslejlighed");
-        expect(resultat.bygningAnvendelseTekst).toBe("Fritliggende enfamiliehus");
-        expect(resultat.byggeaar).toBe(1998);
-        expect(resultat.boligareal).toBe(140);
-        expect(resultat.antalVaerelser).toBe(5);
-        expect(resultat.grundareal).toBe(700);
-        expect(resultat.kanOprettesSomEjendomsprofil).toBe(true);
+
+        expect(resultat).toMatchObject({
+            adresse: "Testvej 1, 1234 Testbyen",
+            boligtype: "Egentlig beboelseslejlighed",
+            bygningAnvendelseTekst: "Fritliggende enfamiliehus",
+            byggeaar: 1998,
+            boligareal: 140,
+            antalVaerelser: 5,
+            grundareal: 700,
+            kanOprettesSomEjendomsprofil: true
+        });
     });
-    
-        test("afviser adresse grundet manglende boligdata", () => {
+
+    test("afviser adresse grundet manglende boligdata", () => {
         const bbrData = {
             adgangsadresse: {
                 adressebetegnelse: "Testvej 1, 1234 Testbyen"
             },
             grundareal: 400,
             enheder: [],
-            bygninger: [ { byg026Opfoerelsesaar: 1998 }
+            bygninger: [{ byg026Opfoerelsesaar: 1998 }
             ]
         };
-        
+
         const resultat = mapBbrTilEjendomsdata(bbrData);
-        
+
         expect(resultat.adresse).toBe("Testvej 1, 1234 Testbyen");
         expect(resultat.byggeaar).toBe(1998);
         expect(resultat.grundareal).toBe(400);
@@ -74,15 +76,17 @@ describe("bbrMapper", () => {
                 }
             ]
         };
-        
+
         const resultat = mapBbrTilEjendomsdata(bbrData);
-        
-        expect(resultat.adresse).toBe("Testvej 2, 1234 Testbyen");
-        expect(resultat.bygningAnvendelseKode).toBe(120);
-        expect(resultat.bygningAnvendelseTekst).toBe("Fritliggende enfamiliehus");
-        expect(resultat.byggeaar).toBe(1988);
-        expect(resultat.boligareal).toBe(150);
-        expect(resultat.grundareal).toBe(1000);
-        expect(resultat.kanOprettesSomEjendomsprofil).toBe(true);
+
+        expect(resultat).toMatchObject({
+            adresse: "Testvej 2, 1234 Testbyen",
+            bygningAnvendelseKode: 120,
+            bygningAnvendelseTekst: "Fritliggende enfamiliehus",
+            byggeaar: 1988,
+            boligareal: 150,
+            grundareal: 1000,
+            kanOprettesSomEjendomsprofil: true
+        });
     });
 })

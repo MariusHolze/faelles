@@ -4,8 +4,8 @@
   "description": "Backend til ejendomsapp",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
