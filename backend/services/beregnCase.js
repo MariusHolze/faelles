@@ -160,7 +160,6 @@ function beregnInvesteringscase(input = {}) {
     aarligtCashflow,
     aarligtCashflowEfterLaaneydelse: aarligtCashflow,
 
-    simpelROI: data.egenbetaling > 0 ? (aarligtCashflow / data.egenbetaling) * 100 : 0,
     ejendomspris: data.koebspris,
     belaaning: data.koebspris > 0 ? (laanebeloeb / data.koebspris) * 100 : 0,
     estimeretVaerdiEfterPeriode,
