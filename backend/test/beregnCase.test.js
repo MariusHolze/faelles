@@ -23,7 +23,6 @@ describe("beregnCase", () => {
 
       udlejningAktiv: true,
       maanedligLeje: 10000,
-      tomgangDage: 0,
       udlejningsudgifter: [
         { navn: "Administration", beloeb: 500, periode: "maanedligt" }
       ],
@@ -68,7 +67,6 @@ describe("beregnCase", () => {
 
       udlejningAktiv: false,
       maanedligLeje: 0,
-      tomgangDage: 0,
       udlejningsudgifter: [],
 
       vaekstProcent: 2,
@@ -104,7 +102,6 @@ describe("beregnCase", () => {
 
       udlejningAktiv: false,
       maanedligLeje: 10000,
-      tomgangDage: 0,
       udlejningsudgifter: [
         { navn: "Administration", beloeb: 500, periode: "maanedligt" }
       ],

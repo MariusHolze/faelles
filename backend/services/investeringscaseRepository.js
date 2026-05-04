@@ -36,10 +36,6 @@ function poster(value) {
     : [];
 }
 
-function gyldigeTomgangDage(value) {
-  return Math.min(365, Math.round(tal(value)));
-}
-
 async function hentCaseInput(pool, caseID) {
   const [koeb, renovering, finansiering, drift, udlejning] = await Promise.all([
     pool.request()
@@ -62,7 +58,7 @@ async function hentCaseInput(pool, caseID) {
     pool.request()
       .input("caseID", sql.Int, caseID)
       .query(`
-        SELECT aktiv, maanedligLeje, tomgangDage,
+        SELECT aktiv, maanedligLeje,
                maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter
         FROM InvesteringscaseUdlejning
         WHERE caseID = @caseID
@@ -111,7 +107,6 @@ async function hentCaseInput(pool, caseID) {
     })),
     udlejningAktiv: Boolean(udlejningRow.aktiv),
     maanedligLeje: tal(udlejningRow.maanedligLeje),
-    tomgangDage: gyldigeTomgangDage(udlejningRow.tomgangDage),
     udlejningsudgifter,
     vaekstProcent: 2,
     periodeAar: 30
@@ -244,15 +239,14 @@ async function gemUdlejning(transaction, caseID, input) {
     .input("caseID", sql.Int, Number(caseID))
     .input("aktiv", sql.Bit, Boolean(input.udlejningAktiv))
     .input("maanedligLeje", sql.Decimal(18, 2), tal(input.maanedligLeje))
-    .input("tomgangDage", sql.Int, gyldigeTomgangDage(input.tomgangDage))
     .input("maanedligeUdlejningsudgifter", sql.Decimal(18, 2), maanedligeUdlejningsudgifter)
     .input("aarligeUdlejningsudgifter", sql.Decimal(18, 2), aarligeUdlejningsudgifter)
     .query(`
       INSERT INTO InvesteringscaseUdlejning
-      (caseID, aktiv, maanedligLeje, tomgangDage,
+      (caseID, aktiv, maanedligLeje,
        maanedligeUdlejningsudgifter, aarligeUdlejningsudgifter)
       VALUES
-      (@caseID, @aktiv, @maanedligLeje, @tomgangDage,
+      (@caseID, @aktiv, @maanedligLeje,
        @maanedligeUdlejningsudgifter, @aarligeUdlejningsudgifter)
     `);
 }

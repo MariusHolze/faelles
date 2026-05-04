@@ -98,8 +98,6 @@ function normaliserInput(input = {}) {
 
     udlejningAktiv: input.udlejningAktiv === true,
     maanedligLeje: input.udlejningAktiv === true ? positivtTal(input.maanedligLeje) : 0,
-    tomgangDage: input.udlejningAktiv === true ? Math.min(365, positivtTal(input.tomgangDage)) : 0,
-
     vaekstProcent: talMedStandard(input.vaekstProcent, 2),
     periodeAar: talMedStandard(input.periodeAar, 30)
   };
@@ -120,9 +118,7 @@ function beregnInvesteringscase(input = {}) {
   const driftMaanedligt = maanedligTotal(data.driftsposter);
   const lejeUdgifterMaanedligt = maanedligTotal(data.udlejningsudgifter);
 
-  const lejeAarligt = data.maanedligLeje * 12;
-  const tomgangBeloeb = lejeAarligt * (data.tomgangDage / 365);
-  const maanedligIndtaegt = (lejeAarligt - tomgangBeloeb) / 12;
+  const maanedligIndtaegt = data.maanedligLeje;
 
   const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
   const maanedligtCashflow = maanedligIndtaegt - maanedligeUdgifter;

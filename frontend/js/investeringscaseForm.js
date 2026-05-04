@@ -404,7 +404,6 @@ function collectFormData() {
     driftsposter: collectRows(".operation-row", false, true),
     udlejningAktiv: form.udlejningAktiv.value === "ja",
     maanedligLeje: form.udlejningAktiv.value === "ja" ? talFraKroner(form.maanedligLeje.value) : 0,
-    tomgangDage: 0,
     udlejningsudgifter: form.udlejningAktiv.value === "ja" ? collectRows(".rental-cost-row", false, true) : [],
     vaekstProcent: 2,
     periodeAar: 30
