@@ -29,6 +29,19 @@
   color: #508fcd;
 }
 
+.nav-pill {
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #1e3a8a;
+  color: #ffffff !important;
+}
+
+.nav-pill:hover {
+  background: #2a4fa8;
+  color: #ffffff !important;
+}
+
 .nav-left > a:first-child {
   display: flex;
   align-items: center;

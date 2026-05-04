@@ -32,6 +32,10 @@
   flex-wrap: wrap;
 }
 
+.profil-hero h1 {
+  text-align: left;
+}
+
 .profil-intro,
 .tom-tilstand p,
 .kortdata-adresse,
@@ -147,12 +151,14 @@
 }
 
 .kortdata-luk {
-  position: absolute;
-  top: 14px;
-  right: 14px;
   width: 40px;
   padding: 0;
   font-size: 26px;
+  background: #c94c4c;
+}
+
+.kortdata-luk:hover {
+  background: #a83838;
 }
 
 .kortdata-feedback {
