@@ -2,47 +2,6 @@ let valgtAdresse = null; // gemmer den adresse brugeren vælger
 let aktivSoegning = null;
 let soegeTimer = null;
 
-async function opdaterCasesKnapForAdresse(adresse) {
-  const casesKnap = document.getElementById("seCasesForEjendomKnap");
-
-  if (!casesKnap) {
-    return;
-  }
-
-  casesKnap.disabled = true;
-  casesKnap.textContent = "Finder cases...";
-  casesKnap.removeAttribute("data-ejendom-id");
-  casesKnap.removeAttribute("data-ejendom-adresse");
-
-  try {
-    const params = new URLSearchParams();
-
-    if (adresse.adresseID) {
-      params.set("adresseID", adresse.adresseID);
-    }
-
-    if (adresse.adgangsadresseID) {
-      params.set("adgangsadresseID", adresse.adgangsadresseID);
-    }
-
-    const response = await fetch(`/api/ejendomme/find?${params.toString()}`);
-    const data = await response.json();
-
-    if (!response.ok || !data) {
-      casesKnap.textContent = "Ingen cases endnu";
-      return;
-    }
-
-    casesKnap.dataset.ejendomId = data.id;
-    casesKnap.dataset.ejendomAdresse = data.adresse || adresse.adresse || "";
-    casesKnap.disabled = false;
-    casesKnap.textContent = `Se cases (${data.antalCases || 0})`;
-  } catch (error) {
-    console.error("Fejl ved opslag af offentlig ejendom:", error);
-    casesKnap.textContent = "Ingen cases endnu";
-  }
-}
-
 function rydAdresseForslag() {
   const adresseListe = document.getElementById("adresseListe");
 
@@ -200,9 +159,6 @@ function vaelgAdresse(adresse) {
   const resultatKort = document.getElementById("resultatKort");
   const ejendomAdresse = document.getElementById("ejendomAdresse");
   const ejendomPost = document.getElementById("ejendomPost");
-  const ejendomBeskrivelse = document.getElementById("ejendomBeskrivelse");
-  const visKortdataKnap = document.getElementById("visKortdataKnap");
-  const seCasesKnap = document.getElementById("seCasesForEjendomKnap");
 
   if (input) {
     input.value = adresse.adresse || "";
@@ -218,27 +174,9 @@ function vaelgAdresse(adresse) {
     ejendomPost.textContent = `${adresse.postnr || ""} ${adresse.postnrnavn || ""}`.trim(); // viser postnr og by
   }
 
-  if (ejendomBeskrivelse) {
-    ejendomBeskrivelse.textContent = "Klar til at oprette ejendomsprofil eller se eksisterende cases."; // hjælpetekst
-  }
-
-  if (visKortdataKnap) {
-    visKortdataKnap.disabled = !adresse.adresseID && !adresse.adgangsadresseID;
-    visKortdataKnap.dataset.kortAdresseId = adresse.adresseID || "";
-    visKortdataKnap.dataset.kortAdgangsadresseId = adresse.adgangsadresseID || "";
-    visKortdataKnap.dataset.kortAdresse = adresse.adresse || "";
-  }
-
-  if (seCasesKnap) {
-    seCasesKnap.disabled = true;
-    seCasesKnap.textContent = "Se cases";
-  }
-
   if (resultatKort) {
     resultatKort.classList.remove("skjult"); // viser kortet med den valgte adresse
   }
-
-  opdaterCasesKnapForAdresse(adresse);
 }
 
 function bindOpretEjendomsprofilFraForside() {
@@ -294,26 +232,5 @@ function bindOpretEjendomsprofilFraForside() {
         fejlBesked.textContent = "Server fejl";
       }
     }
-  });
-}
-
-function bindSeCasesFraForside() {
-  const knap = document.getElementById("seCasesForEjendomKnap");
-
-  if (!knap) {
-    return;
-  }
-
-  knap.addEventListener("click", () => {
-    const ejendomID = knap.dataset.ejendomId;
-
-    if (!ejendomID) {
-      return;
-    }
-
-    const url = new URL("investeringscase.html", window.location.href);
-    url.searchParams.set("ejendomID", ejendomID);
-
-    window.location.href = url.toString();
   });
 }

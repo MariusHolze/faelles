@@ -141,7 +141,7 @@ router.delete("/:id", async (req, res) => {
 
   try {
     const pool = await getPool();
-    const sletResultat = await pool.request()
+    await pool.request()
       .input("ejendomID", sql.Int, ejendomID)
       .query(`
         DELETE FROM Investeringscase WHERE ejendomID = @ejendomID;
