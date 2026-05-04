@@ -1,5 +1,22 @@
 .forside-body .page-content {
-  padding-top: 56px;
+  padding-top: 72px;
+}
+
+.forside-eyebrow {
+  color: #508fcd;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.forside-body h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 20px;
 }
 
 .søgeområde {
@@ -28,7 +45,21 @@
 }
 
 #index-søge-input {
-  border: 2px solid #508fcd;
+  border: 1px solid #d9e3ee;
+  height: 52px;
+  font-size: 15px;
+  border-radius: 12px;
+  padding-right: 48px;
+}
+
+.søge-ikon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a9bb0;
+  pointer-events: none;
+  display: flex;
 }
 
 #fejlBesked {
@@ -60,6 +91,30 @@
 .forside-resultat {
   width: 100%;
   max-width: 860px;
+  text-align: left;
+}
+
+.forside-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid #e0e0de;
+  text-align: center;
+}
+
+.forside-stats strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #182330;
+  margin-bottom: 4px;
+}
+
+.forside-stats span {
+  color: #526070;
+  font-size: 14px;
 }
 
 .forside-resultat .ejendom-data-grid {
@@ -78,7 +133,9 @@
 }
 
 @media (max-width: 700px) {
-  .forside-resultat .ejendom-data-grid {
+  .forside-resultat .ejendom-data-grid,
+  .forside-stats {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }

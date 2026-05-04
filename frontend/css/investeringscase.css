@@ -15,9 +15,6 @@
   align-items: center;
 }
 
-.case-form-header button {
-  align-self: flex-start;
-}
 
 .case-form-header p {
   color: #526070;
@@ -67,6 +64,8 @@
 
 .form-step h3 {
   margin: 22px 0 10px;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .case-field-grid {
@@ -104,16 +103,45 @@
 }
 
 .choice-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin-bottom: 14px;
 }
 
+.choice-buttons button {
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 16px;
+  min-height: 130px;
+  border: 1.5px solid #e0e0de;
+  border-radius: 12px;
+}
+
+.choice-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.choice-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.choice-desc {
+  font-size: 13px;
+  color: #526070;
+  font-weight: 400;
+}
+
 .choice-buttons button.active {
-  background: #508fcd;
-  color: #ffffff;
-  border-color: #508fcd;
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #3b5bdb;
+}
+
+.choice-buttons button.active .choice-desc {
+  color: #4361c2;
 }
 
 .overview-box {
@@ -159,6 +187,10 @@
 
 .tal-negativ { color: #b42318 !important; }
 .tal-positiv { color: #1f6b4a !important; }
+
+.result-grid {
+  margin-top: 16px;
+}
 
 .result-grid,
 .case-card-numbers {
@@ -236,18 +268,21 @@
 }
 
 .case-card-bottom {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #eee;
 }
 
 .case-compare-choice {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #888;
-  font-size: 12px;
-  font-weight: 400;
+  gap: 6px;
+  color: #526070;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .comparison-table-container {
@@ -314,7 +349,8 @@ textarea[name="beskrivelse"] {
   .purchase-row,
   .result-grid,
   .cases-grid,
-  .case-card-numbers {
+  .case-card-numbers,
+  .choice-buttons {
     grid-template-columns: 1fr;
   }
 }

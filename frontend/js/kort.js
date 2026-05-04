@@ -38,7 +38,6 @@ function opretKortModalHvisMangler() {
   modal.innerHTML = `
     <div class="kortdata-backdrop" data-kort-close="true"></div>
     <div class="kortdata-panel" role="dialog" aria-modal="true" aria-labelledby="kortdataTitel">
-      <button type="button" class="kortdata-luk" id="kortdataLukKnap" aria-label="Luk kortvisning">×</button>
       <div class="kortdata-header">
         <div>
           <p class="eyebrow">Kort data</p>
@@ -48,6 +47,7 @@ function opretKortModalHvisMangler() {
         <div class="kortdata-skift">
           <button type="button" class="kortdata-visning aktiv" data-kort-visning="satellit">Satellitkort</button>
           <button type="button" class="kortdata-visning" data-kort-visning="matrikelkort">Matrikelkortet</button>
+          <button type="button" class="kortdata-luk" id="kortdataLukKnap" aria-label="Luk kortvisning">×</button>
         </div>
       </div>
       <div id="kortdataFeedback" class="kortdata-feedback">Henter kortdata...</div>

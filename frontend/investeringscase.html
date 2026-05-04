@@ -71,15 +71,15 @@
       <form id="investmentCaseForm" class="case-form">
       <ol id="stepIndicator" class="step-indicator" aria-label="Formulartrin">
         <li class="active">1. Køb</li>
-        <li>2. Lån</li>
+        <li>2. Finansiering</li>
         <li>3. Renovering</li>
         <li>4. Drift</li>
         <li>5. Udlejning</li>
-        <li>6. Resultat</li>
+        <li>Resultat</li>
       </ol>
 
       <section class="form-step" data-step="0">
-        <h2>Side 1: køb og grunddata</h2>
+        <h2>1. Købsudgifter</h2>
         <div class="case-field-grid">
           <label>
             Ejendomsprofil
@@ -97,13 +97,13 @@
           </label>
         </div>
 
-        <h3>Købs- og omkostningsposter</h3>
+        <h3>Købsposter</h3>
         <div id="purchaseRows" class="simple-row-list"></div>
         <button id="addPurchaseRowButton" class="sekundaer-knap" type="button">Tilføj købspost</button>
       </section>
 
       <section class="form-step hidden" data-step="1">
-        <h2>Side 2: finansiering/lån</h2>
+        <h2>2. Finansiering</h2>
         <p class="case-help-text">
           Samlede købs- og omkostningsposter: <strong id="purchaseTotalText">0 kr.</strong>
         </p>
@@ -128,10 +128,18 @@
       </section>
 
       <section class="form-step hidden" data-step="2">
-        <h2>Side 3: renovering</h2>
+        <h2>3. Renovering</h2>
         <div class="choice-buttons">
-          <button id="renovationYesButton" class="sekundaer-knap" type="button">Ja</button>
-          <button id="renovationNoButton" class="sekundaer-knap" type="button">Nej</button>
+          <button id="renovationYesButton" class="sekundaer-knap" type="button">
+            <span class="choice-icon">🔨</span>
+            <span class="choice-label">Ja</span>
+            <span class="choice-desc">Ejendommen renoveres</span>
+          </button>
+          <button id="renovationNoButton" class="sekundaer-knap" type="button">
+            <span class="choice-icon">✓</span>
+            <span class="choice-label">Nej</span>
+            <span class="choice-desc">Klar til indflytning</span>
+          </button>
         </div>
         <input id="renovationActive" name="renoveringAktiv" type="hidden" value="">
 
@@ -142,16 +150,24 @@
       </section>
 
       <section class="form-step hidden" data-step="3">
-        <h2>Side 4: drift</h2>
+        <h2>4. Driftsudgifter</h2>
         <div id="operationRows" class="simple-row-list"></div>
-        <button id="addOperationRowButton" class="sekundaer-knap" type="button">Tilføj driftsomkostning</button>
+        <button id="addOperationRowButton" class="sekundaer-knap" type="button">Tilføj driftsudgifter</button>
       </section>
 
       <section class="form-step hidden" data-step="4">
-        <h2>Side 5: udlejning</h2>
+        <h2>5. Udlejning</h2>
         <div class="choice-buttons">
-          <button id="rentalYesButton" class="sekundaer-knap" type="button">Ja</button>
-          <button id="rentalNoButton" class="sekundaer-knap" type="button">Nej</button>
+          <button id="rentalYesButton" class="sekundaer-knap" type="button">
+            <span class="choice-icon">🏠</span>
+            <span class="choice-label">Ja</span>
+            <span class="choice-desc">Ejendommen udlejes</span>
+          </button>
+          <button id="rentalNoButton" class="sekundaer-knap" type="button">
+            <span class="choice-icon">✓</span>
+            <span class="choice-label">Nej</span>
+            <span class="choice-desc">Ingen udlejning</span>
+          </button>
         </div>
         <input id="rentalActive" name="udlejningAktiv" type="hidden" value="">
 
@@ -171,7 +187,7 @@
       </section>
 
       <section class="form-step hidden" data-step="5">
-        <h2>Side 6: overblik og simulering</h2>
+        <h2> Overblik og simulering</h2>
         <div id="inputOverview" class="overview-box"></div>
         <div class="overview-box">
           <p>Simuleringen bruger en fast årlig værdistigning på 2% på ejendommens værdi. Cashflow og gæld påvirkes ikke af værdistigningen.</p>

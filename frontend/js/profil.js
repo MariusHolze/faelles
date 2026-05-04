@@ -114,16 +114,13 @@ function hentEjendomKortHtml(ejendom) {
       </div>
     </dl>
 
-    <div class="ejendom-kort-footer">
+    <div class="ejendom-knapper">
       ${hentKortdataKnapHtml({
         adresseID: ejendom.adresseID,
         adgangsadresseID: ejendom.adgangsadresseID,
         adresse: ejendom.adresse,
         disabled: !ejendom.adresseID && !ejendom.adgangsadresseID
       })}
-    </div>
-
-    <div class="ejendom-knapper">
       <button class="knap slet-knap slet-ejendom-fra-profil" type="button">Slet ejendom</button>
     </div>
   `;

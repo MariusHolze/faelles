@@ -8,7 +8,7 @@ button,
   padding: 10px 16px;
   border: 1px solid transparent;
   border-radius: 8px;
-  background: #508fcd;
+  background: #1e3a8a;
   color: #ffffff;
   font: inherit;
   font-weight: 700;
@@ -20,7 +20,7 @@ button:hover,
 .knap:hover,
 button:focus,
 .knap:focus {
-  background: #3c6fa3;
+  background: #2a4fa8;
 }
 
 button:disabled,
