@@ -38,8 +38,7 @@ function validerCase(body = {}) {
     "egenbetaling",
     "rente",
     "loebetid",
-    "maanedligLeje",
-    "tomgangDage"
+    "maanedligLeje"
   ]) {
     if (!gyldigtTal(body[felt])) {
       fejl.push(`${felt} skal være et tal på 0 eller derover.`);
@@ -48,10 +47,6 @@ function validerCase(body = {}) {
 
   if (Number(body.loebetid) <= 0) {
     fejl.push("loebetid skal være større end 0.");
-  }
-
-  if (Number(body.tomgangDage) > 365) {
-    fejl.push("tomgangDage må højst være 365.");
   }
 
   if (!Array.isArray(body.koebsposter) || body.koebsposter.length === 0) {

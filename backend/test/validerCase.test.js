@@ -22,7 +22,6 @@ function lavGyldigCase(overrides = {}) {
 
     udlejningAktiv: false,
     maanedligLeje: 0,
-    tomgangDage: 0,
     udlejningsudgifter: [],
 
     // ny værdi med samme navn, overrider den gamle standardværdi fra "Standardcase"
@@ -89,8 +88,7 @@ describe("validerCase", () => {
     const input = lavGyldigCase({
       ejendomID: null,
       rente: "abc",
-      loebetid: 0,
-      tomgangDage: 366
+      loebetid: 0
     });
 
     const resultat = validerCase(input);
@@ -98,8 +96,7 @@ describe("validerCase", () => {
     expect(resultat).toEqual(expect.arrayContaining([
       "Vælg en ejendomsprofil.",
       "rente skal være et tal på 0 eller derover.",
-      "loebetid skal være større end 0.",
-      "tomgangDage må højst være 365."
+      "loebetid skal være større end 0."
     ]));
   });
 

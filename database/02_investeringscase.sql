@@ -80,7 +80,6 @@ CREATE TABLE InvesteringscaseUdlejning (
     caseID INT NOT NULL,
     aktiv BIT NOT NULL DEFAULT 0,
     maanedligLeje DECIMAL(18,2) NOT NULL DEFAULT 0,
-    tomgangDage INT NOT NULL DEFAULT 0,
     maanedligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,
     aarligeUdlejningsudgifter DECIMAL(18,2) NOT NULL DEFAULT 0,
 
@@ -89,6 +88,5 @@ CREATE TABLE InvesteringscaseUdlejning (
     CONSTRAINT FK_InvesteringscaseUdlejning_Investeringscase
         FOREIGN KEY (caseID) REFERENCES Investeringscase(caseID) ON DELETE CASCADE,
     CONSTRAINT CK_InvesteringscaseUdlejning_Tal CHECK
-        (maanedligLeje >= 0 AND tomgangDage BETWEEN 0 AND 365
-         AND maanedligeUdlejningsudgifter >= 0 AND aarligeUdlejningsudgifter >= 0)
+        (maanedligLeje >= 0 AND maanedligeUdlejningsudgifter >= 0 AND aarligeUdlejningsudgifter >= 0)
 );

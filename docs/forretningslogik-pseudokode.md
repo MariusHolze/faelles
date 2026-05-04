@@ -13,7 +13,6 @@ Formålet er ikke at lave en præcis finansiel model, men en forklarbar prototyp
 - Rente: 4 %
 - Løbetid: 30 år
 - Månedlig leje: 12.000 kr.
-- Tomgang: 5 %
 - Drift pr. måned: 2.000 kr.
 - Udlejningsudgifter pr. måned: 500 kr.
 
@@ -31,14 +30,12 @@ ellers:
     maanedligYdelse = lånebeløb *
         (maanedligRente / (1 - (1 + maanedligRente)^(-antalMaaneder)))
 
-lejeEfterTomgang = månedligLeje * (1 - tomgangProcent / 100)
-
 maanedligeUdgifter =
     driftPrMaaned
     + udlejningsudgifterPrMaaned
     + maanedligYdelse
 
-maanedligtCashflow = lejeEfterTomgang - maanedligeUdgifter
+maanedligtCashflow = månedligLeje - maanedligeUdgifter
 aarligtCashflow = maanedligtCashflow * 12
 
 totalRenteomkostning = maanedligYdelse * antalMaaneder - lånebeløb

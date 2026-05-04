@@ -112,10 +112,6 @@ function hentEjendomKortHtml(ejendom) {
         <dt>Oprettet</dt>
         <dd>${formatDato(ejendom.oprettetTidspunkt)}</dd>
       </div>
-      <div>
-        <dt>Sidst hentet</dt>
-        <dd>${formatDato(ejendom.sidstOpdateret)}</dd>
-      </div>
     </dl>
 
     <div class="ejendom-kort-footer">
