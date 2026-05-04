@@ -1,4 +1,9 @@
-const { beregnInvesteringscase } = require("../services/beregnCase");
+const {
+  InvesteringscaseBeregner,
+  Laan,
+  PostSamling,
+  beregnInvesteringscase
+} = require("../services/beregnCase");
 
 describe("beregnCase", () => {
 
@@ -117,5 +122,27 @@ describe("beregnCase", () => {
     expect(resultat.maanedligeUdgifter).toBe(2000);
     expect(resultat.maanedligtCashflow).toBe(-2000);
     expect(resultat.aarligtCashflow).toBe(-24000);
+  });
+
+  test("kan bruges objektorienteret med domæneklasser", () => {
+    const poster = new PostSamling([
+      { navn: "Ejendomspris", beloeb: 1000000 },
+      { navn: "Omkostninger ved køb", beloeb: 50000 }
+    ]);
+    const laan = new Laan(850000, 4, 30);
+    const beregner = new InvesteringscaseBeregner({
+      koebsposter: poster.poster,
+      laanebeloeb: laan.laanebeloeb,
+      egenbetaling: 200000,
+      rente: 4,
+      loebetid: 30,
+      udlejningAktiv: false
+    });
+
+    const resultat = beregner.beregn();
+
+    expect(poster.sum()).toBe(1050000);
+    expect(Math.round(laan.maanedligYdelse())).toBe(4058);
+    expect(resultat.noegletalOverTid).toHaveLength(30);
   });
 });

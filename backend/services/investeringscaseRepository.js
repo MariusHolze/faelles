@@ -333,7 +333,34 @@ async function sletCase(pool, caseID) {
   return result.rowsAffected[0] > 0;
 }
 
+class InvesteringscaseRepository {
+  constructor(pool) {
+    this.pool = pool;
+  }
+
+  hentAlle(ejendomID) {
+    return hentAlleCases(this.pool, ejendomID);
+  }
+
+  hent(caseID) {
+    return hentCase(this.pool, caseID);
+  }
+
+  opret(body) {
+    return opretCase(this.pool, body);
+  }
+
+  opdater(caseID, body) {
+    return opdaterCase(this.pool, caseID, body);
+  }
+
+  slet(caseID) {
+    return sletCase(this.pool, caseID);
+  }
+}
+
 module.exports = {
+  InvesteringscaseRepository,
   hentAlleCases,
   hentCase,
   opretCase,

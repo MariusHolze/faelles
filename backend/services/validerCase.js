@@ -1,4 +1,4 @@
-// validerer investeringscase-input.
+// Validerer investeringscase-input med en simpel klasse.
 
 function gyldigtId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
@@ -22,98 +22,120 @@ function postTotal(poster = [], navn) {
     : 0;
 }
 
-function validerCase(body = {}) {
-  const fejl = [];
-
-  if (!gyldigtId(body.ejendomID)) {
-    fejl.push("Vælg en ejendomsprofil.");
+class CaseValidering {
+  constructor(body = {}) {
+    this.body = body;
+    this.fejl = [];
   }
 
-  if (!String(body.navn || "").trim()) {
-    fejl.push("Giv casen et navn.");
+  valider() {
+    this.validerGrunddata();
+    this.validerKoebsposter();
+    this.validerFinansiering();
+    this.validerRenovering();
+    this.validerDrift();
+    this.validerUdlejning();
+    return this.fejl;
   }
 
-  for (const felt of [
-    "laanebeloeb",
-    "egenbetaling",
-    "rente",
-    "loebetid",
-    "maanedligLeje"
-  ]) {
-    if (!gyldigtTal(body[felt])) {
-      fejl.push(`${felt} skal være et tal på 0 eller derover.`);
+  validerGrunddata() {
+    if (!gyldigtId(this.body.ejendomID)) {
+      this.fejl.push("Vælg en ejendomsprofil.");
     }
-  }
 
-  if (Number(body.loebetid) <= 0) {
-    fejl.push("loebetid skal være større end 0.");
-  }
-
-  if (!Array.isArray(body.koebsposter) || body.koebsposter.length === 0) {
-    fejl.push("Tilføj mindst én købspost.");
-  }
-
-  for (const post of body.koebsposter || []) {
-    if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb)) {
-      fejl.push("Alle købsposter skal udfyldes med gyldige beløb.");
+    if (!String(this.body.navn || "").trim()) {
+      this.fejl.push("Giv casen et navn.");
     }
-  }
 
-  const ejendomspris = postTotal(body.koebsposter, "Ejendomspris");
-
-  if (ejendomspris <= 0) {
-    fejl.push("Ejendomspris skal være større end 0.");
-  }
-
-  const samletKoebssum = sumPoster(body.koebsposter);
-  const totalFinansiering = Number(body.laanebeloeb) + Number(body.egenbetaling);
-
-  if (Math.round(totalFinansiering) !== Math.round(samletKoebssum)) {
-    fejl.push("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
-  }
-
-  if (body.renoveringAktiv) {
-    for (const post of body.renoveringer || []) {
-      if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb) || Number(post.beloeb) <= 0) {
-        fejl.push("Alle renoveringsfelter skal udfyldes");
+    for (const felt of ["laanebeloeb", "egenbetaling", "rente", "loebetid", "maanedligLeje"]) {
+      if (!gyldigtTal(this.body[felt])) {
+        this.fejl.push(`${felt} skal være et tal på 0 eller derover.`);
       }
+    }
+
+    if (Number(this.body.loebetid) <= 0) {
+      this.fejl.push("loebetid skal være større end 0.");
+    }
+  }
+
+  validerKoebsposter() {
+    if (!Array.isArray(this.body.koebsposter) || this.body.koebsposter.length === 0) {
+      this.fejl.push("Tilføj mindst én købspost.");
+    }
+
+    for (const post of this.body.koebsposter || []) {
+      if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb)) {
+        this.fejl.push("Alle købsposter skal udfyldes med gyldige beløb.");
+      }
+    }
+
+    if (postTotal(this.body.koebsposter, "Ejendomspris") <= 0) {
+      this.fejl.push("Ejendomspris skal være større end 0.");
+    }
+  }
+
+  validerFinansiering() {
+    const samletKoebssum = sumPoster(this.body.koebsposter);
+    const totalFinansiering = Number(this.body.laanebeloeb) + Number(this.body.egenbetaling);
+
+    if (Math.round(totalFinansiering) !== Math.round(samletKoebssum)) {
+      this.fejl.push("Lånebeløb + egenbetaling skal være lig med samlede købs- og omkostningsposter.");
+    }
+  }
+
+  validerRenovering() {
+    if (!this.body.renoveringAktiv) {
+      return;
+    }
+
+    for (const post of this.body.renoveringer || []) {
+      this.validerPost(post, "Alle renoveringsfelter skal udfyldes");
 
       if (post.tidspunktAar !== undefined && post.tidspunktAar !== null && post.tidspunktAar !== "" && !gyldigtTal(post.tidspunktAar)) {
-        fejl.push("Renoveringsår skal være et tal på 0 eller derover.");
+        this.fejl.push("Renoveringsår skal være et tal på 0 eller derover.");
       }
     }
   }
 
-  for (const post of body.driftsposter || []) {
-    if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb) || Number(post.beloeb) <= 0) {
-      fejl.push("Alle driftsfelter skal udfyldes");
-    }
-
-    if (!["maanedligt", "aarligt"].includes(post.periode)) {
-      fejl.push("Driftsperiode skal være maanedligt eller aarligt.");
-    }
-  }
-
-  if (body.udlejningAktiv) {
-    if (Number(body.maanedligLeje) <= 0) {
-      fejl.push("Udlejningsfelter skal udfyldes");
-    }
-
-    for (const post of body.udlejningsudgifter || []) {
-      if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb) || Number(post.beloeb) <= 0) {
-        fejl.push("Udlejningsfelter skal udfyldes");
-      }
-
+  validerDrift() {
+    for (const post of this.body.driftsposter || []) {
+      this.validerPost(post, "Alle driftsfelter skal udfyldes");
       if (!["maanedligt", "aarligt"].includes(post.periode)) {
-        fejl.push("Udlejningsperiode skal være maanedligt eller aarligt.");
+        this.fejl.push("Driftsperiode skal være maanedligt eller aarligt.");
       }
     }
   }
 
-  return fejl;
+  validerUdlejning() {
+    if (!this.body.udlejningAktiv) {
+      return;
+    }
+
+    if (Number(this.body.maanedligLeje) <= 0) {
+      this.fejl.push("Udlejningsfelter skal udfyldes");
+    }
+
+    for (const post of this.body.udlejningsudgifter || []) {
+      this.validerPost(post, "Udlejningsfelter skal udfyldes");
+      if (!["maanedligt", "aarligt"].includes(post.periode)) {
+        this.fejl.push("Udlejningsperiode skal være maanedligt eller aarligt.");
+      }
+    }
+  }
+
+  validerPost(post, besked) {
+    if (!String(post.navn || "").trim() || !gyldigtTal(post.beloeb) || Number(post.beloeb) <= 0) {
+      this.fejl.push(besked);
+    }
+  }
+}
+
+function validerCase(body = {}) {
+  return new CaseValidering(body).valider();
 }
 
 module.exports = {
+  CaseValidering,
   validerCase,
   gyldigtId,
   gyldigtTal,

@@ -1,4 +1,4 @@
-// beregner økonomien.
+// Beregner økonomien i en investeringscase med simple klasser.
 
 function tal(value) {
   const number = Number(value);
@@ -17,154 +17,155 @@ function talMedStandard(value, standard) {
   return positivtTal(value);
 }
 
-function sumPoster(poster = []) {
-  return poster.reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
-}
-
-function maanedligTotal(poster = []) {
-  return poster.reduce((sum, post) => {
-    const beloeb = positivtTal(post.beloeb);
-    return sum + (post.periode === "aarligt" ? beloeb / 12 : beloeb);
-  }, 0);
-}
-
-function hentPostTotal(poster = [], navn) {
-  return poster
-    .filter((post) => String(post.navn || "").toLowerCase() === navn.toLowerCase())
-    .reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
-}
-
-function beregnMaanedligYdelse(laanebeloeb, renteProcent, loebetidAar) {
-  const hovedstol = positivtTal(laanebeloeb);
-  const maaneder = positivtTal(loebetidAar) * 12;
-  const maanedligRente = (positivtTal(renteProcent) / 100) / 12;
-
-  if (hovedstol === 0 || maaneder === 0) {
-    return 0;
+class PostSamling {
+  constructor(poster = []) {
+    this.poster = Array.isArray(poster) ? poster : [];
   }
 
-  if (maanedligRente === 0) {
-    return hovedstol / maaneder;
+  sum() {
+    return this.poster.reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
   }
 
-  return hovedstol * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -maaneder)));
-}
-
-function restgaeldEfterAar(laanebeloeb, renteProcent, loebetidAar, aar) {
-  const hovedstol = positivtTal(laanebeloeb);
-  const maaneder = positivtTal(loebetidAar) * 12;
-  const betalteMaaneder = Math.min(maaneder, positivtTal(aar) * 12);
-  const maanedligRente = (positivtTal(renteProcent) / 100) / 12;
-
-  if (hovedstol === 0 || maaneder === 0 || betalteMaaneder >= maaneder) {
-    return 0;
+  maanedligTotal() {
+    return this.poster.reduce((sum, post) => {
+      const beloeb = positivtTal(post.beloeb);
+      return sum + (post.periode === "aarligt" ? beloeb / 12 : beloeb);
+    }, 0);
   }
 
-  if (maanedligRente === 0) {
-    return Math.max(0, hovedstol - (hovedstol / maaneder) * betalteMaaneder);
+  totalForNavn(navn) {
+    return this.poster
+      .filter((post) => String(post.navn || "").toLowerCase() === navn.toLowerCase())
+      .reduce((sum, post) => sum + positivtTal(post.beloeb), 0);
+  }
+}
+
+class Laan {
+  constructor(laanebeloeb, renteProcent, loebetidAar) {
+    this.laanebeloeb = positivtTal(laanebeloeb);
+    this.renteProcent = positivtTal(renteProcent);
+    this.loebetidAar = positivtTal(loebetidAar);
   }
 
-  const ydelse = beregnMaanedligYdelse(hovedstol, renteProcent, loebetidAar);
-  const restgaeld = hovedstol * Math.pow(1 + maanedligRente, betalteMaaneder)
-    - ydelse * ((Math.pow(1 + maanedligRente, betalteMaaneder) - 1) / maanedligRente);
+  maanedligYdelse() {
+    const maaneder = this.loebetidAar * 12;
+    const maanedligRente = (this.renteProcent / 100) / 12;
 
-  return Math.max(0, restgaeld);
+    if (this.laanebeloeb === 0 || maaneder === 0) {
+      return 0;
+    }
+
+    if (maanedligRente === 0) {
+      return this.laanebeloeb / maaneder;
+    }
+
+    return this.laanebeloeb * (maanedligRente / (1 - Math.pow(1 + maanedligRente, -maaneder)));
+  }
+
+  totalRenteomkostning() {
+    return Math.max(0, this.maanedligYdelse() * this.loebetidAar * 12 - this.laanebeloeb);
+  }
+
+  restgaeldEfterAar(aar) {
+    const maaneder = this.loebetidAar * 12;
+    const betalteMaaneder = Math.min(maaneder, positivtTal(aar) * 12);
+    const maanedligRente = (this.renteProcent / 100) / 12;
+
+    if (this.laanebeloeb === 0 || maaneder === 0 || betalteMaaneder >= maaneder) {
+      return 0;
+    }
+
+    if (maanedligRente === 0) {
+      return Math.max(0, this.laanebeloeb - (this.laanebeloeb / maaneder) * betalteMaaneder);
+    }
+
+    const ydelse = this.maanedligYdelse();
+    const restgaeld = this.laanebeloeb * Math.pow(1 + maanedligRente, betalteMaaneder)
+      - ydelse * ((Math.pow(1 + maanedligRente, betalteMaaneder) - 1) / maanedligRente);
+
+    return Math.max(0, restgaeld);
+  }
 }
 
-function normaliserInput(input = {}) {
-  const koebsposter = Array.isArray(input.koebsposter) ? input.koebsposter : [];
-  const driftsposter = Array.isArray(input.driftsposter) ? input.driftsposter : [];
-
-  const renoveringer = input.renoveringAktiv === true && Array.isArray(input.renoveringer)
-    ? input.renoveringer
-    : [];
-
-  const udlejningsudgifter = input.udlejningAktiv === true && Array.isArray(input.udlejningsudgifter)
-    ? input.udlejningsudgifter
-    : [];
-
-  return {
-    koebsposter,
-    renoveringer,
-    driftsposter,
-    udlejningsudgifter,
-
-    koebspris: hentPostTotal(koebsposter, "Ejendomspris"),
-
-    laanebeloeb: positivtTal(input.laanebeloeb),
-    egenbetaling: positivtTal(input.egenbetaling),
-    rente: positivtTal(input.rente),
-    loebetid: positivtTal(input.loebetid),
-
-    udlejningAktiv: input.udlejningAktiv === true,
-    maanedligLeje: input.udlejningAktiv === true ? positivtTal(input.maanedligLeje) : 0,
-    vaekstProcent: talMedStandard(input.vaekstProcent, 2),
-    periodeAar: talMedStandard(input.periodeAar, 30)
-  };
+class InvesteringscaseData {
+  constructor(input = {}) {
+    this.koebsposter = Array.isArray(input.koebsposter) ? input.koebsposter : [];
+    this.driftsposter = Array.isArray(input.driftsposter) ? input.driftsposter : [];
+    this.renoveringAktiv = input.renoveringAktiv === true;
+    this.udlejningAktiv = input.udlejningAktiv === true;
+    this.renoveringer = this.renoveringAktiv && Array.isArray(input.renoveringer) ? input.renoveringer : [];
+    this.udlejningsudgifter = this.udlejningAktiv && Array.isArray(input.udlejningsudgifter) ? input.udlejningsudgifter : [];
+    this.koebspris = new PostSamling(this.koebsposter).totalForNavn("Ejendomspris");
+    this.laanebeloeb = positivtTal(input.laanebeloeb);
+    this.egenbetaling = positivtTal(input.egenbetaling);
+    this.rente = positivtTal(input.rente);
+    this.loebetid = positivtTal(input.loebetid);
+    this.maanedligLeje = this.udlejningAktiv ? positivtTal(input.maanedligLeje) : 0;
+    this.vaekstProcent = talMedStandard(input.vaekstProcent, 2);
+    this.periodeAar = talMedStandard(input.periodeAar, 30);
+  }
 }
 
-function beregnInvesteringscase(input = {}) {
-  const data = normaliserInput(input);
+class InvesteringscaseBeregner {
+  constructor(input = {}) {
+    this.input = input instanceof InvesteringscaseData ? input : new InvesteringscaseData(input);
+    this.laan = new Laan(this.input.laanebeloeb, this.input.rente, this.input.loebetid);
+  }
 
-  const koebsudgifterIAlt = sumPoster(data.koebsposter);
-  const koebsomkostninger = Math.max(0, koebsudgifterIAlt - data.koebspris);
-  const renoveringIAlt = sumPoster(data.renoveringer);
-  const startInvestering = koebsudgifterIAlt + renoveringIAlt;
+  beregn() {
+    const koeb = new PostSamling(this.input.koebsposter);
+    const renovering = new PostSamling(this.input.renoveringer);
+    const drift = new PostSamling(this.input.driftsposter);
+    const udlejning = new PostSamling(this.input.udlejningsudgifter);
 
-  const laanebeloeb = data.laanebeloeb;
-  const maanedligYdelse = beregnMaanedligYdelse(laanebeloeb, data.rente, data.loebetid);
-  const totalRenteomkostning = Math.max(0, maanedligYdelse * data.loebetid * 12 - laanebeloeb);
+    const koebsudgifterIAlt = koeb.sum();
+    const renoveringIAlt = renovering.sum();
+    const startInvestering = koebsudgifterIAlt + renoveringIAlt;
+    const maanedligYdelse = this.laan.maanedligYdelse();
+    const driftMaanedligt = drift.maanedligTotal();
+    const lejeUdgifterMaanedligt = udlejning.maanedligTotal();
+    const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
+    const maanedligtCashflow = this.input.maanedligLeje - maanedligeUdgifter;
+    const aarligtCashflow = maanedligtCashflow * 12;
+    const periodeAar = Math.max(1, Math.round(this.input.periodeAar));
+    const vaekstFaktor = 1 + this.input.vaekstProcent / 100;
+    const estimeretVaerdiEfterPeriode = this.input.koebspris * Math.pow(vaekstFaktor, periodeAar);
 
-  const driftMaanedligt = maanedligTotal(data.driftsposter);
-  const lejeUdgifterMaanedligt = maanedligTotal(data.udlejningsudgifter);
+    return {
+      koebspris: this.input.koebspris,
+      koebsomkostninger: Math.max(0, koebsudgifterIAlt - this.input.koebspris),
+      koebsudgifterIAlt,
+      renoveringIAlt,
+      startInvestering,
+      samletInvestering: startInvestering,
+      laanebeloeb: this.input.laanebeloeb,
+      finansieringsbehov: this.input.laanebeloeb,
+      egenkapitalBehov: this.input.egenbetaling,
+      maanedligYdelse,
+      totalRenteomkostning: this.laan.totalRenteomkostning(),
+      driftMaanedligt,
+      driftsudgifterMaanedligt: driftMaanedligt,
+      driftsudgifterAarligt: driftMaanedligt * 12,
+      lejeUdgifterMaanedligt,
+      lejeUdgifterAarligt: lejeUdgifterMaanedligt * 12,
+      maanedligIndtaegt: this.input.maanedligLeje,
+      maanedligeUdgifter,
+      maanedligtCashflow,
+      aarligtCashflow,
+      aarligtCashflowEfterLaaneydelse: aarligtCashflow,
+      ejendomspris: this.input.koebspris,
+      belaaning: this.input.koebspris > 0 ? (this.input.laanebeloeb / this.input.koebspris) * 100 : 0,
+      estimeretVaerdiEfterPeriode,
+      samletResultat: (estimeretVaerdiEfterPeriode - this.input.koebspris) + (aarligtCashflow * periodeAar) - renoveringIAlt,
+      noegletalOverTid: this.beregnNoegletalOverTid(periodeAar, vaekstFaktor, aarligtCashflow)
+    };
+  }
 
-  const maanedligIndtaegt = data.maanedligLeje;
-
-  const maanedligeUdgifter = driftMaanedligt + lejeUdgifterMaanedligt + maanedligYdelse;
-  const maanedligtCashflow = maanedligIndtaegt - maanedligeUdgifter;
-  const aarligtCashflow = maanedligtCashflow * 12;
-
-  const vaekstFaktor = 1 + data.vaekstProcent / 100;
-  const periodeAar = Math.max(1, Math.round(data.periodeAar));
-  const estimeretVaerdiEfterPeriode = data.koebspris * Math.pow(vaekstFaktor, periodeAar);
-  const samletResultat = (estimeretVaerdiEfterPeriode - data.koebspris) + (aarligtCashflow * periodeAar) - renoveringIAlt;
-
-  return {
-    koebspris: data.koebspris,
-    koebsomkostninger,
-    koebsudgifterIAlt,
-    renoveringIAlt,
-    startInvestering,
-    samletInvestering: startInvestering,
-
-    laanebeloeb,
-    finansieringsbehov: laanebeloeb,
-    egenkapitalBehov: data.egenbetaling,
-    maanedligYdelse,
-    totalRenteomkostning,
-
-    driftMaanedligt,
-    driftsudgifterMaanedligt: driftMaanedligt,
-    driftsudgifterAarligt: driftMaanedligt * 12,
-
-    lejeUdgifterMaanedligt,
-    lejeUdgifterAarligt: lejeUdgifterMaanedligt * 12,
-    maanedligIndtaegt,
-    maanedligeUdgifter,
-
-    maanedligtCashflow,
-    aarligtCashflow,
-    aarligtCashflowEfterLaaneydelse: aarligtCashflow,
-
-    ejendomspris: data.koebspris,
-    belaaning: data.koebspris > 0 ? (laanebeloeb / data.koebspris) * 100 : 0,
-    estimeretVaerdiEfterPeriode,
-    samletResultat,
-
-    noegletalOverTid: Array.from({ length: periodeAar }, (_, index) => {
+  beregnNoegletalOverTid(periodeAar, vaekstFaktor, aarligtCashflow) {
+    return Array.from({ length: periodeAar }, (_, index) => {
       const aar = index + 1;
-      const ejendomsvaerdi = data.koebspris * Math.pow(vaekstFaktor, aar);
-      const restgaeld = restgaeldEfterAar(laanebeloeb, data.rente, data.loebetid, aar);
+      const ejendomsvaerdi = this.input.koebspris * Math.pow(vaekstFaktor, aar);
+      const restgaeld = this.laan.restgaeldEfterAar(aar);
 
       return {
         aar,
@@ -175,17 +176,49 @@ function beregnInvesteringscase(input = {}) {
         akkumuleretCashflow: aarligtCashflow * aar,
         samletInvestorVaerdi: ejendomsvaerdi - restgaeld + aarligtCashflow * aar
       };
-    })
-  };
+    });
+  }
+}
+
+function normaliserCaseData(input = {}) {
+  return { ...new InvesteringscaseData(input) };
+}
+
+function sumPoster(poster = []) {
+  return new PostSamling(poster).sum();
+}
+
+function maanedligTotal(poster = []) {
+  return new PostSamling(poster).maanedligTotal();
+}
+
+function beregnMaanedligYdelse(laanebeloeb, renteProcent, loebetidAar) {
+  return new Laan(laanebeloeb, renteProcent, loebetidAar).maanedligYdelse();
+}
+
+function restgaeldEfterAar(laanebeloeb, renteProcent, loebetidAar, aar) {
+  return new Laan(laanebeloeb, renteProcent, loebetidAar).restgaeldEfterAar(aar);
+}
+
+function beregnInvesteringscase(input = {}) {
+  return new InvesteringscaseBeregner(input).beregn();
 }
 
 module.exports = {
+  PostSamling,
+  Laan,
+  InvesteringscaseData,
+  InvesteringscaseBeregner,
   beregnInvesteringscase,
   beregnAnalyse: beregnInvesteringscase,
   beregnMaanedligYdelse,
   beregnRestgaeldEfterAar: restgaeldEfterAar,
   beregnNoegletalOverTid: (input) => beregnInvesteringscase(input).noegletalOverTid,
-  normaliserInput,
+  normaliserCaseData,
+  normaliserInput: normaliserCaseData,
   sumPoster,
-  maanedligTotal
+  maanedligTotal,
+  tal,
+  positivtTal,
+  talMedStandard
 };

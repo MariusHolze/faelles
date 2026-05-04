@@ -4,14 +4,99 @@ let currentCaseID = null;
 let investmentChart = null;
 let comparisonCases = [];
 
-const moneyFormatter = new Intl.NumberFormat("da-DK", {
-  style: "currency",
-  currency: "DKK",
-  maximumFractionDigits: 0
-});
+class DanskPengeFormat {
+  constructor() {
+    this.formattering = new Intl.NumberFormat("da-DK", {
+      style: "currency",
+      currency: "DKK",
+      maximumFractionDigits: 0
+    });
+  }
+
+  kroner(value) {
+    return this.formattering.format(Number(value) || 0);
+  }
+
+  talFraKroner(value) {
+    return Number(
+      String(value)
+        .replaceAll(".", "")
+        .replace("kr.", "")
+        .replace("kr", "")
+        .trim()
+    ) || 0;
+  }
+
+  aktiverFelt(felt) {
+    felt.type = "text";
+    felt.inputMode = "numeric";
+
+    felt.addEventListener("input", () => {
+      felt.value = felt.value.replace(/[^0-9]/g, "");
+    });
+
+    felt.addEventListener("blur", () => {
+      const raw = felt.value.replace(/\./g, "");
+      if (raw !== "") {
+        felt.value = Number(raw).toLocaleString("da-DK");
+      }
+    });
+
+    felt.addEventListener("focus", () => {
+      felt.value = felt.value.replace(/\./g, "");
+    });
+  }
+}
+
+class DynamiskPostRaekke {
+  constructor({ klasseNavn, navn, beloeb, kanFjernes, minBeloeb = 0, pengeFormat }) {
+    this.klasseNavn = klasseNavn;
+    this.navn = navn;
+    this.beloeb = beloeb;
+    this.kanFjernes = kanFjernes;
+    this.minBeloeb = minBeloeb;
+    this.pengeFormat = pengeFormat;
+  }
+
+  render() {
+    const row = document.createElement("div");
+    row.className = `simple-row ${this.klasseNavn}`;
+
+    const navnFelt = document.createElement("input");
+    navnFelt.className = "row-name";
+    navnFelt.type = "text";
+    navnFelt.placeholder = "Navn";
+    navnFelt.required = true;
+    navnFelt.value = this.navn;
+
+    const beloebFelt = document.createElement("input");
+    beloebFelt.className = "row-amount kroner-input";
+    beloebFelt.type = "number";
+    beloebFelt.required = true;
+    beloebFelt.min = String(this.minBeloeb);
+    beloebFelt.step = "0.01";
+    beloebFelt.placeholder = "Beløb i kr.";
+    beloebFelt.value = this.beloeb;
+    this.pengeFormat.aktiverFelt(beloebFelt);
+
+    const fjernKnap = document.createElement("button");
+    fjernKnap.className = "sekundaer-knap";
+    fjernKnap.type = "button";
+    fjernKnap.textContent = "Fjern";
+    fjernKnap.disabled = !this.kanFjernes;
+    fjernKnap.addEventListener("click", () => row.remove());
+
+    row.appendChild(navnFelt);
+    row.appendChild(beloebFelt);
+    row.appendChild(fjernKnap);
+    return row;
+  }
+}
+
+const pengeFormat = new DanskPengeFormat();
 
 function kroner(value) {
-  return moneyFormatter.format(Number(value) || 0);
+  return pengeFormat.kroner(value);
 }
 
 function cashflowKlasse(value) {
@@ -19,13 +104,7 @@ function cashflowKlasse(value) {
 }
 
 function talFraKroner(value) {
-  return Number(
-    String(value)
-      .replaceAll(".", "")
-      .replace("kr.", "")
-      .replace("kr", "")
-      .trim()
-  ) || 0;
+  return pengeFormat.talFraKroner(value);
 }
 
 function bindInvesteringscaseForm() {
@@ -122,7 +201,7 @@ function startNewCase() {
 }
 
 function addPurchaseRow(name, amount, fast) {
-  const row = createMoneyRow("purchase-row", name, amount, !fast, 0);
+  const row = opretPengeRaekke("purchase-row", name, amount, !fast, 0);
 
   if (fast) {
     row.querySelector(".row-name").readOnly = true;
@@ -228,7 +307,7 @@ function fillPurchaseRows(posts) {
 }
 
 function addRenovationRow(name, amount, year) {
-  const row = createMoneyRow("renovation-row", name, amount, true, 1);
+  const row = opretPengeRaekke("renovation-row", name, amount, true, 1);
   const timeInput = document.createElement("input");
   timeInput.className = "row-time";
   timeInput.type = "number";
@@ -243,52 +322,29 @@ function addRenovationRow(name, amount, year) {
 }
 
 function addOperationRow(name, amount, period) {
-  const row = createMoneyRow("operation-row", name, amount, true, 1);
-  row.insertBefore(createPeriodSelect(period), row.querySelector("button"));
+  const row = opretPengeRaekke("operation-row", name, amount, true, 1);
+  row.insertBefore(opretPeriodeValg(period), row.querySelector("button"));
   document.querySelector("#operationRows").appendChild(row);
 }
 
 function addRentalCostRow(name, amount, period) {
-  const row = createMoneyRow("rental-cost-row", name, amount, true, 1);
-  row.insertBefore(createPeriodSelect(period), row.querySelector("button"));
+  const row = opretPengeRaekke("rental-cost-row", name, amount, true, 1);
+  row.insertBefore(opretPeriodeValg(period), row.querySelector("button"));
   document.querySelector("#rentalCostRows").appendChild(row);
 }
 
-function createMoneyRow(className, name, amount, canRemove, minAmount = 0) {
-  const row = document.createElement("div");
-  row.className = `simple-row ${className}`;
-
-  const nameInput = document.createElement("input");
-  nameInput.className = "row-name";
-  nameInput.type = "text";
-  nameInput.placeholder = "Navn";
-  nameInput.required = true;
-  nameInput.value = name;
-
-  const amountInput = document.createElement("input");
-  amountInput.className = "row-amount kroner-input";
-  amountInput.type = "number";
-  amountInput.required = true;
-  amountInput.min = String(minAmount);
-  amountInput.step = "0.01";
-  amountInput.placeholder = "Beløb i kr.";
-  amountInput.value = amount;
-  aktiverKronerFelt(amountInput);
-
-  const removeButton = document.createElement("button");
-  removeButton.className = "sekundaer-knap";
-  removeButton.type = "button";
-  removeButton.textContent = "Fjern";
-  removeButton.disabled = !canRemove;
-  removeButton.addEventListener("click", () => row.remove());
-
-  row.appendChild(nameInput);
-  row.appendChild(amountInput);
-  row.appendChild(removeButton);
-  return row;
+function opretPengeRaekke(klasseNavn, navn, beloeb, kanFjernes, minBeloeb = 0) {
+  return new DynamiskPostRaekke({
+    klasseNavn,
+    navn,
+    beloeb,
+    kanFjernes,
+    minBeloeb,
+    pengeFormat
+  }).render();
 }
 
-function createPeriodSelect(period) {
+function opretPeriodeValg(period) {
   const select = document.createElement("select");
   select.className = "row-period";
   select.innerHTML = `
@@ -577,9 +633,9 @@ function renderChart(result) {
       plugins: {
         legend: { position: "top" },
         tooltip: {
-          // Formatér tooltip-værdier som kr. via den eksisterende moneyFormatter
+          // Formatér tooltip-værdier som kr.
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${moneyFormatter.format(ctx.parsed.y)}`
+            label: (ctx) => `${ctx.dataset.label}: ${pengeFormat.kroner(ctx.parsed.y)}`
           }
         }
       },
@@ -587,7 +643,7 @@ function renderChart(result) {
         x: { title: { display: true, text: "År" } },
         y: {
           title: { display: true, text: "kr." },
-          ticks: { callback: (v) => moneyFormatter.format(v) }
+          ticks: { callback: (v) => pengeFormat.kroner(v) }
         }
       }
     }
@@ -911,23 +967,7 @@ function sumPosts(posts) {
 }
 
 function aktiverKronerFelt(input) {
-  input.type = "text";
-  input.inputMode = "numeric";
-
-  input.addEventListener("input", () => {
-    input.value = input.value.replace(/[^0-9]/g, "");
-  });
-
-  input.addEventListener("blur", () => {
-    const raw = input.value.replace(/\./g, "");
-    if (raw !== "") {
-      input.value = Number(raw).toLocaleString("da-DK");
-    }
-  });
-
-  input.addEventListener("focus", () => {
-    input.value = input.value.replace(/\./g, "");
-  });
+  pengeFormat.aktiverFelt(input);
 }
 
 function showError(message) {
