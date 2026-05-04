@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(curl -s -w \"\\\\nHTTP: %{http_code}\" \"https://services.datafordeler.dk/BBR/BBRPublic/1/rest/bygning?username=KZWGSXGNNA&password=EKSamen4x12&format=JSON&Husnummer=0a3f507a-21fc-32b8-e044-0003ba298018\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://okapi.dataforsyningen.dk/lib/okapi-1.6.0.min.js\")"
-    ]
-  }
-}
