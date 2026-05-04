@@ -2,14 +2,8 @@
   padding-top: 72px;
 }
 
-.forside-eyebrow {
-  color: #508fcd;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+.forside-body .eyebrow {
   text-align: center;
-  margin-bottom: 12px;
 }
 
 .forside-body h1 {
@@ -65,7 +59,7 @@
 #fejlBesked {
   min-height: 20px;
   margin: 0;
-  color: #c0392b;
+  color: #b42318;
   font-weight: 700;
 }
 
@@ -100,7 +94,7 @@
   gap: 24px;
   margin-top: 56px;
   padding-top: 32px;
-  border-top: 1px solid #e0e0de;
+  border-top: 1px solid #d9e3ee;
   text-align: center;
 }
 
@@ -128,8 +122,6 @@
 
 #profilEjendomListe {
   margin-top: 20px;
-  padding: 0;
-  list-style: none;
 }
 
 @media (max-width: 700px) {
