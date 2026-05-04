@@ -14,6 +14,10 @@ function kroner(value) {
   return moneyFormatter.format(Number(value) || 0);
 }
 
+function cashflowKlasse(value) {
+  return Number(value) < 0 ? "tal-negativ" : "tal-positiv";
+}
+
 function talFraKroner(value) {
   return Number(
     String(value)
@@ -186,8 +190,8 @@ function fillInvestmentForm(caseData) {
   form.rente.value = input.rente || 0;
   form.loebetid.value = input.loebetid || 30;
 
+  setRenovationActive(input.renoveringAktiv === true);
   if (input.renoveringAktiv) {
-    setRenovationActive(true);
     document.querySelector("#renovationRows").innerHTML = "";
     (input.renoveringer || []).forEach((post) => addRenovationRow(post.navn, post.beloeb, post.tidspunktAar ?? ""));
   }
@@ -195,8 +199,8 @@ function fillInvestmentForm(caseData) {
   document.querySelector("#operationRows").innerHTML = "";
   (input.driftsposter || []).forEach((post) => addOperationRow(post.navn, post.beloeb, post.periode || "maanedligt"));
 
+  setRentalActive(input.udlejningAktiv === true);
   if (input.udlejningAktiv) {
-    setRentalActive(true);
     form.maanedligLeje.value = input.maanedligLeje || 0;
     document.querySelector("#rentalCostRows").innerHTML = "";
     (input.udlejningsudgifter || []).forEach((post) => addRentalCostRow(post.navn, post.beloeb, post.periode || "maanedligt"));
@@ -374,7 +378,6 @@ function nextStep() {
   if (!validateCurrentStep()) {
     return;
   }
-
   showStep(Math.min(currentStep + 1, document.querySelectorAll(".form-step").length - 1));
 }
 
@@ -625,11 +628,11 @@ function renderResult(result) {
   `;
 }
 
-function resultCard(label, value) {
+function resultCard(label, value, klasse = "") {
   return `
     <article class="result-card">
       <span>${label}</span>
-      <strong>${value}</strong>
+      <strong${klasse ? ` class="${klasse}"` : ""}>${value}</strong>
     </article>
   `;
 }
@@ -727,22 +730,30 @@ async function loadInvestmentCases() {
       const card = document.createElement("article");
       card.className = "case-card";
       card.innerHTML = `
-        <h3>${escapeHtml(caseData.navn)}</h3>
-        <p>${escapeHtml(caseData.adresse || "Ingen adresse")}</p>
-        <p>${caseData.oprettetTidspunkt ? new Date(caseData.oprettetTidspunkt).toLocaleDateString("da-DK") : ""}</p>
-        <label class="case-compare-choice">
-          <input class="case-compare-checkbox" type="checkbox" value="${caseData.caseID}">
-          Sammenlign
-        </label>
+        <div class="case-card-top">
+          <div>
+            <h3>${escapeHtml(caseData.navn)}</h3>
+            <p>${escapeHtml(caseData.adresse || "Ingen adresse")}</p>
+            <p>${caseData.oprettetTidspunkt ? new Date(caseData.oprettetTidspunkt).toLocaleDateString("da-DK") : ""}</p>
+          </div>
+          <div class="case-card-actions">
+            <button class="sekundaer-knap rediger-case-knap" type="button">Rediger</button>
+            <button class="sekundaer-knap resultat-case-knap" type="button">Resultat</button>
+            <button class="sekundaer-knap dupliker-case-knap" type="button">Duplikér</button>
+            <button class="sekundaer-knap slet-case-knap" type="button">Slet</button>
+          </div>
+        </div>
         <dl class="case-card-numbers">
-          <div><dt>Månedligt cashflow</dt><dd>${kroner(caseData.resultat.maanedligtCashflow)}</dd></div>
+          <div><dt>Månedligt cashflow</dt><dd class="${cashflowKlasse(caseData.resultat.maanedligtCashflow)}">${kroner(caseData.resultat.maanedligtCashflow)}</dd></div>
           <div><dt>Startinvestering</dt><dd>${kroner(caseData.resultat.startInvestering)}</dd></div>
           <div><dt>Værdi efter 30 år</dt><dd>${kroner(caseData.resultat.estimeretVaerdiEfterPeriode)}</dd></div>
         </dl>
-        <button class="sekundaer-knap rediger-case-knap" type="button">Rediger</button>
-        <button class="sekundaer-knap resultat-case-knap" type="button">Resultat</button>
-        <button class="sekundaer-knap dupliker-case-knap" type="button">Duplikér</button>
-        <button class="sekundaer-knap slet-case-knap" type="button">Slet</button>
+        <div class="case-card-bottom">
+          <label class="case-compare-choice">
+            <input class="case-compare-checkbox" type="checkbox" value="${caseData.caseID}">
+            Sammenlign
+          </label>
+        </div>
       `;
 
       const compareCheckbox = card.querySelector(".case-compare-checkbox");
