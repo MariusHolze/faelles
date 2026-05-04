@@ -1,4 +1,4 @@
-const { validerCase } = require("../services/validerCase");
+const { CaseValidering, validerCase } = require("../services/validerCase");
 
 function lavGyldigCase(overrides = {}) {
   return {
@@ -36,6 +36,12 @@ describe("validerCase", () => {
     const resultat = validerCase(input);
 
     expect(resultat).toEqual([]); // der skal være 0 fejl.
+  });
+
+  test("kan validere via CaseValidering-klassen", () => {
+    const validering = new CaseValidering(lavGyldigCase());
+
+    expect(validering.valider()).toEqual([]);
   });
 
   test("afviser case uden navn", () => {

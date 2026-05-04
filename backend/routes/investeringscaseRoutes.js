@@ -2,15 +2,19 @@ const express = require("express");
 const router = express.Router();
 const { getPool } = require("../db");
 const {
-  hentAlleCases,
-  hentCase,
-  opretCase,
-  opdaterCase,
-  sletCase
+  InvesteringscaseRepository
 } = require("../services/investeringscaseRepository");
 
 const { beregnInvesteringscase } = require("../services/beregnCase");
-const { validerCase, gyldigtId } = require("../services/validerCase");
+const { CaseValidering, gyldigtId } = require("../services/validerCase");
+
+function validerCase(body) {
+  return new CaseValidering(body).valider();
+}
+
+async function hentRepository() {
+  return new InvesteringscaseRepository(await getPool());
+}
 
 router.get("/", async (req, res) => {
   const { ejendomID } = req.query;
@@ -20,8 +24,8 @@ router.get("/", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const cases = await hentAlleCases(pool, ejendomID ? Number(ejendomID) : null);
+    const repository = await hentRepository();
+    const cases = await repository.hentAlle(ejendomID ? Number(ejendomID) : null);
     res.json(cases);
   } catch (error) {
     console.error("Fejl ved hentning af investeringscases:", error);
@@ -35,8 +39,8 @@ router.get("/:id", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const investeringscase = await hentCase(pool, Number(req.params.id));
+    const repository = await hentRepository();
+    const investeringscase = await repository.hent(Number(req.params.id));
 
     if (!investeringscase) {
       return res.status(404).json({ message: "Case ikke fundet" });
@@ -69,9 +73,9 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const caseID = await opretCase(pool, req.body);
-    const investeringscase = await hentCase(pool, caseID);
+    const repository = await hentRepository();
+    const caseID = await repository.opret(req.body);
+    const investeringscase = await repository.hent(caseID);
 
     res.status(201).json({
       message: "Investeringscase gemt",
@@ -94,8 +98,8 @@ router.post("/:id/duplicate", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const original = await hentCase(pool, Number(req.params.id));
+    const repository = await hentRepository();
+    const original = await repository.hent(Number(req.params.id));
 
     if (!original) {
       return res.status(404).json({ message: "Case ikke fundet" });
@@ -108,7 +112,7 @@ router.post("/:id/duplicate", async (req, res) => {
       beskrivelse: original.beskrivelse || ""
     };
 
-    const caseID = await opretCase(pool, kopi);
+    const caseID = await repository.opret(kopi);
 
     res.status(201).json({
       message: "Investeringscase duplikeret",
@@ -136,15 +140,15 @@ router.put("/:id", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const eksisterende = await hentCase(pool, Number(req.params.id));
+    const repository = await hentRepository();
+    const eksisterende = await repository.hent(Number(req.params.id));
 
     if (!eksisterende) {
       return res.status(404).json({ message: "Case ikke fundet" });
     }
 
-    await opdaterCase(pool, Number(req.params.id), req.body);
-    const investeringscase = await hentCase(pool, Number(req.params.id));
+    await repository.opdater(Number(req.params.id), req.body);
+    const investeringscase = await repository.hent(Number(req.params.id));
 
     res.json({
       message: "Investeringscase gemt",
@@ -167,8 +171,8 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const pool = await getPool();
-    const slettet = await sletCase(pool, Number(req.params.id));
+    const repository = await hentRepository();
+    const slettet = await repository.slet(Number(req.params.id));
 
     if (!slettet) {
       return res.status(404).json({ message: "Case ikke fundet" });
