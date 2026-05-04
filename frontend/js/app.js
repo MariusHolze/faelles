@@ -15,10 +15,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     bindOpretEjendomsprofilFraForside(); // knap fra forsiden til ejendomsoprettelse
   }
 
-  if (typeof bindSeCasesFraForside === "function") {
-    bindSeCasesFraForside(); // offentlig visning af cases for valgt ejendom
-  }
-
   if (typeof initKortdata === "function") {
     initKortdata(); // sætter kortmodal og kortknapper op
   }

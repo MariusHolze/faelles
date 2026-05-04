@@ -39,12 +39,6 @@ app.use("/api/ejendomme", ejendomRoutes);
 app.use("/api/kort", kortRoutes);
 app.use("/api/investeringscases", investeringscaseRoutes);
 
-// Simpel testroute.
-// Den kan bruges til hurtigt at tjekke om serveren kører.
-app.get("/api/test", (req, res) => {
-  res.json({ message: "Server virker" });
-});
-
 // Starter serveren og får den til at lytte på den valgte port.
 const server = app.listen(port, () => {
   console.log(`Server kører på port ${port}`);
