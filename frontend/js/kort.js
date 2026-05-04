@@ -345,10 +345,13 @@ async function visKortdataModal(adresseID, adgangsadresseID, adresse) {
     });
 
     kortInstans = opretKort(data.kort.dataforsyningenToken, data.koordinater);
-    opretMatrikelkortOverlay(kortInstans);
 
     if (kortInstans?.olMap) {
+      await new Promise((resolve) => {
+        window.requestAnimationFrame(resolve);
+      });
       kortInstans.olMap.updateSize();
+      opretMatrikelkortOverlay(kortInstans);
     }
   } catch (error) {
     console.error("Fejl ved visning af kortdata:", error);
